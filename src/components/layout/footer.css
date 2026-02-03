@@ -1,0 +1,30 @@
+.footer {
+    position: relative;
+    padding: 20px;
+    width: 100%;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-top: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.footer-text {
+    margin: 0;
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.footer-version {
+    margin: 0;
+    color: #718096;
+    font-size: 12px;
+    font-weight: 400;
+}

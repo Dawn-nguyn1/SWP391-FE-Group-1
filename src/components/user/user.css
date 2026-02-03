@@ -1,0 +1,347 @@
+/* ==================== GENERAL STYLES ==================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.user-page-container {
+    min-height: 100vh;
+    background: #f8f9fc;
+    padding: 32px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ==================== PAGE HEADER ==================== */
+.page-header {
+    margin-bottom: 24px;
+    padding: 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.page-title {
+    font-size: 28px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: #ffffff;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+/* ==================== TABLE WRAPPER ==================== */
+.user-table-wrapper {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+}
+
+/* ==================== TABLE HEADER ==================== */
+.user-table .ant-table-thead > tr > th {
+    background: #f3f4f6;
+    color: #718096;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 16px;
+    text-align: left;
+}
+
+.user-table .ant-table-thead > tr > th::before {
+    content: none;
+}
+
+/* ==================== TABLE BODY ==================== */
+.user-table .ant-table-tbody > tr {
+    transition: all 0.2s ease;
+}
+
+.user-table .ant-table-tbody > tr > td {
+    padding: 16px;
+    border-bottom: 1px solid #f7fafc;
+    vertical-align: middle;
+    color: #2d3748;
+    font-size: 14px;
+}
+
+.user-table .ant-table-tbody > tr:hover {
+    background: #f7fafc;
+}
+
+.user-table .ant-table-tbody > tr:last-child > td {
+    border-bottom: none;
+}
+
+/* ==================== STT COLUMN ==================== */
+.stt-number {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 14px;
+}
+
+/* ==================== ID COLUMN ==================== */
+.user-id {
+    color: #3182ce;
+    font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.user-id:hover {
+    color: #2c5282;
+    text-decoration: underline;
+}
+
+/* ==================== AVATAR ==================== */
+.avatar-wrapper {
+    display: inline-block;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #e2e8f0;
+}
+
+/* ==================== INITIALS AVATAR ==================== */
+.initials-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+}
+
+.initials-avatar.color-blue {
+    background: #3182ce;
+}
+
+.initials-avatar.color-orange {
+    background: #dd6b20;
+}
+
+.initials-avatar.color-purple {
+    background: #805ad5;
+}
+
+.initials-avatar.color-red {
+    background: #e53e3e;
+}
+
+.initials-avatar.color-teal {
+    background: #319795;
+}
+
+.initials-avatar.color-pink {
+    background: #d53f8c;
+}
+
+/* ==================== NAME & EMAIL ==================== */
+.user-name {
+    font-weight: 500;
+    color: #2d3748;
+    font-size: 14px;
+}
+
+.user-email {
+    color: #718096;
+    font-size: 14px;
+}
+
+/* ==================== ROLE BADGES ==================== */
+.role-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.role-badge.team-leader {
+    background: #ebf4ff;
+    color: #3182ce;
+}
+
+.role-badge.individual-operator {
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+/* ==================== STATUS BADGES ==================== */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.status-badge.active {
+    background: #f0fdf4;
+    color: #16a34a;
+}
+
+.status-badge.inactive {
+    background: #fef2f2;
+    color: #dc2626;
+}
+
+.status-badge .anticon {
+    font-size: 10px;
+}
+
+/* ==================== ACTION BUTTONS ==================== */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.action-btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 16px;
+}
+
+.edit-btn {
+    color: #d97706;
+}
+
+.edit-btn:hover {
+    background: #fef3c7;
+}
+
+.delete-btn {
+    color: #dc2626;
+}
+
+.delete-btn:hover {
+    background: #fef2f2;
+}
+
+/* ==================== PAGINATION ==================== */
+.user-table .ant-pagination {
+    margin: 24px 0;
+    padding: 0 16px;
+}
+
+.user-table .ant-pagination-total-text {
+    color: #718096;
+    font-size: 14px;
+}
+
+.user-table .ant-pagination-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-weight: 500;
+    min-width: 36px;
+    height: 36px;
+    line-height: 34px;
+}
+
+.user-table .ant-pagination-item:hover {
+    border-color: #3182ce;
+}
+
+.user-table .ant-pagination-item:hover a {
+    color: #3182ce;
+}
+
+.user-table .ant-pagination-item-active {
+    background: #3182ce;
+    border-color: #3182ce;
+}
+
+.user-table .ant-pagination-item-active a {
+    color: white;
+}
+
+.user-table .ant-pagination-prev,
+.user-table .ant-pagination-next {
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    min-width: 36px;
+    height: 36px;
+    line-height: 34px;
+}
+
+.user-table .ant-pagination-prev:hover,
+.user-table .ant-pagination-next:hover {
+    border-color: #3182ce;
+}
+
+.user-table .ant-pagination-prev:hover .ant-pagination-item-link,
+.user-table .ant-pagination-next:hover .ant-pagination-item-link {
+    color: #3182ce;
+}
+
+/* ==================== RESPONSIVE ==================== */
+@media (max-width: 768px) {
+    .user-page-container {
+        padding: 16px;
+    }
+
+    .page-title {
+        font-size: 24px;
+    }
+
+    .user-table .ant-table-thead > tr > th,
+    .user-table .ant-table-tbody > tr > td {
+        padding: 12px 8px;
+        font-size: 13px;
+    }
+
+    .user-avatar,
+    .initials-avatar {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+}
+
+/* ==================== LOADING STATE ==================== */
+.user-table .ant-spin-container {
+    min-height: 300px;
+}
+
+/* ==================== EMPTY STATE ==================== */
+.user-table .ant-empty {
+    padding: 48px 0;
+}
+
+.user-table .ant-empty-description {
+    color: #a0aec0;
+    font-size: 14px;
+}
