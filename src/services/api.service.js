@@ -1,8 +1,6 @@
 import axios from "./axios.customize";
 
-// =============================================================================
-// USER & AUTH APIs
-// =============================================================================
+// user and authentication API
 
 const createUserAPI = (fullName, email, password, phone) => {
     const URL_BACKEND = "/api/v1/user";
@@ -94,18 +92,8 @@ const logoutAPI = () => {
     return axios.post(URL_BACKEND);
 }
 
-// =============================================================================
-// BOOK APIs (Existing)
-// =============================================================================
 
-const fetchALlBookAPI = (current, pageSize) => {
-    const URL_BACKEND = `/api/v1/book?current=${current}&pageSize=${pageSize}`;
-    return axios.get(URL_BACKEND);
-}
-
-// =============================================================================
-// PRODUCT APIs (New)
-// =============================================================================
+//product API
 
 const fetchProductsAPI = (current, pageSize) => {
     const URL_BACKEND = `/api/public/products/search?page=${current - 1}&size=${pageSize}`;
@@ -136,12 +124,49 @@ const createAttributeAPI = (variantId, attributeName, attributeValue) => {
     return axios.post(URL_BACKEND, data);
 }
 
+// Update APIs
+const updateProductAPI = (id, name, description, brandName, productImage) => {
+    const URL_BACKEND = `/api/manager/products/${id}`;
+    const data = { name, description, brandName, productImage };
+    return axios.put(URL_BACKEND, data);
+}
+
+const updateVariantAPI = (variantId, sku, price, stockQuantity) => {
+    const URL_BACKEND = `/api/manager/variants/${variantId}`;
+    const data = { sku, price, stockQuantity };
+    return axios.put(URL_BACKEND, data);
+}
+
+const updateAttributeAPI = (attributeId, attributeName, attributeValue) => {
+    const URL_BACKEND = `/api/manager/attributes/${attributeId}`;
+    const data = { attributeName, attributeValue };
+    return axios.put(URL_BACKEND, data);
+}
+
+const deleteProductAPI = (id) => {
+    const URL_BACKEND = `/api/manager/products/${id}`;
+    return axios.delete(URL_BACKEND);
+}
+
+const deleteVariantAPI = (variantId) => {
+    const URL_BACKEND = `/api/manager/variants/${variantId}`;
+    return axios.delete(URL_BACKEND);
+}
+
+const deleteAttributeAPI = (attributeId) => {
+    const URL_BACKEND = `/api/manager/attributes/${attributeId}`;
+    return axios.delete(URL_BACKEND);
+}
+
 export {
     createUserAPI, updateUserAPI, fetchAllUserAPI,
     deleteUserAPI, handleUploadFile, updateUserAvatarAPI,
     registerUserAPI, forgotPasswordAPI, resetPasswordAPI, loginAPI, getAccountAPI,
-    logoutAPI, fetchALlBookAPI,
+    logoutAPI,
     // Exports new endpoints
     fetchProductsAPI, fetchProductByIdAPI,
-    createProductAPI, createVariantAPI, createAttributeAPI
+    createProductAPI, createVariantAPI, createAttributeAPI,
+    updateProductAPI, updateVariantAPI, updateAttributeAPI,
+    deleteProductAPI, deleteVariantAPI, deleteAttributeAPI
 }
+

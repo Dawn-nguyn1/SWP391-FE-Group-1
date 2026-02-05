@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Table, Space, Button, Tag } from 'antd';
+import { Table, Button, Space, Popconfirm, message, notification } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const ProductTable = ({
@@ -10,47 +11,56 @@ const ProductTable = ({
     total,
     setCurrent,
     setPageSize,
-    loadProducts
+    loadProducts,
+    handleEditProduct,
+    handleDeleteProduct
 }) => {
+
+    const confirmDelete = (id) => {
+        handleDeleteProduct(id);
+    };
 
     const columns = [
         {
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
-            width: 80,
+            align: 'center',
         },
         {
             title: 'Image',
             dataIndex: 'productImage',
             key: 'productImage',
+            align: 'center',
             render: (url) => <img src={url} alt="product" style={{ width: 50, height: 50, objectFit: 'cover' }} />
         },
         {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            render: (text) => <b>{text}</b>
+            align: 'center',
         },
         {
             title: 'Brand',
             dataIndex: 'brandName',
             key: 'brandName',
-            render: (text) => <Tag color="blue">{text}</Tag>
+            align: 'center',
         },
         {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status) => (
-                <Tag color={status === 'ACTIVE' ? 'green' : 'red'}>
-                    {status}
-                </Tag>
-            )
+            title: 'Description',
+            dataIndex: 'description',
+            key: 'description',
+            align: 'center',
+            render: (text) => {
+                if (!text) return "N/A";
+                // Truncate if too long
+                return text.length > 50 ? `${text.substring(0, 50)}...` : text;
+            }
         },
         {
             title: 'Action',
             key: 'action',
+            align: 'center',
             render: (_, record) => (
                 <Space size="middle">
                     <Button
@@ -58,20 +68,28 @@ const ProductTable = ({
                         icon={<EditOutlined />}
                         ghost
                         onClick={() => {
-                            // TODO: Handle Edit
-                            console.log("Edit", record);
+                            if (handleEditProduct) {
+                                handleEditProduct(record);
+                            }
                         }}
                     >
                         Edit
                     </Button>
-                    <Button
-                        type="primary"
-                        danger
-                        icon={<DeleteOutlined />}
-                        ghost
+                    <Popconfirm
+                        title="Delete the product"
+                        description="Are you sure to delete this product?"
+                        onConfirm={() => confirmDelete(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                        placement="left"
                     >
-                        Delete
-                    </Button>
+                        <Button
+                            danger
+                            icon={<DeleteOutlined />}
+                        >
+                            Delete
+                        </Button>
+                    </Popconfirm>
                 </Space>
             ),
         },
