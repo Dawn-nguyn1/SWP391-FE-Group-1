@@ -25,38 +25,42 @@ const ProductTable = ({
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
+            align: 'center',
         },
         {
             title: 'Image',
             dataIndex: 'productImage',
             key: 'productImage',
+            align: 'center',
             render: (url) => <img src={url} alt="product" style={{ width: 50, height: 50, objectFit: 'cover' }} />
         },
         {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
+            align: 'center',
         },
         {
             title: 'Brand',
             dataIndex: 'brandName',
             key: 'brandName',
+            align: 'center',
         },
         {
-            title: 'Price',
-            dataIndex: 'price', // Assuming price comes from somewhere or is representative variant price
-            key: 'price',
-            render: (_, record) => {
-                // Logic to show price range if multiple variants or just first variant price
-                if (record.variants && record.variants.length > 0) {
-                    return `${record.variants[0].price} `;
-                }
-                return "N/A";
+            title: 'Description',
+            dataIndex: 'description',
+            key: 'description',
+            align: 'center',
+            render: (text) => {
+                if (!text) return "N/A";
+                // Truncate if too long
+                return text.length > 50 ? `${text.substring(0, 50)}...` : text;
             }
         },
         {
             title: 'Action',
             key: 'action',
+            align: 'center',
             render: (_, record) => (
                 <Space size="middle">
                     <Button

@@ -27,6 +27,7 @@ const ProductPage = () => {
         setLoading(true);
         try {
             const res = await fetchProductsAPI(current, pageSize);
+            console.log(">>> Checking API response:", res); // Debug log
             if (res && res.content) {
                 setDataSource(res.content);
                 setTotal(res.totalElements);
