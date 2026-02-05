@@ -83,8 +83,7 @@ const loginAPI = (username, password) => {
     const URL_BACKEND = "/api/auth/login";
     const data = {
         username: username,
-        password: password,
-        delay: 2000
+        password: password
     }
     return axios.post(URL_BACKEND, data)
 }
