@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import ProductTable from './product.table';
 import ProductForm from './product.form';
-import { fetchProductsAPI } from '../../services/api.service';
-import { Button, notification } from 'antd';
+import { fetchProductsAPI, deleteProductAPI } from '../../services/api.service';
+import { Button, notification, Popconfirm, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import './product.css';
 
@@ -12,6 +12,9 @@ const ProductPage = () => {
     const [total, setTotal] = useState(0);
     const [current, setCurrent] = useState(1);
     const [pageSize, setPageSize] = useState(10);
+
+    // State for Edit
+    const [dataUpdate, setDataUpdate] = useState(null);
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,6 +38,29 @@ const ProductPage = () => {
             });
         }
         setLoading(false);
+    };
+
+    const handleEditProduct = (product) => {
+        setDataUpdate(product);
+        setIsModalOpen(true);
+    }
+
+    const handleDeleteProduct = async (id) => {
+        try {
+            const res = await deleteProductAPI(id);
+            if (res) {
+                notification.success({
+                    message: "Success",
+                    description: "Product deleted successfully"
+                });
+                await loadProducts();
+            }
+        } catch (error) {
+            notification.error({
+                message: "Error",
+                description: "Failed to delete product"
+            });
+        }
     }
 
     return (
@@ -47,7 +73,10 @@ const ProductPage = () => {
                 <Button
                     type="primary"
                     icon={<PlusOutlined />}
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                        setDataUpdate(null);
+                        setIsModalOpen(true);
+                    }}
                 >
                     Create Product
                 </Button>
@@ -62,12 +91,16 @@ const ProductPage = () => {
                 setCurrent={setCurrent}
                 setPageSize={setPageSize}
                 loadProducts={loadProducts}
+                handleEditProduct={handleEditProduct}
+                handleDeleteProduct={handleDeleteProduct}
             />
 
             <ProductForm
                 isModalOpen={isModalOpen}
                 setIsModalOpen={setIsModalOpen}
                 loadProducts={loadProducts}
+                dataUpdate={dataUpdate}
+                setDataUpdate={setDataUpdate}
             />
         </div>
     );

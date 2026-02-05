@@ -1,5 +1,6 @@
+
 import React from 'react';
-import { Table, Space, Button, Tag } from 'antd';
+import { Table, Button, Space, Popconfirm, message, notification } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const ProductTable = ({
@@ -10,15 +11,20 @@ const ProductTable = ({
     total,
     setCurrent,
     setPageSize,
-    loadProducts
+    loadProducts,
+    handleEditProduct,
+    handleDeleteProduct
 }) => {
+
+    const confirmDelete = (id) => {
+        handleDeleteProduct(id);
+    };
 
     const columns = [
         {
             title: 'ID',
             dataIndex: 'id',
             key: 'id',
-            width: 80,
         },
         {
             title: 'Image',
@@ -30,23 +36,23 @@ const ProductTable = ({
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
-            render: (text) => <b>{text}</b>
         },
         {
             title: 'Brand',
             dataIndex: 'brandName',
             key: 'brandName',
-            render: (text) => <Tag color="blue">{text}</Tag>
         },
         {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status) => (
-                <Tag color={status === 'ACTIVE' ? 'green' : 'red'}>
-                    {status}
-                </Tag>
-            )
+            title: 'Price',
+            dataIndex: 'price', // Assuming price comes from somewhere or is representative variant price
+            key: 'price',
+            render: (_, record) => {
+                // Logic to show price range if multiple variants or just first variant price
+                if (record.variants && record.variants.length > 0) {
+                    return `${record.variants[0].price} `;
+                }
+                return "N/A";
+            }
         },
         {
             title: 'Action',
@@ -58,20 +64,28 @@ const ProductTable = ({
                         icon={<EditOutlined />}
                         ghost
                         onClick={() => {
-                            // TODO: Handle Edit
-                            console.log("Edit", record);
+                            if (handleEditProduct) {
+                                handleEditProduct(record);
+                            }
                         }}
                     >
                         Edit
                     </Button>
-                    <Button
-                        type="primary"
-                        danger
-                        icon={<DeleteOutlined />}
-                        ghost
+                    <Popconfirm
+                        title="Delete the product"
+                        description="Are you sure to delete this product?"
+                        onConfirm={() => confirmDelete(record.id)}
+                        okText="Yes"
+                        cancelText="No"
+                        placement="left"
                     >
-                        Delete
-                    </Button>
+                        <Button
+                            danger
+                            icon={<DeleteOutlined />}
+                        >
+                            Delete
+                        </Button>
+                    </Popconfirm>
                 </Space>
             ),
         },
