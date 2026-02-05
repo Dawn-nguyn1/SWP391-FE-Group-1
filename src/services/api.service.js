@@ -1,36 +1,32 @@
-// import axios from "axios";
-import axios from './axios.customize.js';
+import axios from "./axios.customize";
+
+// =============================================================================
+// USER & AUTH APIs
+// =============================================================================
 
 const createUserAPI = (fullName, email, password, phone) => {
     const URL_BACKEND = "/api/v1/user";
-    const data = {
-        fullName: fullName,
-        email: email,
-        password: password,
-        phone: phone,
-    }
-    return axios.post(URL_BACKEND, data)
+    const data = { fullName, email, password, phone };
+    return axios.post(URL_BACKEND, data);
 }
-const fetchAllUserAPI = (current, pageSize) => {
-    const URL_BACKEND = `/api/v1/user?current=${current}&pageSize=${pageSize}`;
-    return axios.get(URL_BACKEND)
-}
+
 const updateUserAPI = (_id, fullName, phone) => {
     const URL_BACKEND = `/api/v1/user`;
-    const data = {
-        _id: _id,
-        fullName: fullName,
-        phone: phone,
-    }
-    return axios.put(URL_BACKEND, data)
+    const data = { _id, fullName, phone };
+    return axios.put(URL_BACKEND, data);
 }
+
+const fetchAllUserAPI = (current, pageSize) => {
+    const URL_BACKEND = `/api/v1/user?current=${current}&pageSize=${pageSize}`;
+    return axios.get(URL_BACKEND);
+}
+
 const deleteUserAPI = (id) => {
     const URL_BACKEND = `/api/v1/user/${id}`;
     return axios.delete(URL_BACKEND);
 }
 
-const handleUploadFile = (file, folder) => {//file va ten folder chua anh can upload
-    //tham so API can truyen phu thuoc vao nguoi viet' back-end
+const handleUploadFile = (file, folder) => {
     const URL_BACKEND = `/api/v1/file/upload`;
     let config = {
         headers: {
@@ -38,12 +34,11 @@ const handleUploadFile = (file, folder) => {//file va ten folder chua anh can up
             "Content-Type": "multipart/form-data"
         }
     }
-
     const bodyFormData = new FormData();
-    bodyFormData.append("fileImg", file)//đặt tên biến như BE
-
+    bodyFormData.append("fileImg", file);
     return axios.post(URL_BACKEND, bodyFormData, config);
 }
+
 const updateUserAvatarAPI = (avatar, _id, fullName, phone) => {
     const URL_BACKEND = "/api/v1/user";
     const data = {
@@ -66,7 +61,7 @@ const registerUserAPI = (fullName, email, password, confirmPassword, phone, dob,
         dob: dob,
         gender: gender
     }
-    return axios.post(URL_BACKEND, data)
+    return axios.post(URL_BACKEND, data);
 }
 
 const forgotPasswordAPI = (email) => {
@@ -86,12 +81,12 @@ const loginAPI = (username, password) => {
         password: password,
         delay: 2000
     }
-    return axios.post(URL_BACKEND, data)
+    return axios.post(URL_BACKEND, data);
 }
 
 const getAccountAPI = () => {
     const URL_BACKEND = "/api/v1/auth/account";
-    return axios.get(URL_BACKEND)
+    return axios.get(URL_BACKEND);
 }
 
 const logoutAPI = () => {
@@ -99,16 +94,54 @@ const logoutAPI = () => {
     return axios.post(URL_BACKEND);
 }
 
-//BOOK API
+// =============================================================================
+// BOOK APIs (Existing)
+// =============================================================================
 
 const fetchALlBookAPI = (current, pageSize) => {
     const URL_BACKEND = `/api/v1/book?current=${current}&pageSize=${pageSize}`;
-    return axios.get(URL_BACKEND)
+    return axios.get(URL_BACKEND);
+}
+
+// =============================================================================
+// PRODUCT APIs (New)
+// =============================================================================
+
+const fetchProductsAPI = (current, pageSize) => {
+    const URL_BACKEND = `/api/public/products/search?page=${current - 1}&size=${pageSize}`;
+    return axios.get(URL_BACKEND);
+}
+
+const fetchProductByIdAPI = (id) => {
+    const URL_BACKEND = `/api/public/products/${id}`;
+    return axios.get(URL_BACKEND);
+}
+
+// Sequential Product Creation APIs
+const createProductAPI = (name, description, brandName, productImage) => {
+    const URL_BACKEND = "/api/manager/products";
+    const data = { name, description, brandName, productImage };
+    return axios.post(URL_BACKEND, data);
+}
+
+const createVariantAPI = (productId, sku, price, stockQuantity) => {
+    const URL_BACKEND = `/api/manager/products/${productId}/variants`;
+    const data = { sku, price, stockQuantity };
+    return axios.post(URL_BACKEND, data);
+}
+
+const createAttributeAPI = (variantId, attributeName, attributeValue) => {
+    const URL_BACKEND = `/api/manager/variants/${variantId}/attributes`;
+    const data = { attributeName, attributeValue };
+    return axios.post(URL_BACKEND, data);
 }
 
 export {
     createUserAPI, updateUserAPI, fetchAllUserAPI,
     deleteUserAPI, handleUploadFile, updateUserAvatarAPI,
     registerUserAPI, forgotPasswordAPI, resetPasswordAPI, loginAPI, getAccountAPI,
-    logoutAPI, fetchALlBookAPI
+    logoutAPI, fetchALlBookAPI,
+    // Exports new endpoints
+    fetchProductsAPI, fetchProductByIdAPI,
+    createProductAPI, createVariantAPI, createAttributeAPI
 }

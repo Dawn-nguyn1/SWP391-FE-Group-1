@@ -13,6 +13,7 @@ import ForgetPasswordPage from './pages/forget-password.jsx';
 import ResetPasswordPage from './pages/reset-password.jsx';
 import HomePage from './pages/homepage.jsx';
 import UserPage from './components/user/user.jsx';
+import ProductPage from './components/product/product.jsx';
 import { AuthWrapper } from './context/auth.context.jsx';
 
 const router = createBrowserRouter([
@@ -21,7 +22,7 @@ const router = createBrowserRouter([
     element: <App />,
     // errorElement: <ErrorPage />,
     children: [
-       {
+      {
         index: true,
         element: <Navigate to="/login" replace />,
       },
@@ -34,7 +35,11 @@ const router = createBrowserRouter([
       {
         //user management
         path: "/users",
-        element: <UserPage/>,
+        element: <UserPage />,
+      },
+      {
+        path: "/products",
+        element: <ProductPage />,
       }
     ]
   },
@@ -61,7 +66,7 @@ const router = createBrowserRouter([
 createRoot(document.getElementById('root')).render(
   // <StrictMode>
   <AuthWrapper>
-  <RouterProvider router={router} />
+    <RouterProvider router={router} />
   </AuthWrapper>
   // </StrictMode>,
 )

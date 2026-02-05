@@ -49,6 +49,11 @@ const Header = () => {
             key: 'users',
             icon: <UsergroupAddOutlined />
         },
+        {
+            label: <Link to={"/products"}>Products</Link>,
+            key: 'products',
+            icon: <PlayCircleOutlined />
+        },
 
         ...(!user?._id ? [{
             label: <Link to={"/login"}>Đăng nhập</Link>,
