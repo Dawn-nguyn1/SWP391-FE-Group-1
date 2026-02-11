@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
-import { Button, Form, Input, Row, Col, Tabs, notification } from "antd";
+import { Button, Form, Input, Row, Col, Tabs, notification, Typography } from "antd";
+const { Text } = Typography;
 import './styles/login.css';
 import { Link, useNavigate } from "react-router-dom";
 import { loginAPI } from "../services/api.service";
@@ -7,9 +8,31 @@ import { AuthContext } from "../context/auth.context";
 const LoginPage = () => {
     const [form] = Form.useForm();
     const navigate = useNavigate();
-    const {user,setUser} = useContext(AuthContext);
+    const { user, setUser } = useContext(AuthContext);
 
     const onFinish = async (values) => {
+        // Mock login for testing purposes
+        if (values.username === 'test@genetix.vn' && values.password === '123') {
+            const mockRes = {
+                accessKey: 'mock-token-123',
+                _id: 'mock-user-id',
+                email: 'test@genetix.vn',
+                profile: {
+                    fullName: 'Người Dùng Thử Nghiệm',
+                    phone: '0987654321',
+                    address: 'Lô E2a-7, Đường D1, Đ. D1, Long Thạnh Mỹ, Thành Phố Thủ Đức, Hồ Chí Minh'
+                }
+            };
+            notification.success({
+                message: "Đăng nhập thử nghiệm",
+                description: "Đang vào hệ thống với tài khoản test.",
+            });
+            localStorage.setItem("access_token", mockRes.accessKey);
+            setUser(mockRes);
+            navigate('/homepage');
+            return;
+        }
+
         const res = await loginAPI(values.username, values.password);
         if (res && res.accessKey) {
             notification.success({
@@ -26,7 +49,7 @@ const LoginPage = () => {
                 description: "Đăng nhập thất bại!",
             });
         }
-        
+
     };
 
     const handleTabChange = (key) => {
@@ -50,7 +73,7 @@ const LoginPage = () => {
                         <h2>Chào mừng bạn!</h2>
                         <p>Vui lòng nhập thông tin để đăng nhập.</p>
                     </div>
-                    
+
                     <Form.Item
                         label="Username (email)"
                         name="username"
@@ -59,8 +82,8 @@ const LoginPage = () => {
                             { type: "email", message: 'username không đúng định dạng!' },
                         ]}
                     >
-                        <Input 
-                            placeholder="Nhập username của bạn" 
+                        <Input
+                            placeholder="Nhập username của bạn"
                             className="modern-input"
                             size="large"
                         />
@@ -73,19 +96,19 @@ const LoginPage = () => {
                             { required: true, message: 'Password không được để trống!' },
                         ]}
                     >
-                        <Input.Password 
-                            placeholder="Nhập mật khẩu của bạn" 
+                        <Input.Password
+                            placeholder="Nhập mật khẩu của bạn"
                             className="modern-input"
                             size="large"
                             onKeyDown={(event) => {
                                 if (event.key === 'Enter') form.submit()
-                            }} 
+                            }}
                         />
                     </Form.Item>
 
                     <Form.Item className="form-actions">
                         <Button
-                            type="primary" 
+                            type="primary"
                             onClick={() => form.submit()}
                             className="modern-button"
                             size="large"
@@ -98,7 +121,12 @@ const LoginPage = () => {
                     <div className="forget-password">
                         <Link to="/forget-password" className="forget-link">Quên mật khẩu?</Link>
                     </div>
-                    
+
+                    <div style={{ marginTop: '16px', padding: '12px', border: '1px dashed #d9d9d9', borderRadius: '8px', textAlign: 'center' }}>
+                        <Text type="secondary">Tài khoản test (Dành cho Dev):</Text><br />
+                        <Text strong>test@genetix.vn</Text> / <Text strong>123</Text>
+                    </div>
+
                     <div className="form-footer">
                         <span>Chưa có tài khoản? </span>
                         <Link to="/register" className="modern-link">Đăng ký tại đây</Link>
@@ -108,18 +136,18 @@ const LoginPage = () => {
         },
         {
             key: 'register',
-            label: 'Đăng ký', 
+            label: 'Đăng ký',
         },
     ];
-    
-    console.log(">>>>> user:",user );
+
+    console.log(">>>>> user:", user);
     return (
         <div className="login-container">
             <Row className="login-row">
                 <Col xs={0} md={12} className="image-col">
                     <div className="image-overlay">
                         <div className="brand-content">
-                            <h1>SWP Glasses </h1>
+                            <h1>GENETIX </h1>
                             <p> Mua kính mắt chất lượng cao trực tuyến</p>
                         </div>
                     </div>
@@ -131,7 +159,7 @@ const LoginPage = () => {
                             centered
                             items={items}
                             className="modern-tabs"
-                            onChange={handleTabChange} 
+                            onChange={handleTabChange}
                         />
                     </div>
                 </Col>

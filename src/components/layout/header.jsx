@@ -6,14 +6,16 @@ import {
     HomeOutlined,
     PlayCircleOutlined,
     AliwangwangOutlined,
-    LoginOutlined
+    LoginOutlined,
+    ShoppingCartOutlined
 } from '@ant-design/icons';
-
+import { Badge } from 'antd';
 import { useState } from 'react';
 import { AuthContext } from '../../context/auth.context';
+import { useCart } from '../../context/cart.context';
 
 const Header = () => {
-    const [current, setCurrent] = useState('');
+    const [current, setCurrent] = useState('home');
     const navigate = useNavigate();
     const { user, setUser } = useContext(AuthContext);
 
@@ -30,6 +32,8 @@ const Header = () => {
         navigate("/login");
     };
 
+    const { cartCount } = useCart();
+
     const onClick = (e) => {
         if (e.key === 'logout') {
             handleLogout();
@@ -40,35 +44,59 @@ const Header = () => {
 
     const items = [
         {
-            label: <Link to={"/homepage"}>Home</Link>,
+            label: <Link to={"/homepage"}>Trang chủ</Link>,
             key: 'home',
             icon: <HomeOutlined />,
         },
         {
-            label: <Link to={"/users"}>Users</Link>,
-            key: 'users',
-            icon: <UsergroupAddOutlined />
-        },
-        {
-            label: <Link to={"/products"}>Products</Link>,
+            label: <Link to={"/products"}>Bộ sưu tập</Link>,
             key: 'products',
             icon: <PlayCircleOutlined />
         },
+        {
+            label: <Link to={"/admin"}>Trang quản trị</Link>,
+            key: 'admin',
+            icon: <UsergroupAddOutlined />
+        },
+        {
+            label: (
+                <Link to="/cart">
+                    <Badge count={cartCount} size="small" offset={[10, 0]}>
+                        Giỏ hàng
+                    </Badge>
+                </Link>
+            ),
+            key: 'cart',
+            icon: <ShoppingCartOutlined />,
+        },
+    ];
 
+    const userMenuItems = [
         ...(!user?._id ? [{
             label: <Link to={"/login"}>Đăng nhập</Link>,
             key: 'login',
             icon: <LoginOutlined />,
         }] : []),
-
         ...(user?._id ? [{
-            label: `Welcome ${user.profile?.fullName ?? user.email}`,
-            key: 'setting',
+            label: `Xin chào, ${user.profile?.fullName ?? user.email}`,
+            key: 'user-menu',
             icon: <AliwangwangOutlined />,
             children: [
                 {
-                    label: <span >Đăng xuất</span>,
+                    label: <Link to="/account">Thông tin cá nhân</Link>,
+                    key: 'profile',
+                },
+                {
+                    label: <Link to="/account">Đơn hàng của tôi</Link>,
+                    key: 'my-orders',
+                },
+                {
+                    type: 'divider',
+                },
+                {
+                    label: 'Đăng xuất',
                     key: 'logout',
+                    danger: true,
                 },
             ],
         }] : []),
@@ -77,34 +105,57 @@ const Header = () => {
     return (
         <div
             style={{
-                width: 256,
-                height: '100vh',
                 position: 'sticky',
                 top: 0,
-                left: 0,
-                overflow: 'auto',
-                borderRight: '1px solid #e2e8f0',
-                background: '#fff'
+                zIndex: 1000,
+                width: '100%',
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(10px)',
+                borderBottom: '1px solid var(--border-color)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0 var(--spacing-xl)',
+                height: '72px'
             }}
         >
             <div
                 style={{
-                    padding: '16px 20px',
                     fontWeight: 700,
-                    fontSize: 16,
-                    color: '#fff',
-                    borderBottom: '1px solid #e2e8f0',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                    fontSize: '1.5rem',
+                    fontFamily: 'var(--font-heading)',
+                    letterSpacing: '1px',
+                    color: 'var(--primary-color)',
+                    cursor: 'pointer'
                 }}
+                onClick={() => navigate('/homepage')}
             >
-                SWP Glasses
+                GENETIX
             </div>
+
             <Menu
                 onClick={onClick}
-                style={{ width: 256, borderRight: 0 }}
-                selectedKeys={current ? [current] : undefined}
-                mode="inline"
+                selectedKeys={[current]}
+                mode="horizontal"
                 items={items}
+                style={{
+                    flex: 1,
+                    justifyContent: 'center',
+                    borderBottom: 'none',
+                    background: 'transparent'
+                }}
+            />
+
+            <Menu
+                onClick={onClick}
+                mode="horizontal"
+                items={userMenuItems}
+                style={{
+                    borderBottom: 'none',
+                    background: 'transparent',
+                    minWidth: '200px',
+                    justifyContent: 'flex-end'
+                }}
             />
         </div>
     )
