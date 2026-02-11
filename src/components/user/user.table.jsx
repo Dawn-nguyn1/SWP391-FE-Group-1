@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Popconfirm, notification, Switch } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import UpdateUserModal from './update.user.modal';
 import ViewUserDetail from './user.detail';
 // import { deleteUserAPI } from '../../services/api.service';
@@ -151,9 +151,18 @@ const UserTable = (props) => {
         {
             title: 'Action',
             key: 'action',
-            width: 120,
+            width: 180,
             render: (_, record) => (
                 <div className="action-buttons">
+                    <button
+                        className="action-btn-icon view-btn"
+                        onClick={() => {
+                            console.log("trang xem chi tiết");
+                        }}
+                        title="View"
+                    >
+                        <EyeOutlined />
+                    </button>
                     <button
                         className="action-btn-icon edit-btn"
                         onClick={() => {

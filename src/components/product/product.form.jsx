@@ -8,7 +8,8 @@ import {
     deleteVariantAPI, deleteAttributeAPI
 } from '../../services/api.service';
 
-const ProductForm = ({ isModalOpen, setIsModalOpen, loadProducts, dataUpdate, setDataUpdate }) => {
+const ProductForm = (props) => {
+    const { isModalOpen, setIsModalOpen, loadProducts, dataUpdate, setDataUpdate } = props;
     const [form] = Form.useForm();
     const [loading, setLoading] = useState(false);
     const [createdProductId, setCreatedProductId] = useState(null);

@@ -19,3 +19,49 @@
     color: #666;
     margin: 8px 0 0 0;
 }
+
+/* ==================== ACTION BUTTONS ==================== */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    justify-content: center;
+}
+
+.action-btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 16px;
+}
+
+.view-btn {
+    color: #3182ce;
+}
+
+.view-btn:hover {
+    background: #ebf4ff;
+}
+
+.edit-btn {
+    color: #d97706;
+}
+
+.edit-btn:hover {
+    background: #fef3c7;
+}
+
+.delete-btn {
+    color: #dc2626;
+}
+
+.delete-btn:hover {
+    background: #fef2f2;
+}

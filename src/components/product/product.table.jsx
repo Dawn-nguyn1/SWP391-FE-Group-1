@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Table, Button, Space, Popconfirm, message, notification } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 
 const ProductTable = ({
     dataSource,
@@ -61,20 +61,29 @@ const ProductTable = ({
             title: 'Action',
             key: 'action',
             align: 'center',
+            width: 180,
             render: (_, record) => (
-                <Space size="middle">
-                    <Button
-                        type="primary"
-                        icon={<EditOutlined />}
-                        ghost
+                <div className="action-buttons">
+                    <button
+                        className="action-btn-icon view-btn"
+                        onClick={() => {
+                            console.log("trang xem chi tiết product");
+                        }}
+                        title="View"
+                    >
+                        <EyeOutlined />
+                    </button>
+                    <button
+                        className="action-btn-icon edit-btn"
                         onClick={() => {
                             if (handleEditProduct) {
                                 handleEditProduct(record);
                             }
                         }}
+                        title="Edit"
                     >
-                        Edit
-                    </Button>
+                        <EditOutlined />
+                    </button>
                     <Popconfirm
                         title="Delete the product"
                         description="Are you sure to delete this product?"
@@ -83,14 +92,14 @@ const ProductTable = ({
                         cancelText="No"
                         placement="left"
                     >
-                        <Button
-                            danger
-                            icon={<DeleteOutlined />}
+                        <button 
+                            className="action-btn-icon delete-btn"
+                            title="Delete"
                         >
-                            Delete
-                        </Button>
+                            <DeleteOutlined />
+                        </button>
                     </Popconfirm>
-                </Space>
+                </div>
             ),
         },
     ];
