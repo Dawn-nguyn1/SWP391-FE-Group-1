@@ -1,6 +1,6 @@
 import { Input, Modal, Descriptions, Image, Card, Tag, Divider } from 'antd'
 import React, { useEffect, useState } from 'react'
-import { fetchManagerProductByIdAPI } from '../../services/api.service'
+import { fetchManagerProductByIdAPI } from '../../../services/api.service'
 
 const ProductDetail = (props) => {
     const { isDetailOpen, setIsDetailOpen, productId } = props;

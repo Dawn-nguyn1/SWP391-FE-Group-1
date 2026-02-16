@@ -7,7 +7,7 @@ import {
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
     deleteVariantAPI, deleteAttributeAPI,
     addImagesToAttributeAPI, deleteAttributeImageAPI
-} from '../../services/api.service';
+} from '../../../services/api.service';
 
 const ProductForm = (props) => {
     const { isModalOpen, setIsModalOpen, loadProducts, dataUpdate, setDataUpdate } = props;

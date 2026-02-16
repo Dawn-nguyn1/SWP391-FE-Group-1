@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ProductTable from './product.table';
 import ProductForm from './product.form';
-import { fetchProductsAPI, deleteProductAPI } from '../../services/api.service';
+import { fetchProductsAPI, deleteProductAPI } from '../../../services/api.service';
 import { Button, notification, Popconfirm, message } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import './product.css';

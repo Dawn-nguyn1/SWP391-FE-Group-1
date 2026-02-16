@@ -10,7 +10,7 @@ import {
 } from '@ant-design/icons';
 
 import { useState } from 'react';
-import { AuthContext } from '../../context/auth.context';
+import { AuthContext } from '../../../context/auth.context';
 
 const Header = () => {
     const [current, setCurrent] = useState('');
