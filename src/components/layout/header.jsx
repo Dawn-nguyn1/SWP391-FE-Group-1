@@ -40,21 +40,21 @@ const Header = () => {
 
     const items = [
         {
-            label: <Link to={"/homepage"}>Home</Link>,
+            label: <Link to={"/admin/homepage"}>Home</Link>,
             key: 'home',
             icon: <HomeOutlined />,
         },
         {
-            label: <Link to={"/users"}>Users</Link>,
+            label: <Link to={"/admin/users"}>Users</Link>,
             key: 'users',
             icon: <UsergroupAddOutlined />
         },
         {
-            label: <Link to={"/products"}>Products</Link>,
+            label: <Link to={"/admin/products"}>Products</Link>,
             key: 'products',
             icon: <PlayCircleOutlined />
         },
-
+        
         ...(!user?._id ? [{
             label: <Link to={"/login"}>Đăng nhập</Link>,
             key: 'login',

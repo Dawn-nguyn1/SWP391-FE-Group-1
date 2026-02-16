@@ -15,6 +15,8 @@ import HomePage from './pages/homepage.jsx';
 import UserPage from './components/user/user.jsx';
 import ProductPage from './components/product/product.jsx';
 import { AuthWrapper } from './context/auth.context.jsx';
+import CustomerLayout from './CustomerLayout.jsx';
+import AdminLayout from './AdminLayout.jsx';
 
 const router = createBrowserRouter([
   {
@@ -22,26 +24,41 @@ const router = createBrowserRouter([
     element: <App />,
     // errorElement: <ErrorPage />,
     children: [
+      // --- NHÓM 1: CUSTOMER ---
       {
-        index: true,
-        element: <Navigate to="/login" replace />,
+        path: "/customer",
+        element: <CustomerLayout />, // Layout có Navbar/Footer của khách
+        // children: [
+        //   { index: true, element: <UserHomePage /> },
+        //   { path: "product/:id", element: <ProductDetail /> },
+        // ]
       },
-      {
-        //home page
-        path: "/homepage",
-        element: <HomePage />,
 
-      },
+      // --- NHÓM 2: ADMIN ---
       {
-        //user management
-        path: "/users",
-        element: <UserPage />,
-      },
-      {
-        path: "/products",
-        element: <ProductPage />,
+        path: "/admin",
+        element: <AdminLayout />, // Layout có Sidebar của Admin
+        children: [
+          {
+            index: true,
+            element: <Navigate to="/login" replace />,
+          },
+          {
+            path: "homepage",
+            element: <HomePage />,
+          },
+          {
+            path: "users",
+            element: <UserPage />,
+          },
+          {
+            path: "products",
+            element: <ProductPage />,
+          }
+        ]
       }
     ]
+
   },
   {
     path: "/login",

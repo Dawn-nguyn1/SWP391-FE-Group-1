@@ -18,7 +18,7 @@ const LoginPage = () => {
             });
             localStorage.setItem("access_token", res.accessKey);
             setUser(res);
-            navigate('/homepage');
+            navigate('/admin/homepage');
         } else {
             notification.error({
                 title: "Login failed",
