@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, Button, Space, Popconfirm, message, notification } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import ProductDetail from './product.detail';
 
 const ProductTable = ({
     dataSource,
@@ -20,6 +21,8 @@ const ProductTable = ({
         handleDeleteProduct(id);
     };
 
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [selectedProductId, setSelectedProductId] = useState(null);
     const columns = [
         {
             title: 'ID',
@@ -39,6 +42,24 @@ const ProductTable = ({
             dataIndex: 'name',
             key: 'name',
             align: 'center',
+        },
+        {
+            title: 'Status',
+            dataIndex: 'status',
+            key: 'status',
+            align: 'center',
+            render: (status) => (
+                <span style={{
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    backgroundColor: status === 'ACTIVE' ? '#f0fdf4' : '#fef2f2',
+                    color: status === 'ACTIVE' ? '#16a34a' : '#dc2626'
+                }}>
+                    {status || 'N/A'}
+                </span>
+            )
         },
         {
             title: 'Brand',
@@ -67,7 +88,9 @@ const ProductTable = ({
                     <button
                         className="action-btn-icon view-btn"
                         onClick={() => {
-                            console.log("trang xem chi tiết product");
+                            setSelectedProductId(record.id);
+                            setIsDetailOpen(true);
+                            console.log("Dữ liệu record khi nhấn:", record);
                         }}
                         title="View"
                     >
@@ -92,7 +115,7 @@ const ProductTable = ({
                         cancelText="No"
                         placement="left"
                     >
-                        <button 
+                        <button
                             className="action-btn-icon delete-btn"
                             title="Delete"
                         >
@@ -115,20 +138,27 @@ const ProductTable = ({
     };
 
     return (
-        <Table
-            columns={columns}
-            dataSource={dataSource}
-            rowKey={"id"}
-            loading={loading}
-            pagination={{
-                current: current,
-                pageSize: pageSize,
-                total: total,
-                showSizeChanger: true,
-                pageSizeOptions: ['5', '10', '20']
-            }}
-            onChange={onChange}
-        />
+        <>
+            <Table
+                columns={columns}
+                dataSource={dataSource}
+                rowKey={"id"}
+                loading={loading}
+                pagination={{
+                    current: current,
+                    pageSize: pageSize,
+                    total: total,
+                    showSizeChanger: true,
+                    pageSizeOptions: ['5', '10', '20']
+                }}
+                onChange={onChange}
+            />
+            <ProductDetail
+                isDetailOpen={isDetailOpen}
+                setIsDetailOpen={setIsDetailOpen}
+                productId={selectedProductId}
+            />
+        </>
     );
 };
 

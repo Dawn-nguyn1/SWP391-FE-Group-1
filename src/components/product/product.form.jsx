@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, InputNumber, Button, Steps, message, Card, Space, Divider, Row, Col, notification } from 'antd';
+import { Modal, Form, Input, InputNumber, Button, Steps, message, Card, Space, Divider, Row, Col, notification, Select } from 'antd';
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import {
     createProductAPI, createVariantAPI, createAttributeAPI,
     fetchProductByIdAPI,
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
-    deleteVariantAPI, deleteAttributeAPI
+    deleteVariantAPI, deleteAttributeAPI,
+    addImagesToAttributeAPI, deleteAttributeImageAPI
 } from '../../services/api.service';
 
 const ProductForm = (props) => {
@@ -17,8 +18,33 @@ const ProductForm = (props) => {
     useEffect(() => {
         if (isModalOpen) {
             if (dataUpdate) {
-                // Load details for edit
-                loadProductDetail(dataUpdate.id);
+                // Bypass GET API calls due to 500 errors - use table data only
+                console.log("Using table data for edit (bypassing GET APIs):", dataUpdate);
+                
+                // Initialize with basic product info
+                const formData = {
+                    name: dataUpdate.name,
+                    brandName: dataUpdate.brandName,
+                    productImage: dataUpdate.productImage,
+                    description: dataUpdate.description,
+                    variants: []
+                };
+
+                // Try to use variants if they exist in table data
+                if (dataUpdate.variants && dataUpdate.variants.length > 0) {
+                    formData.variants = dataUpdate.variants;
+                } else {
+                    // Create empty variant structure for editing
+                    formData.variants = [{}];
+                }
+
+                form.setFieldsValue(formData);
+                
+                notification.info({ 
+                    message: "Edit Mode - Limited Data",
+                    description: "Using basic product info. Variants/attributes need backend fix."
+                });
+
             } else {
                 // Create mode: reset
                 form.resetFields();
@@ -28,35 +54,96 @@ const ProductForm = (props) => {
     }, [isModalOpen, dataUpdate]);
 
     const loadProductDetail = async (id) => {
+        console.log("Loading product detail for ID:", id);
         try {
             const res = await fetchProductByIdAPI(id);
-            if (res && res.id) {
+            console.log("Product detail response:", res);
+            
+            // Handle different response structures
+            let productData = res;
+            
+            // If response is nested in data property
+            if (res && res.data && !res.id) {
+                productData = res.data;
+            }
+            
+            // If response is nested in result property  
+            if (res && res.result && !res.id) {
+                productData = res.result;
+            }
+            
+            console.log("Processed product data:", productData);
+            
+            if (productData && productData.id) {
                 // Transform data to match form structure
-                // API returns variants: [ {id, sku, ..., variantAttributeRequestDTOList: [] } ]
-                // Form expects: variants: [ {sku, ..., attributes: [] } ]
-
-                const formattedVariants = res.variants?.map(v => ({
-                    id: v.id, // Keep ID for update
+                const formattedVariants = productData.variants?.map(v => ({
+                    id: v.id,
                     sku: v.sku,
                     price: v.price,
                     stockQuantity: v.stockQuantity,
-                    attributes: v.variantAttributeRequestDTOList?.map(a => ({
-                        id: a.id, // Keep ID for update
+                    saleType: v.saleType || 'IN_STOCK',
+                    attributes: v.attributes?.map(a => ({
+                        id: a.id,
                         attributeName: a.attributeName,
-                        attributeValue: a.attributeValue
-                    }))
-                }));
+                        attributeValue: a.attributeValue,
+                        images: a.images || []
+                    })) || []
+                })) || [];
+
+                console.log("Formatted variants:", formattedVariants);
 
                 form.setFieldsValue({
-                    name: res.name,
-                    brandName: res.brandName,
-                    productImage: res.productImage,
-                    description: res.description,
+                    name: productData.name,
+                    brandName: productData.brandName,
+                    productImage: productData.productImage,
+                    description: productData.description,
                     variants: formattedVariants
                 });
+            } else {
+                console.error("Invalid response structure:", res);
+                // Fallback to basic data from table if API fails
+                if (dataUpdate) {
+                    console.log("Falling back to table data");
+                    form.setFieldsValue({
+                        name: dataUpdate.name,
+                        brandName: dataUpdate.brandName,
+                        productImage: dataUpdate.productImage,
+                        description: dataUpdate.description,
+                        variants: []
+                    });
+                    notification.warning({ 
+                        message: "Limited data loaded",
+                        description: "Could not load variants and attributes. Using basic product info."
+                    });
+                } else {
+                    notification.error({ 
+                        message: "Invalid product data received",
+                        description: "Please check the API response structure"
+                    });
+                }
             }
         } catch (error) {
-            notification.error({ message: "Error loading detail" });
+            console.error("Error loading product detail:", error);
+            // Fallback to basic data from table if API fails
+            if (dataUpdate) {
+                console.log("API failed, falling back to table data");
+                form.setFieldsValue({
+                    name: dataUpdate.name,
+                    brandName: dataUpdate.brandName,
+                    productImage: dataUpdate.productImage,
+                    description: dataUpdate.description,
+                    variants: []
+                });
+                notification.warning({ 
+                    message: "Using limited data",
+                    description: "Server error occurred. Editing basic product info only."
+                });
+            } else {
+                notification.error({ 
+                    message: "Error loading product detail",
+                    description: error.message || "Unknown error occurred"
+                });
+            }
         }
     }
 
@@ -71,14 +158,20 @@ const ProductForm = (props) => {
         setLoading(true);
         try {
             if (dataUpdate) {
-                // === UPDATE MODE === (Simplified: Update Product + Existing Variants)
+                // === UPDATE MODE ===
+                console.log("Updating product with values:", values);
+                
+                // Update basic product info
                 await updateProductAPI(dataUpdate.id, values.name, values.description, values.brandName, values.productImage);
+                console.log("Product info updated successfully");
 
+                // Handle variants if they exist
                 if (values.variants && values.variants.length > 0) {
                     for (const variant of values.variants) {
                         if (variant.id) {
                             // Update existing variant
-                            await updateVariantAPI(variant.id, variant.sku, variant.price, variant.stockQuantity);
+                            console.log("Updating variant:", variant.id);
+                            await updateVariantAPI(variant.id, variant.sku, variant.price, variant.stockQuantity, variant.saleType);
 
                             // Update attributes
                             if (variant.attributes) {
@@ -91,9 +184,10 @@ const ProductForm = (props) => {
                                     }
                                 }
                             }
-                        } else {
-                            // New variant on existing product
-                            const resVar = await createVariantAPI(dataUpdate.id, variant.sku, variant.price, variant.stockQuantity);
+                        } else if (variant.sku) {
+                            // New variant on existing product (only if SKU is provided)
+                            console.log("Creating new variant for product:", dataUpdate.id);
+                            const resVar = await createVariantAPI(dataUpdate.id, variant.sku, variant.price, variant.stockQuantity, variant.saleType || 'IN_STOCK');
                             if (resVar && resVar.id) {
                                 if (variant.attributes) {
                                     for (const attr of variant.attributes) {
@@ -131,7 +225,8 @@ const ProductForm = (props) => {
                             productId,
                             variant.sku,
                             variant.price,
-                            variant.stockQuantity
+                            variant.stockQuantity,
+                            variant.saleType || 'IN_STOCK'
                         );
 
                         if (resVariant && resVariant.id) {
@@ -155,8 +250,8 @@ const ProductForm = (props) => {
             await loadProducts();
 
         } catch (error) {
-            console.error(error);
-            message.error("Failed to save product");
+            console.error("Error saving product:", error);
+            message.error("Failed to save product: " + (error.message || "Unknown error"));
         }
         setLoading(false);
     };
@@ -257,7 +352,7 @@ const ProductForm = (props) => {
                                     <Form.Item name={[name, 'id']} hidden><Input /></Form.Item>
 
                                     <Row gutter={16}>
-                                        <Col span={8}>
+                                        <Col span={6}>
                                             <Form.Item
                                                 {...restField}
                                                 name={[name, 'sku']}
@@ -267,7 +362,7 @@ const ProductForm = (props) => {
                                                 <Input placeholder="SKU-001" />
                                             </Form.Item>
                                         </Col>
-                                        <Col span={8}>
+                                        <Col span={6}>
                                             <Form.Item
                                                 {...restField}
                                                 name={[name, 'price']}
@@ -277,7 +372,7 @@ const ProductForm = (props) => {
                                                 <InputNumber style={{ width: '100%' }} formatter={value => `$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} />
                                             </Form.Item>
                                         </Col>
-                                        <Col span={8}>
+                                        <Col span={6}>
                                             <Form.Item
                                                 {...restField}
                                                 name={[name, 'stockQuantity']}
@@ -285,6 +380,21 @@ const ProductForm = (props) => {
                                                 rules={[{ required: true, message: 'Missing stock' }]}
                                             >
                                                 <InputNumber style={{ width: '100%' }} />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={6}>
+                                            <Form.Item
+                                                {...restField}
+                                                name={[name, 'saleType']}
+                                                label="Sale Type"
+                                                rules={[{ required: true, message: 'Missing sale type' }]}
+                                                initialValue="IN_STOCK"
+                                            >
+                                                <Select style={{ width: '100%' }}>
+                                                    <Select.Option value="IN_STOCK">In Stock</Select.Option>
+                                                    <Select.Option value="OUT_OF_STOCK">Out of Stock</Select.Option>
+                                                    <Select.Option value="PRE_ORDER">Pre Order</Select.Option>
+                                                </Select>
                                             </Form.Item>
                                         </Col>
                                     </Row>

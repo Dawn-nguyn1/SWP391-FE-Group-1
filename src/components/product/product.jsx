@@ -26,11 +26,11 @@ const ProductPage = () => {
     const loadProducts = async () => {
         setLoading(true);
         try {
-            const res = await fetchProductsAPI(current, pageSize);
+            const res = await fetchProductsAPI();
             console.log(">>> Checking API response:", res); // Debug log
-            if (res && res.content) {
-                setDataSource(res.content);
-                setTotal(res.totalElements);
+            if (res && Array.isArray(res)) {
+                setDataSource(res);
+                setTotal(res.length);
             }
         } catch (error) {
             notification.error({
@@ -42,6 +42,7 @@ const ProductPage = () => {
     };
 
     const handleEditProduct = (product) => {
+        console.log("Editing product:", product);
         setDataUpdate(product);
         setIsModalOpen(true);
     }

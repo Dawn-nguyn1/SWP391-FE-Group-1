@@ -95,13 +95,13 @@ const logoutAPI = () => {
 
 //product API
 
-const fetchProductsAPI = (current, pageSize) => {
-    const URL_BACKEND = `/api/public/products/search?page=${current - 1}&size=${pageSize}`;
+const fetchProductsAPI = () => {
+    const URL_BACKEND = `/api/manager/products`;
     return axios.get(URL_BACKEND);
 }
 
 const fetchProductByIdAPI = (id) => {
-    const URL_BACKEND = `/api/public/products/${id}`;
+    const URL_BACKEND = `/api/manager/products/${id}`;
     return axios.get(URL_BACKEND);
 }
 
@@ -114,7 +114,7 @@ const createProductAPI = (name, description, brandName, productImage) => {
 
 const createVariantAPI = (productId, sku, price, stockQuantity) => {
     const URL_BACKEND = `/api/manager/products/${productId}/variants`;
-    const data = { sku, price, stockQuantity };
+    const data = { sku, price, stockQuantity, saleType: "IN_STOCK" };
     return axios.post(URL_BACKEND, data);
 }
 
@@ -131,9 +131,9 @@ const updateProductAPI = (id, name, description, brandName, productImage) => {
     return axios.put(URL_BACKEND, data);
 }
 
-const updateVariantAPI = (variantId, sku, price, stockQuantity) => {
+const updateVariantAPI = (variantId, sku, price, stockQuantity, saleType) => {
     const URL_BACKEND = `/api/manager/variants/${variantId}`;
-    const data = { sku, price, stockQuantity };
+    const data = { sku, price, stockQuantity, saleType };
     return axios.put(URL_BACKEND, data);
 }
 
@@ -158,6 +158,24 @@ const deleteAttributeAPI = (attributeId) => {
     return axios.delete(URL_BACKEND);
 }
 
+// Image Management APIs
+const addImagesToAttributeAPI = (attributeId, images) => {
+    const URL_BACKEND = `/api/manager/attributes/${attributeId}/images`;
+    const data = { images };
+    return axios.post(URL_BACKEND, data);
+}
+
+const deleteAttributeImageAPI = (imageId) => {
+    const URL_BACKEND = `/api/manager/attributes/images/${imageId}`;
+    return axios.delete(URL_BACKEND);
+}
+
+// Manager Product Detail API
+const fetchManagerProductByIdAPI = (id) => {
+    const URL_BACKEND = `/api/manager/products/${id}`;
+    return axios.get(URL_BACKEND);
+}
+
 export {
     createUserAPI, updateUserAPI, fetchAllUserAPI,
     deleteUserAPI, handleUploadFile, updateUserAvatarAPI,
@@ -167,6 +185,8 @@ export {
     fetchProductsAPI, fetchProductByIdAPI,
     createProductAPI, createVariantAPI, createAttributeAPI,
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
-    deleteProductAPI, deleteVariantAPI, deleteAttributeAPI
+    deleteProductAPI, deleteVariantAPI, deleteAttributeAPI,
+    fetchManagerProductByIdAPI,
+    addImagesToAttributeAPI, deleteAttributeImageAPI
 }
 
