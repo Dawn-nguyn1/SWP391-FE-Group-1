@@ -176,6 +176,34 @@ const fetchManagerProductByIdAPI = (id) => {
     return axios.get(URL_BACKEND);
 }
 
+// Combo Management APIs
+const fetchCombosAPI = (page = 0, size = 10) => {
+    const URL_BACKEND = `/api/manager/combos?page=${page}&size=${size}`;
+    return axios.get(URL_BACKEND);
+}
+
+const fetchComboByIdAPI = (id) => {
+    const URL_BACKEND = `/api/manager/combos/${id}`;
+    return axios.get(URL_BACKEND);
+}
+
+const createComboAPI = (name, description, items) => {
+    const URL_BACKEND = "/api/manager/combos";
+    const data = { name, description, items };
+    return axios.post(URL_BACKEND, data);
+}
+
+const updateComboAPI = (id, name, description, items) => {
+    const URL_BACKEND = `/api/manager/combos/${id}`;
+    const data = { name, description, items };
+    return axios.put(URL_BACKEND, data);
+}
+
+const deleteComboAPI = (id) => {
+    const URL_BACKEND = `/api/manager/combos/${id}`;
+    return axios.delete(URL_BACKEND);
+}
+
 export {
     createUserAPI, updateUserAPI, fetchAllUserAPI,
     deleteUserAPI, handleUploadFile, updateUserAvatarAPI,
@@ -187,6 +215,9 @@ export {
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
     deleteProductAPI, deleteVariantAPI, deleteAttributeAPI,
     fetchManagerProductByIdAPI,
-    addImagesToAttributeAPI, deleteAttributeImageAPI
+    addImagesToAttributeAPI, deleteAttributeImageAPI,
+    // Combo Management APIs
+    fetchCombosAPI, fetchComboByIdAPI,
+    createComboAPI, updateComboAPI, deleteComboAPI
 }
 

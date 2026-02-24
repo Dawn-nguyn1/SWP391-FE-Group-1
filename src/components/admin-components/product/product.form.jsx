@@ -18,33 +18,9 @@ const ProductForm = (props) => {
     useEffect(() => {
         if (isModalOpen) {
             if (dataUpdate) {
-                // Bypass GET API calls due to 500 errors - use table data only
-                console.log("Using table data for edit (bypassing GET APIs):", dataUpdate);
-                
-                // Initialize with basic product info
-                const formData = {
-                    name: dataUpdate.name,
-                    brandName: dataUpdate.brandName,
-                    productImage: dataUpdate.productImage,
-                    description: dataUpdate.description,
-                    variants: []
-                };
-
-                // Try to use variants if they exist in table data
-                if (dataUpdate.variants && dataUpdate.variants.length > 0) {
-                    formData.variants = dataUpdate.variants;
-                } else {
-                    // Create empty variant structure for editing
-                    formData.variants = [{}];
-                }
-
-                form.setFieldsValue(formData);
-                
-                notification.info({ 
-                    message: "Edit Mode - Limited Data",
-                    description: "Using basic product info. Variants/attributes need backend fix."
-                });
-
+                // Load full product detail from API
+                console.log("Loading product detail for edit:", dataUpdate.id);
+                loadProductDetail(dataUpdate.id);
             } else {
                 // Create mode: reset
                 form.resetFields();
@@ -86,7 +62,11 @@ const ProductForm = (props) => {
                         id: a.id,
                         attributeName: a.attributeName,
                         attributeValue: a.attributeValue,
-                        images: a.images || []
+                        images: a.images?.map(img => ({
+                            id: img.id || null,
+                            imageUrl: img.imageUrl || img,
+                            sortOrder: img.sortOrder || 1
+                        })) || []
                     })) || []
                 })) || [];
 
@@ -178,9 +158,22 @@ const ProductForm = (props) => {
                                 for (const attr of variant.attributes) {
                                     if (attr.id) {
                                         await updateAttributeAPI(attr.id, attr.attributeName, attr.attributeValue);
+                                        
+                                        // Upload images for existing attribute
+                                        if (attr.images && attr.images.length > 0) {
+                                            const imagesToUpload = attr.images.filter(img => img.imageUrl && !img.id);
+                                            if (imagesToUpload.length > 0) {
+                                                await addImagesToAttributeAPI(attr.id, imagesToUpload);
+                                            }
+                                        }
                                     } else {
                                         // New attribute on existing variant
-                                        await createAttributeAPI(variant.id, attr.attributeName, attr.attributeValue);
+                                        const resAttr = await createAttributeAPI(variant.id, attr.attributeName, attr.attributeValue);
+                                        
+                                        // Upload images for new attribute
+                                        if (resAttr && resAttr.id && attr.images && attr.images.length > 0) {
+                                            await addImagesToAttributeAPI(resAttr.id, attr.images);
+                                        }
                                     }
                                 }
                             }
@@ -231,13 +224,18 @@ const ProductForm = (props) => {
 
                         if (resVariant && resVariant.id) {
                             const variantId = resVariant.id;
-                            if (variant.attributes && variant.attributes.length > 0) {
+                            if (variant.attributes) {
                                 for (const attr of variant.attributes) {
-                                    await createAttributeAPI(
+                                    const resAttr = await createAttributeAPI(
                                         variantId,
                                         attr.attributeName,
                                         attr.attributeValue
                                     );
+                                    
+                                    // Upload images for new attribute
+                                    if (resAttr && resAttr.id && attr.images && attr.images.length > 0) {
+                                        await addImagesToAttributeAPI(resAttr.id, attr.images);
+                                    }
                                 }
                             }
                         }
@@ -421,6 +419,47 @@ const ProductForm = (props) => {
                                                         >
                                                             <Input placeholder="Value (e.g Black)" />
                                                         </Form.Item>
+
+                                                        {/* IMAGES FOR ATTRIBUTE */}
+                                                        <Form.List name={[attrName, 'images']}>
+                                                            {(imgFields, { add: addImg, remove: removeImg }) => (
+                                                                <div style={{ width: '100%' }}>
+                                                                    {imgFields.map(({ key: imgKey, name: imgName, ...imgRestField }) => (
+                                                                        <div key={imgKey} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                                                                            <Form.Item
+                                                                                {...imgRestField}
+                                                                                name={[imgName, 'imageUrl']}
+                                                                                rules={[{ required: true, message: 'Missing image URL' }]}
+                                                                                style={{ flex: 1 }}
+                                                                            >
+                                                                                <Input placeholder="Image URL" />
+                                                                            </Form.Item>
+                                                                            <Form.Item
+                                                                                {...imgRestField}
+                                                                                name={[imgName, 'sortOrder']}
+                                                                                initialValue={imgName + 1}
+                                                                                style={{ width: 80 }}
+                                                                            >
+                                                                                <InputNumber placeholder="Order" min={1} />
+                                                                            </Form.Item>
+                                                                            <MinusCircleOutlined
+                                                                                onClick={() => removeImg(imgName)}
+                                                                                style={{ marginTop: 8 }}
+                                                                            />
+                                                                        </div>
+                                                                    ))}
+                                                                    <Button 
+                                                                        type="dashed" 
+                                                                        onClick={() => addImg({ sortOrder: imgFields.length + 1 })} 
+                                                                        block 
+                                                                        icon={<PlusOutlined />}
+                                                                        size="small"
+                                                                    >
+                                                                        Add Image
+                                                                    </Button>
+                                                                </div>
+                                                            )}
+                                                        </Form.List>
                                                         <MinusCircleOutlined
                                                             onClick={() => {
                                                                 const attribute = form.getFieldValue(['variants', name, 'attributes', attrName]);
