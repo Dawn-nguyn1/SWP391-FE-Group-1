@@ -6,7 +6,7 @@ export const AuthContext = createContext({});
 export const AuthWrapper = (props) => {
     const [isLoading, setIsLoading] = useState(false);
     const [user, setUser] = useState({
-        _id: "",
+        id: "",
         accessKey: "",
         refreshKey: "",
         role: "",

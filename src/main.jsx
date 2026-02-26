@@ -17,12 +17,14 @@ import ProductPage from './components/admin-components/product/product.jsx';
 import { AuthWrapper } from './context/auth.context.jsx';
 import CustomerLayout from './CustomerLayout.jsx';
 import AdminLayout from './AdminLayout.jsx';
+import ErrorPage from './pages/error/error.page.jsx';
+import PrivateRoute from './pages/admin-pages/private.route.jsx';
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
-    // errorElement: <ErrorPage />,
+    errorElement: <ErrorPage />,
     children: [
       // --- NHÓM 1: CUSTOMER ---
       {
@@ -45,15 +47,17 @@ const router = createBrowserRouter([
           },
           {
             path: "homepage",
-            element: <HomePage />,
+            element: (<PrivateRoute><HomePage /></PrivateRoute>),
           },
           {
             path: "users",
-            element: <UserPage />,
+            element: (<PrivateRoute><UserPage /></PrivateRoute>),
+
           },
           {
             path: "products",
-            element: <ProductPage />,
+            element: (<PrivateRoute><ProductPage /></PrivateRoute>),
+
           }
         ]
       }
@@ -76,7 +80,11 @@ const router = createBrowserRouter([
     path: "/reset-password",
     element: <ResetPasswordPage />,
   },
-
+  // Catch-all route for 404
+  {
+    path: "*",
+    element: <ErrorPage />
+  }
 ]); //khai bao router
 
 

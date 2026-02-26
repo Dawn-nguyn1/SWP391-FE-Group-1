@@ -20,7 +20,7 @@ const Header = () => {
     const handleLogout = () => {
         localStorage.removeItem("access_token");
         setUser({
-            _id: "",
+            id: "",
             email: "",
             profile: {
                 fullName: ""
@@ -54,15 +54,16 @@ const Header = () => {
             key: 'products',
             icon: <PlayCircleOutlined />
         },
-        
-        ...(!user?._id ? [{
+
+        ...(!user?.id ? [{
             label: <Link to={"/login"}>Đăng nhập</Link>,
             key: 'login',
             icon: <LoginOutlined />,
         }] : []),
 
-        ...(user?._id ? [{
-            label: `Welcome ${user.profile?.fullName ?? user.email}`,
+        ...(user?.id ? [{
+            // label: `Welcome ${user.profile?.fullName ?? user.email}`,
+            label: `Welcome Manager`,
             key: 'setting',
             icon: <AliwangwangOutlined />,
             children: [
