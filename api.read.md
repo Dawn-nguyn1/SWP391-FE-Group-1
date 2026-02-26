@@ -770,3 +770,281 @@ Code	Description	Links
 No Content
 
 No links
+
+# admin-controller
+
+
+GET
+/api/admin/users/{id}
+
+
+Parameters
+Try it out
+Name	Description
+id *
+integer($int64)
+(path)
+id
+Responses
+Code	Description	Links
+200	
+OK
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "email": "string",
+  "phone": "string",
+  "fullName": "string",
+  "role": "CUSTOMER",
+  "status": "ACTIVED",
+  "createdAt": "2026-02-26T14:41:15.528Z"
+}
+No links
+
+PUT
+/api/admin/users/{id}
+
+
+Parameters
+Try it out
+Name	Description
+id *
+integer($int64)
+(path)
+id
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "fullName": "string",
+  "dob": "2026-02-26",
+  "gender": 2,
+  "role": "CUSTOMER"
+}
+Responses
+Code	Description	Links
+201	
+Created
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "email": "string",
+  "phone": "string",
+  "fullName": "string",
+  "role": "CUSTOMER",
+  "status": "ACTIVED",
+  "createdAt": "2026-02-26T14:41:15.530Z"
+}
+No links
+
+DELETE
+/api/admin/users/{id}
+
+
+Parameters
+Try it out
+Name	Description
+id *
+integer($int64)
+(path)
+id
+Responses
+Code	Description	Links
+204	
+No Content
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{}
+No links
+
+GET
+/api/admin/users
+
+
+Parameters
+Try it out
+Name	Description
+keyword
+string
+(query)
+keyword
+role
+string
+(query)
+Available values : CUSTOMER, SUPPORT_STAFF, OPERATION_STAFF, MANAGER, ADMIN
+
+
+--
+status
+string
+(query)
+Available values : ACTIVED, INACTIVE
+
+
+--
+pageable *
+object
+(query)
+Example Value
+Schema
+{
+  "page": 0,
+  "size": 1,
+  "sort": [
+    "string"
+  ]
+}
+Responses
+Code	Description	Links
+200	
+OK
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "totalElements": 0,
+  "totalPages": 0,
+  "size": 0,
+  "content": [
+    {
+      "id": 0,
+      "email": "string",
+      "phone": "string",
+      "fullName": "string",
+      "role": "CUSTOMER",
+      "status": "ACTIVED",
+      "createdAt": "2026-02-26T14:41:15.533Z"
+    }
+  ],
+  "number": 0,
+  "first": true,
+  "last": true,
+  "numberOfElements": 0,
+  "sort": {
+    "empty": true,
+    "sorted": true,
+    "unsorted": true
+  },
+  "pageable": {
+    "offset": 0,
+    "paged": true,
+    "sort": {
+      "empty": true,
+      "sorted": true,
+      "unsorted": true
+    },
+    "pageNumber": 0,
+    "pageSize": 0,
+    "unpaged": true
+  },
+  "empty": true
+}
+No links
+
+POST
+/api/admin/users
+
+
+Parameters
+Try it out
+Reset
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "email": "user@example.com",
+  "phone": "84758748337",
+  "password": "stringst",
+  "fullName": "string",
+  "dob": "2026-02-26",
+  "gender": 2,
+  "role": "CUSTOMER"
+}
+Responses
+Code	Description	Links
+201	
+Created
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "email": "string",
+  "phone": "string",
+  "fullName": "string",
+  "role": "CUSTOMER",
+  "status": "ACTIVED",
+  "createdAt": "2026-02-26T14:41:15.535Z"
+}
+No links
+
+PATCH
+/api/admin/users/{id}/status
+
+
+Parameters
+Try it out
+Name	Description
+id *
+integer($int64)
+(path)
+id
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "status": "ACTIVED"
+}
+Responses
+Code	Description	Links
+200	
+OK
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "email": "string",
+  "phone": "string",
+  "fullName": "string",
+  "role": "CUSTOMER",
+  "status": "ACTIVED",
+  "createdAt": "2026-02-26T14:41:15.536Z"
+}

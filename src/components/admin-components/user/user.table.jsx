@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Table, Popconfirm, notification, Switch } from 'antd';
-import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
-import UpdateUserModal from './update.user.modal';
+import { Table, Popconfirm, notification, Switch, Input, Select, Space } from 'antd';
+import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import ViewUserDetail from './user.detail';
-// import { deleteUserAPI } from '../../services/api.service';
-import './user.css'; // Import CSS file
+import { deleteUserAPI, updateUserStatusAPI } from '../../../services/api.service';
+import './user.css';
+
+const { Option } = Select;
 
 const UserTable = (props) => {
     const { 
@@ -14,14 +15,19 @@ const UserTable = (props) => {
         pageSize, 
         total,
         setCurrent, 
-        setPageSize 
+        setPageSize,
+        loading,
+        keyword,
+        setKeyword,
+        role,
+        setRole,
+        status,
+        setStatus
     } = props;
 
-    const [isModalUpdateOpen, setIsModalUpdateOpen] = useState(false);
-    const [dataUpdate, setDataUpdate] = useState(null);
     const [dataDetail, setDataDetail] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
-    const [confirmDelete, setConfirmDelete] = useState(false); // Toggle xác nhận xóa
+    const [confirmDelete, setConfirmDelete] = useState(false);
 
     // Function to get initials from name
     const getInitials = (name) => {
@@ -47,14 +53,14 @@ const UserTable = (props) => {
             render: (_, record, index) => {
                 return (
                     <span className="stt-number">
-                        {(index + 1) + (current - 1) * pageSize}
+                        {(index + 1) + (current) * pageSize}
                     </span> 
                 );
             }
         },
         {
             title: 'Id',
-            dataIndex: '_id',
+            dataIndex: 'id',
             width: 150,
             render: (_, record) => {
                 return (
@@ -67,14 +73,14 @@ const UserTable = (props) => {
                             setIsDetailOpen(true);
                         }}
                     >
-                        #{record._id.slice(-8).toUpperCase()}
+                        #{record.id ? record.id.toString().slice(-8).toUpperCase() : 'N/A'}
                     </a>
                 );
             }
         },
         {
             title: 'Avatar',
-            dataIndex: ['profile', 'avatar'],
+            dataIndex: 'avatar',
             width: 80,
             render: (avatar, record, index) => (
                 <div className="avatar-wrapper">
@@ -86,7 +92,7 @@ const UserTable = (props) => {
                         />
                     ) : (
                         <div className={`initials-avatar ${getAvatarColor(index)}`}>
-                            {getInitials(record.profile?.fullName)}
+                            {getInitials(record.fullName)}
                         </div>
                     )}
                 </div>
@@ -94,7 +100,7 @@ const UserTable = (props) => {
         },
         {
             title: 'Full Name',
-            dataIndex: ['profile', 'fullName'],
+            dataIndex: 'fullName',
             render: (name) => (
                 <span className="user-name">{name}</span>
             )
@@ -107,16 +113,23 @@ const UserTable = (props) => {
             )
         },
         {
+            title: 'Phone',
+            dataIndex: 'phone',
+            render: (phone) => (
+                <span className="user-phone">{phone}</span>
+            )
+        },
+        {
             title: 'Role',
             dataIndex: 'role',
             width: 180,
             render: (role) => {
                 const roleConfig = {
-                    'admin': { class: 'role-admin', label: 'Admin' },
-                    'manager': { class: 'role-manager', label: 'Manager' },
-                    'operator_staff': { class: 'role-operator', label: 'Operator Staff' },
-                    'support_staff': { class: 'role-support', label: 'Support Staff' },
-                    'user': { class: 'role-user', label: 'User' }
+                    'ADMIN': { class: 'role-admin', label: 'Admin' },
+                    'MANAGER': { class: 'role-manager', label: 'Manager' },
+                    'OPERATION_STAFF': { class: 'role-operator', label: 'Operation Staff' },
+                    'SUPPORT_STAFF': { class: 'role-support', label: 'Support Staff' },
+                    'CUSTOMER': { class: 'role-user', label: 'Customer' }
                 };
                 
                 const config = roleConfig[role] || { class: 'role-default', label: role };
@@ -132,9 +145,9 @@ const UserTable = (props) => {
             title: 'Status',
             dataIndex: 'status',
             width: 120,
-            render: (status) => (
+            render: (status, record) => (
                 <span className={`status-badge ${status}`}>
-                    {status === 'active' ? (
+                    {status === 'ACTIVED' ? (
                         <>
                             <CheckCircleOutlined />
                             Active
@@ -157,7 +170,8 @@ const UserTable = (props) => {
                     <button
                         className="action-btn-icon view-btn"
                         onClick={() => {
-                            console.log("trang xem chi tiết");
+                            setDataDetail(record);
+                            setIsDetailOpen(true);
                         }}
                         title="View"
                     >
@@ -166,15 +180,14 @@ const UserTable = (props) => {
                     <button
                         className="action-btn-icon edit-btn"
                         onClick={() => {
-                            setDataUpdate(record);
-                            setIsModalUpdateOpen(true);
+                            // Pass to parent form for editing
+                            console.log("Edit user:", record);
                         }}
                         title="Edit"
                     >
                         <EditOutlined />
                     </button>
                     {confirmDelete ? (
-                        // Xóa trực tiếp
                         <button 
                             className="action-btn-icon delete-btn"
                             onClick={() => handleDeleteClick(record)}
@@ -183,11 +196,10 @@ const UserTable = (props) => {
                             <DeleteOutlined />
                         </button>
                     ) : (
-                        // Xác nhận trước khi xóa
                         <Popconfirm
                             title="Xóa người dùng"
                             description="Bạn chắc chắn xóa user này ?"
-                            onConfirm={() => handleDeleteUser(record._id)}
+                            onConfirm={() => handleDeleteUser(record.id)}
                             okText="Yes"
                             cancelText="No"
                             placement="left"
@@ -209,8 +221,7 @@ const UserTable = (props) => {
         try {
             const res = await deleteUserAPI(id);
             
-            // API trả về {message: "User deleted successfully"}
-            if (res && res.message) {
+            if (res) {
                 notification.success({
                     message: "Delete user",
                     description: "Xóa user thành công"
@@ -233,51 +244,120 @@ const UserTable = (props) => {
 
     const handleDeleteClick = (record) => {
         if (confirmDelete) {
-            // Xóa trực tiếp không cần xác nhận
-            handleDeleteUser(record._id);
+            handleDeleteUser(record.id);
         }
-        // Nếu không confirmDelete, Popconfirm sẽ xử lý
+    };
+
+    const handleStatusToggle = async (record) => {
+        try {
+            const newStatus = record.status === 'ACTIVED' ? 'INACTIVE' : 'ACTIVED';
+            const res = await updateUserStatusAPI(record.id, newStatus);
+            
+            if (res && res.id) {
+                notification.success({
+                    message: "Update Status",
+                    description: `Cập nhật trạng thái thành ${newStatus === 'ACTIVED' ? 'Active' : 'Inactive'}`
+                });
+                await loadUser();
+            }
+        } catch (error) {
+            console.error("Update status error:", error);
+            notification.error({
+                message: "Error update status",
+                description: error?.message || "Cập nhật trạng thái thất bại"
+            });
+        }
     };
 
     const onChange = (pagination, filters, sorter, extra) => {
         console.log("check onChange:", pagination, filters, sorter, extra);
         
-        // Nếu thay đổi trang: current
         if (pagination && pagination.current) {
             if (pagination.current !== +current) {
-                setCurrent(+pagination.current); // +: chuyển string thành số nguyên
+                setCurrent(+pagination.current - 1); // API uses 0-based indexing
             }
         }
         
-        // Nếu thay đổi tổng số Ptu: pageSize
         if (pagination && pagination.pageSize) {
             if (pagination.pageSize !== +pageSize) {
                 setPageSize(+pagination.pageSize);
+                setCurrent(0); // Reset to first page when changing page size
             }
         }
-
-        console.log({ pagination, filters, sorter, extra });
     };
 
     return (
         <div className="user-table-wrapper">
-            {/* Toggle xác nhận xóa */}
-            <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>Xóa liên tục:</span>
-                <Switch 
-                    checked={confirmDelete}
-                    onChange={setConfirmDelete}
-                    
-                />
+            {/* Filters */}
+            <div style={{ marginBottom: 16, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Space>
+                    <span>Search:</span>
+                    <Input
+                        placeholder="Search by name, email..."
+                        value={keyword}
+                        onChange={(e) => {
+                            setKeyword(e.target.value);
+                            setCurrent(0); // Reset to first page when searching
+                        }}
+                        style={{ width: 200 }}
+                        prefix={<SearchOutlined />}
+                    />
+                </Space>
+                
+                <Space>
+                    <span>Role:</span>
+                    <Select
+                        value={role}
+                        onChange={(value) => {
+                            setRole(value);
+                            setCurrent(0); // Reset to first page when filtering
+                        }}
+                        style={{ width: 150 }}
+                        allowClear
+                        placeholder="All roles"
+                    >
+                        <Option value="ADMIN">Admin</Option>
+                        <Option value="MANAGER">Manager</Option>
+                        <Option value="OPERATION_STAFF">Operation Staff</Option>
+                        <Option value="SUPPORT_STAFF">Support Staff</Option>
+                        <Option value="CUSTOMER">Customer</Option>
+                    </Select>
+                </Space>
+                
+                <Space>
+                    <span>Status:</span>
+                    <Select
+                        value={status}
+                        onChange={(value) => {
+                            setStatus(value);
+                            setCurrent(0); // Reset to first page when filtering
+                        }}
+                        style={{ width: 120 }}
+                        allowClear
+                        placeholder="All status"
+                    >
+                        <Option value="ACTIVED">Active</Option>
+                        <Option value="INACTIVE">Inactive</Option>
+                    </Select>
+                </Space>
+
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span>Xóa liên tục:</span>
+                    <Switch 
+                        checked={confirmDelete}
+                        onChange={setConfirmDelete}
+                    />
+                </div>
             </div>
             
             <Table
                 className="user-table"
                 columns={columns}
                 dataSource={dataUsers}
-                rowKey={"_id"}
+                rowKey="id"
+                loading={loading}
                 pagination={{
-                    current: current,
+                    current: current + 1, // Display uses 1-based indexing
                     pageSize: pageSize,
                     showSizeChanger: true,
                     total: total,
@@ -292,14 +372,6 @@ const UserTable = (props) => {
                 onChange={onChange}
             />
             
-            <UpdateUserModal
-                isModalUpdateOpen={isModalUpdateOpen}
-                setIsModalUpdateOpen={setIsModalUpdateOpen}
-                dataUpdate={dataUpdate}
-                setDataUpdate={setDataUpdate}
-                loadUser={loadUser}
-            />
-
             <ViewUserDetail
                 dataDetail={dataDetail}
                 setDataDetail={setDataDetail}

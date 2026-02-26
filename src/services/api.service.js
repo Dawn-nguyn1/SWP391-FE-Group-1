@@ -2,26 +2,39 @@ import axios from "./axios.customize";
 
 // user and authentication API
 
-const createUserAPI = (fullName, email, password, phone) => {
-    const URL_BACKEND = "/api/v1/user";
-    const data = { fullName, email, password, phone };
+// UPDATED USER APIs - Admin endpoints
+
+const createUserAPI = (fullName, email, password, phone, dob, gender, role = "CUSTOMER") => {
+    const URL_BACKEND = "/api/admin/users";
+    const data = { fullName, email, password, phone, dob, gender, role };
     return axios.post(URL_BACKEND, data);
 }
 
-const updateUserAPI = (_id, fullName, phone) => {
-    const URL_BACKEND = `/api/v1/user`;
-    const data = { _id, fullName, phone };
+const updateUserAPI = (id, fullName, dob, gender, role) => {
+    const URL_BACKEND = `/api/admin/users/${id}`;
+    const data = { fullName, dob, gender, role };
     return axios.put(URL_BACKEND, data);
 }
 
-const fetchAllUserAPI = (current, pageSize) => {
-    const URL_BACKEND = `/api/v1/user?current=${current}&pageSize=${pageSize}`;
+const fetchAllUserAPI = (current = 0, size = 10, keyword = "", role = "", status = "") => {
+    const URL_BACKEND = `/api/admin/users?page=${current}&size=${size}${keyword ? `&keyword=${keyword}` : ""}${role ? `&role=${role}` : ""}${status ? `&status=${status}` : ""}`;
     return axios.get(URL_BACKEND);
 }
 
 const deleteUserAPI = (id) => {
-    const URL_BACKEND = `/api/v1/user/${id}`;
+    const URL_BACKEND = `/api/admin/users/${id}`;
     return axios.delete(URL_BACKEND);
+}
+
+const getUserByIdAPI = (id) => {
+    const URL_BACKEND = `/api/admin/users/${id}`;
+    return axios.get(URL_BACKEND);
+}
+
+const updateUserStatusAPI = (id, status) => {
+    const URL_BACKEND = `/api/admin/users/${id}/status`;
+    const data = { status };
+    return axios.patch(URL_BACKEND, data);
 }
 
 const handleUploadFile = (file, folder) => {
@@ -205,11 +218,14 @@ const deleteComboAPI = (id) => {
 }
 
 export {
+    // Updated User APIs
     createUserAPI, updateUserAPI, fetchAllUserAPI,
-    deleteUserAPI, handleUploadFile, updateUserAvatarAPI,
+    deleteUserAPI, getUserByIdAPI, updateUserStatusAPI,
+    // File & Auth APIs
+    handleUploadFile, updateUserAvatarAPI,
     registerUserAPI, forgotPasswordAPI, resetPasswordAPI, loginAPI, getAccountAPI,
     logoutAPI,
-    // Exports new endpoints
+    // Product APIs
     fetchProductsAPI, fetchProductByIdAPI,
     createProductAPI, createVariantAPI, createAttributeAPI,
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
