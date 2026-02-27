@@ -4,17 +4,18 @@ import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined,
 import ViewUserDetail from './user.detail';
 import { deleteUserAPI, updateUserStatusAPI } from '../../../services/api.service';
 import './user.css';
+import UpdateUserModal from './update.user.modal';
 
 const { Option } = Select;
 
 const UserTable = (props) => {
-    const { 
-        dataUsers, 
-        loadUser, 
-        current, 
-        pageSize, 
+    const {
+        dataUsers,
+        loadUser,
+        current,
+        pageSize,
         total,
-        setCurrent, 
+        setCurrent,
         setPageSize,
         loading,
         keyword,
@@ -27,7 +28,9 @@ const UserTable = (props) => {
 
     const [dataDetail, setDataDetail] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [isUpdateOpen, setIsUpdateOpen] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [dataUpdate, setDataUpdate] = useState(null);
 
     // Function to get initials from name
     const getInitials = (name) => {
@@ -54,7 +57,7 @@ const UserTable = (props) => {
                 return (
                     <span className="stt-number">
                         {(index + 1) + (current) * pageSize}
-                    </span> 
+                    </span>
                 );
             }
         },
@@ -85,8 +88,8 @@ const UserTable = (props) => {
             render: (avatar, record, index) => (
                 <div className="avatar-wrapper">
                     {avatar ? (
-                        <img 
-                            src={avatar} 
+                        <img
+                            src={avatar}
                             alt="avatar"
                             className="user-avatar"
                         />
@@ -131,9 +134,9 @@ const UserTable = (props) => {
                     'SUPPORT_STAFF': { class: 'role-support', label: 'Support Staff' },
                     'CUSTOMER': { class: 'role-user', label: 'Customer' }
                 };
-                
+
                 const config = roleConfig[role] || { class: 'role-default', label: role };
-                
+
                 return (
                     <span className={`role-badge ${config.class}`}>
                         {config.label}
@@ -145,19 +148,17 @@ const UserTable = (props) => {
             title: 'Status',
             dataIndex: 'status',
             width: 120,
-            render: (status, record) => (
-                <span className={`status-badge ${status}`}>
-                    {status === 'ACTIVED' ? (
-                        <>
-                            <CheckCircleOutlined />
-                            Active
-                        </>
-                    ) : (
-                        <>
-                            <CloseCircleOutlined />
-                            Inactive
-                        </>
-                    )}
+            align: 'center',
+            render: (status) => (
+                <span style={{
+                    padding: '4px 12px',
+                    borderRadius: '6px',
+                    fontSize: '12px',
+                    fontWeight: '500',
+                    backgroundColor: status === 'ACTIVED' ? '#f0fdf4' : '#fef2f2',
+                    color: status === 'ACTIVED' ? '#16a34a' : '#dc2626'
+                }}>
+                    {status === 'ACTIVED' ? 'Active' : 'Inactive'}
                 </span>
             )
         },
@@ -180,15 +181,15 @@ const UserTable = (props) => {
                     <button
                         className="action-btn-icon edit-btn"
                         onClick={() => {
-                            // Pass to parent form for editing
-                            console.log("Edit user:", record);
+                           setIsUpdateOpen(true);
+                           setDataUpdate(record);
                         }}
                         title="Edit"
                     >
                         <EditOutlined />
                     </button>
                     {confirmDelete ? (
-                        <button 
+                        <button
                             className="action-btn-icon delete-btn"
                             onClick={() => handleDeleteClick(record)}
                             title="Delete (No confirmation)"
@@ -204,7 +205,7 @@ const UserTable = (props) => {
                             cancelText="No"
                             placement="left"
                         >
-                            <button 
+                            <button
                                 className="action-btn-icon delete-btn"
                                 title="Delete"
                             >
@@ -220,7 +221,7 @@ const UserTable = (props) => {
     const handleDeleteUser = async (id) => {
         try {
             const res = await deleteUserAPI(id);
-            
+
             if (res) {
                 notification.success({
                     message: "Delete user",
@@ -252,7 +253,7 @@ const UserTable = (props) => {
         try {
             const newStatus = record.status === 'ACTIVED' ? 'INACTIVE' : 'ACTIVED';
             const res = await updateUserStatusAPI(record.id, newStatus);
-            
+
             if (res && res.id) {
                 notification.success({
                     message: "Update Status",
@@ -271,13 +272,13 @@ const UserTable = (props) => {
 
     const onChange = (pagination, filters, sorter, extra) => {
         console.log("check onChange:", pagination, filters, sorter, extra);
-        
+
         if (pagination && pagination.current) {
             if (pagination.current !== +current) {
                 setCurrent(+pagination.current - 1); // API uses 0-based indexing
             }
         }
-        
+
         if (pagination && pagination.pageSize) {
             if (pagination.pageSize !== +pageSize) {
                 setPageSize(+pagination.pageSize);
@@ -303,7 +304,7 @@ const UserTable = (props) => {
                         prefix={<SearchOutlined />}
                     />
                 </Space>
-                
+
                 <Space>
                     <span>Role:</span>
                     <Select
@@ -323,7 +324,7 @@ const UserTable = (props) => {
                         <Option value="CUSTOMER">Customer</Option>
                     </Select>
                 </Space>
-                
+
                 <Space>
                     <span>Status:</span>
                     <Select
@@ -343,13 +344,13 @@ const UserTable = (props) => {
 
                 <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span>Xóa liên tục:</span>
-                    <Switch 
+                    <Switch
                         checked={confirmDelete}
                         onChange={setConfirmDelete}
                     />
                 </div>
             </div>
-            
+
             <Table
                 className="user-table"
                 columns={columns}
@@ -371,12 +372,20 @@ const UserTable = (props) => {
                 }}
                 onChange={onChange}
             />
-            
+
             <ViewUserDetail
                 dataDetail={dataDetail}
                 setDataDetail={setDataDetail}
                 isDetailOpen={isDetailOpen}
                 setIsDetailOpen={setIsDetailOpen}
+                loadUser={loadUser}
+            />
+
+            <UpdateUserModal
+                isUpdateOpen={isUpdateOpen}
+                setIsUpdateOpen={setIsUpdateOpen}
+                dataUpdate={dataUpdate}
+                setDataUpdate={setDataUpdate}
                 loadUser={loadUser}
             />
         </div>
