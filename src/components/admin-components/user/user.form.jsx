@@ -95,12 +95,18 @@ const UserForm = (props) => {
     setIsModalOpen(true);
   };
 
+  const handleCreateUser = () => {
+    setDataUpdate(null); // Clear any existing data
+    form.resetFields(); // Reset form fields
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="user-form" style={{ margin: "10px 0" }}>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
         <h3>Table Users</h3>
         <Button
-          onClick={() => setIsModalOpen(true)}
+          onClick={handleCreateUser}
           type="primary"> Create User </Button>
       </div>
 
@@ -118,7 +124,7 @@ const UserForm = (props) => {
           layout="vertical"
           onFinish={onFinish}
           initialValues={{
-            role: "CUSTOMER",
+            role: "MANAGER",
             gender: 2
           }}
         >
@@ -225,26 +231,25 @@ const UserForm = (props) => {
             </Radio.Group>
           </Form.Item>
 
-          <Form.Item
-            label="Role"
-            name="role"
-            rules={[{ required: true, message: 'Role không được để trống!' }]}
+        <Form.Item
+          label="Role"
+          name="role"
+          rules={[{ required: true, message: 'Role không được để trống!' }]}
+        >
+          <Select
+            style={{ width: '100%' }}
+            size="large"
           >
-            <Select
-              style={{ width: '100%' }}
-              size="large"
-            >
-              <Option value="ADMIN">Admin</Option>
-              <Option value="MANAGER">Manager</Option>
-              <Option value="OPERATION_STAFF">Operation Staff</Option>
-              <Option value="SUPPORT_STAFF">Support Staff</Option>
-              <Option value="CUSTOMER">Customer</Option>
-            </Select>
-          </Form.Item>
-        </Form>
-      </Modal>
-    </div>
-  )
+            <Option value="ADMIN">Admin</Option>
+            <Option value="MANAGER">Manager</Option>
+            <Option value="OPERATION_STAFF">Operation Staff</Option>
+            <Option value="SUPPORT_STAFF">Support Staff</Option>
+          </Select>
+        </Form.Item>
+      </Form>
+    </Modal>
+  </div>
+)
 }
 
 export default UserForm;
