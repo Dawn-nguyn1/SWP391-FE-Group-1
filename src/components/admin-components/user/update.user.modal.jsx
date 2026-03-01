@@ -1,12 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Input, notification, Modal, Select, Form } from "antd";
-// import { updateUserAPI } from '../../services/api.service';
+import { updateUserAPI } from '../../../services/api.service';
 import React from 'react';
 
 const { Option } = Select;
 
 const UpdateUserModal = (props) => {
-    const [isModalUpdateOpen, setIsModalUpdateOpen] = useState(false);
     const [form] = Form.useForm();
     
     const { 

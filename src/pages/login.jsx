@@ -13,21 +13,32 @@ const LoginPage = () => {
         const res = await loginAPI(values.username, values.password);
         if (res && res.accessKey) {
             notification.success({
-                title: "Login success",
-                description: "Đăng nhập thành công!",
+                message: "Đăng nhập thành công!",
             });
             localStorage.setItem("access_token", res.accessKey);
-            setUser(res);
-            navigate('/admin/homepage');
+            // Normalize response: backend returns { id, accessKey, role }
+            const userInfo = {
+                id: res.id,
+                accessKey: res.accessKey,
+                refreshKey: res.refreshKey || "",
+                role: res.role,
+            };
+            setUser(userInfo); // also persists to localStorage via auth.context
+            // Role-based redirect
+            const role = String(res.role).toUpperCase();
+            if (role === 'SUPPORT_STAFF') navigate('/staff/support/orders');
+            else if (role === 'OPERATION_STAFF') navigate('/staff/operations/orders');
+            else if (role === 'CUSTOMER') navigate('/customer');
+            else if (role === 'MANAGER' || role === 'ADMIN') navigate('/admin/homepage');
+            else navigate('/admin/homepage');
         } else {
             notification.error({
-                title: "Login failed",
-                // description: JSON.stringify(res.message),
-                description: "Đăng nhập thất bại!",
+                message: "Đăng nhập thất bại!",
+                description: res?.message || "Sai email hoặc mật khẩu.",
             });
         }
-        
     };
+
 
     const handleTabChange = (key) => {
         if (key === 'register') {

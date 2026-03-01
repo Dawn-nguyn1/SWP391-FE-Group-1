@@ -1,0 +1,93 @@
+.staff-page {
+    min-height: 100vh;
+    background: #f0f2f5;
+    padding: 32px 0;
+}
+
+.staff-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.staff-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.staff-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.confirm-btn {
+    background: linear-gradient(135deg, #667eea, #764ba2) !important;
+    border: none !important;
+}
+
+.ship-btn {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+    border: none !important;
+}
+
+.expanded-items {
+    padding: 8px 16px;
+    background: #fafafa;
+    border-radius: 8px;
+}
+
+.exp-item {
+    display: flex;
+    gap: 16px;
+    padding: 6px 0;
+    border-bottom: 1px dashed #e5e7eb;
+    font-size: 13px;
+}
+
+.exp-item:last-child {
+    border-bottom: none;
+}
+
+/* Custom Tabs Styling */
+.staff-card .ant-tabs-card>.ant-tabs-nav .ant-tabs-tab {
+    background: #f0f2f5;
+    border-color: #e8e8e8;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.3s;
+}
+
+.staff-card .ant-tabs-card>.ant-tabs-nav .ant-tabs-tab-active {
+    background: #fff;
+    border-bottom-color: transparent;
+}
+
+.staff-card .ant-tabs-card>.ant-tabs-nav .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #764ba2;
+    font-weight: 600;
+}
+
+/* Order Detail Modal Styling */
+.order-detail-content {
+    padding: 10px 0;
+}
+
+.order-detail-content .ant-descriptions-item-content {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.order-detail-content .ant-table-wrapper {
+    margin-top: 16px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.order-detail-content .ant-table-thead>tr>th {
+    background: #fafafa;
+    font-weight: 600;
+}

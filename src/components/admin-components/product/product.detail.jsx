@@ -1,4 +1,4 @@
-import { Input, Modal, Descriptions, Image, Card, Tag, Divider } from 'antd'
+import { Modal, Descriptions, Image, Card, Tag, Divider } from 'antd'
 import React, { useEffect, useState } from 'react'
 import { fetchManagerProductByIdAPI } from '../../../services/api.service'
 
@@ -6,12 +6,6 @@ const ProductDetail = (props) => {
     const { isDetailOpen, setIsDetailOpen, productId } = props;
     const [productDetail, setProductDetail] = useState(null);
     const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        if (isDetailOpen && productId) {
-            loadProductDetail();
-        }
-    }, [isDetailOpen, productId]);
 
     const loadProductDetail = async () => {
         setLoading(true);
@@ -26,6 +20,13 @@ const ProductDetail = (props) => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (isDetailOpen && productId) {
+            loadProductDetail();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isDetailOpen, productId]);
 
     const handleClose = () => {
         setIsDetailOpen(false);
@@ -90,7 +91,7 @@ const ProductDetail = (props) => {
                                         <div style={{ marginTop: 12 }}>
                                             <strong>Attributes:</strong>
                                             <div style={{ marginTop: 8 }}>
-                                                {variant.attributes.map((attr, attrIndex) => (
+                                                {variant.attributes.map((attr, _attrIndex) => (
                                                     <div key={attr.id} style={{ marginBottom: 8 }}>
                                                         <Tag color="blue">{attr.attributeName}: {attr.attributeValue}</Tag>
                                                         {attr.images && attr.images.length > 0 && (

@@ -1,0 +1,172 @@
+/* CustomerHeader.css */
+.customer-header {
+    background: #fff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 12px 40px;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+.header-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.logo-icon {
+    font-size: 28px;
+}
+
+.logo-text {
+    font-size: 20px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    white-space: nowrap;
+}
+
+.header-search {
+    flex: 1;
+    max-width: 540px;
+    display: flex;
+    justify-content: center;
+}
+
+.search-input {
+    width: 100%;
+}
+
+.search-input .ant-input {
+    border-radius: 24px 0 0 24px;
+    font-size: 14px;
+}
+
+.search-input .ant-btn {
+    border-radius: 0 24px 24px 0;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-shrink: 0;
+}
+
+.cart-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-decoration: none;
+    color: #555;
+    transition: color 0.2s;
+    cursor: pointer;
+}
+
+.cart-btn:hover {
+    color: #764ba2;
+}
+
+.cart-icon {
+    font-size: 24px;
+}
+
+.cart-label {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.avatar-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 20px;
+    transition: background 0.2s;
+}
+
+.avatar-btn:hover {
+    background: #f5f0ff;
+}
+
+.avatar-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #444;
+}
+
+.auth-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-login {
+    padding: 7px 18px;
+    border: 1.5px solid #764ba2;
+    border-radius: 20px;
+    color: #764ba2;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-login:hover {
+    background: #764ba2;
+    color: #fff;
+}
+
+.btn-register {
+    padding: 7px 18px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 20px;
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.btn-register:hover {
+    opacity: 0.88;
+}
+
+/* Nav */
+.header-nav {
+    display: flex;
+    gap: 0;
+    padding: 0 40px;
+    max-width: 1280px;
+    margin: 0 auto;
+    border-top: 1px solid #f0f0f0;
+}
+
+.nav-link {
+    padding: 10px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+}
+
+.nav-link:hover {
+    color: #764ba2;
+    border-bottom-color: #764ba2;
+}

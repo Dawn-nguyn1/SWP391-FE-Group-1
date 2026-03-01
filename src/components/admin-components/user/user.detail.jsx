@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button, Drawer, notification } from 'antd';
 import { useState, useEffect } from 'react';
-// import { handleUploadFile, updateUserAvatarAPI, getUserDetailAPI } from '../../services/api.service';
+import { handleUploadFile, updateUserAvatarAPI, getUserDetailAPI } from '../../../services/api.service';
 
 const ViewUserDetail = (props) => {
 
@@ -16,13 +16,6 @@ const ViewUserDetail = (props) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [userDetail, setUserDetail] = useState(null);
-
-    // Fetch user detail khi drawer mở
-    useEffect(() => {
-        if (isDetailOpen && dataDetail?._id) {
-            fetchUserDetail();
-        }
-    }, [isDetailOpen, dataDetail?._id]);
 
     const fetchUserDetail = async () => {
         try {
@@ -45,6 +38,14 @@ const ViewUserDetail = (props) => {
             });
         }
     };
+
+    // Fetch user detail khi drawer mở
+    useEffect(() => {
+        if (isDetailOpen && dataDetail?._id) {
+            fetchUserDetail();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isDetailOpen, dataDetail?._id]);
 
     const handleOnChangeFile = (event) => {
 

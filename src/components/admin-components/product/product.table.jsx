@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Table, Button, Space, Popconfirm, message, notification } from 'antd';
+import { Table, Button, Space, Popconfirm } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import ProductDetail from './product.detail';
 
@@ -12,7 +12,6 @@ const ProductTable = ({
     total,
     setCurrent,
     setPageSize,
-    loadProducts,
     handleEditProduct,
     handleDeleteProduct
 }) => {
@@ -127,7 +126,7 @@ const ProductTable = ({
         },
     ];
 
-    const onChange = (pagination, filters, sorter, extra) => {
+    const onChange = (pagination, _filters, _sorter, _extra) => {
         if (pagination && pagination.current !== current) {
             setCurrent(pagination.current);
         }

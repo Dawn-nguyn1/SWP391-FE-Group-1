@@ -12,17 +12,18 @@ const UserPage = () => {
     const [pageSize, setPageSize] = useState(10);
     const [total, setTotal] = useState(mockUsers.length);
 
-    // Empty array => run once
-    useEffect(() => {
-        console.log("day la page user");
-        loadUser();
-    }, [current, pageSize]);
-
     const loadUser = async () => {
         // Sử dụng mock data trực tiếp
         setDataUsers(mockUsers);
         setTotal(mockUsers.length);
     };
+
+    /* eslint-disable react-hooks/set-state-in-effect */
+    useEffect(() => {
+        console.log("day la page user");
+        loadUser();
+    }, [current, pageSize]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     return (
         <div className="user-page-container">

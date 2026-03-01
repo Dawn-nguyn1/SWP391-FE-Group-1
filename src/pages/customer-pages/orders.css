@@ -1,0 +1,145 @@
+.orders-page {
+    min-height: 100vh;
+    background: #f8f9fa;
+    padding: 40px 0;
+}
+
+.orders-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50vh;
+}
+
+.orders-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+}
+
+.orders-title {
+    font-size: 28px;
+    font-weight: 800;
+    color: #1a1a2e;
+    margin-bottom: 28px;
+}
+
+.orders-empty {
+    background: #fff;
+    border-radius: 16px;
+    padding: 80px;
+    text-align: center;
+}
+
+.orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.order-card {
+    background: #fff;
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.order-id {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-right: 10px;
+}
+
+.order-date {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.order-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.order-pay-method {
+    font-size: 12px;
+    background: #f3f0fa;
+    color: #764ba2;
+    padding: 3px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.order-items {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #555;
+}
+
+.oi-name {
+    flex: 1;
+}
+
+.oi-qty {
+    color: #94a3b8;
+}
+
+.oi-price {
+    font-weight: 700;
+    color: #1a1a2e;
+    margin-left: auto;
+}
+
+.order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.order-total {
+    font-size: 14px;
+    color: #555;
+}
+
+.order-total strong {
+    color: #764ba2;
+    font-size: 16px;
+    margin-left: 6px;
+}
+
+.cancel-btn {
+    background: none;
+    border: 1.5px solid #ef4444;
+    color: #ef4444;
+    border-radius: 20px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+    background: #ef4444;
+    color: #fff;
+}

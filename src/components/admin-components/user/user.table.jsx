@@ -3,7 +3,7 @@ import { Table, Popconfirm, notification, Switch } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined } from '@ant-design/icons';
 import UpdateUserModal from './update.user.modal';
 import ViewUserDetail from './user.detail';
-// import { deleteUserAPI } from '../../services/api.service';
+import { deleteUserAPI } from '../../../services/api.service';
 import './user.css'; // Import CSS file
 
 const UserTable = (props) => {

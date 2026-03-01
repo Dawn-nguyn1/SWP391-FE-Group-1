@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ProductTable from './product.table';
 import ProductForm from './product.form';
 import { fetchProductsAPI, deleteProductAPI } from '../../../services/api.service';
-import { Button, notification, Popconfirm, message } from 'antd';
+import { Button, notification, Popconfirm } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import './product.css';
 
@@ -19,10 +19,6 @@ const ProductPage = () => {
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    useEffect(() => {
-        loadProducts();
-    }, [current, pageSize]);
-
     const loadProducts = async () => {
         setLoading(true);
         try {
@@ -32,7 +28,7 @@ const ProductPage = () => {
                 setDataSource(res);
                 setTotal(res.length);
             }
-        } catch (error) {
+        } catch (_error) {
             notification.error({
                 message: "Error",
                 description: "Failed to load products"
@@ -40,6 +36,12 @@ const ProductPage = () => {
         }
         setLoading(false);
     };
+
+    /* eslint-disable react-hooks/set-state-in-effect */
+    useEffect(() => {
+        loadProducts();
+    }, [current, pageSize]);
+    /* eslint-enable react-hooks/set-state-in-effect */
 
     const handleEditProduct = (product) => {
         console.log("Editing product:", product);
@@ -57,7 +59,7 @@ const ProductPage = () => {
                 });
                 await loadProducts();
             }
-        } catch (error) {
+        } catch (_error) {
             notification.error({
                 message: "Error",
                 description: "Failed to delete product"

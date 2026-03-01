@@ -39,30 +39,48 @@ const Header = () => {
     };
 
     const items = [
-        {
-            label: <Link to={"/admin/homepage"}>Home</Link>,
-            key: 'home',
-            icon: <HomeOutlined />,
-        },
-        {
-            label: <Link to={"/admin/users"}>Users</Link>,
-            key: 'users',
-            icon: <UsergroupAddOutlined />
-        },
-        {
-            label: <Link to={"/admin/products"}>Products</Link>,
-            key: 'products',
-            icon: <PlayCircleOutlined />
-        },
+        ...(user?.role === 'ADMIN' || user?.role === 'MANAGER' ? [
+            {
+                label: <Link to={"/admin/homepage"}>Home</Link>,
+                key: 'home',
+                icon: <HomeOutlined />,
+            },
+            {
+                label: <Link to={"/admin/users"}>Users</Link>,
+                key: 'users',
+                icon: <UsergroupAddOutlined />
+            },
+            {
+                label: <Link to={"/admin/products"}>Products</Link>,
+                key: 'products',
+                icon: <PlayCircleOutlined />
+            }
+        ] : []),
+
+        ...(user?.role === 'SUPPORT_STAFF' ? [
+            {
+                label: <Link to={"/staff/support/orders"}>Support Orders</Link>,
+                key: 'support-orders',
+                icon: <AliwangwangOutlined />
+            }
+        ] : []),
+
+        ...(user?.role === 'OPERATION_STAFF' ? [
+            {
+                label: <Link to={"/staff/operations/orders"}>Operation Orders</Link>,
+                key: 'op-orders',
+                icon: <PlayCircleOutlined />
+            }
+        ] : []),
         
-        ...(!user?._id ? [{
+        ...(!user?.id ? [{
             label: <Link to={"/login"}>Đăng nhập</Link>,
             key: 'login',
             icon: <LoginOutlined />,
         }] : []),
 
-        ...(user?._id ? [{
-            label: `Welcome ${user.profile?.fullName ?? user.email}`,
+        ...(user?.id ? [{
+            label: `Welcome ${user.profile?.fullName || user.email || user.fullName || "User"}`,
             key: 'setting',
             icon: <AliwangwangOutlined />,
             children: [
