@@ -66,9 +66,15 @@ const router = createBrowserRouter([
         element: <AdminLayout />,
         children: [
           { index: true, element: <Navigate to="/login" replace /> },
-          { path: "homepage", element: <AdminHomePage /> },
-          { path: "users", element: <UserPage /> },
-          { path: "products", element: <ProductPage /> },
+          {
+            path: "homepage", element: (<PrivateRoute><AdminHomePage /></PrivateRoute>),
+          },
+          {
+            path: "users", element: (<PrivateRoute><UserPage /></PrivateRoute>),
+          },
+          {
+            path: "products", element: (<PrivateRoute><ProductPage /></PrivateRoute>),
+          },
         ]
       },
 

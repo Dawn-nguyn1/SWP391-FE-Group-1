@@ -131,7 +131,7 @@ const RegisterPage = () => {
                         rules={[{ required: true, message: 'Please select your date of birth!' }]}
                     >
                         <DatePicker
-                            placeholder="Chọn ngày sinh"
+                            placeholder="Chọn ngày sinh, ví dụ: 2026-03-02"
                             className="modern-input"
                             size="large"
                             style={{ width: '100%' }}

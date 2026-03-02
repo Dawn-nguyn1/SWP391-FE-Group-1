@@ -253,7 +253,7 @@ const UserTable = (props) => {
     return (
         <div className="user-table-wrapper">
             {/* Filters */}
-            <div style={{ marginBottom: 16, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ margin: 25, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
                 <Space>
                     <span>Search:</span>
                     <Input
