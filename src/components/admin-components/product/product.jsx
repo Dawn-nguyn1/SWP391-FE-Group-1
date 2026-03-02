@@ -23,10 +23,12 @@ const ProductPage = () => {
         setLoading(true);
         try {
             const res = await fetchProductsAPI();
-            console.log(">>> Checking API response:", res); // Debug log
+            console.log(">>> Checking API response:", res);
             if (res && Array.isArray(res)) {
-                setDataSource(res);
-                setTotal(res.length);
+                // Only show ACTIVE products
+                const activeProducts = res.filter(product => product.status === 'ACTIVE');
+                setDataSource(activeProducts);
+                setTotal(activeProducts.length);
             }
         } catch (_error) {
             notification.error({
@@ -50,19 +52,24 @@ const ProductPage = () => {
     }
 
     const handleDeleteProduct = async (id) => {
+        console.log(">>> Attempting to delete product with ID:", id);
         try {
             const res = await deleteProductAPI(id);
-            if (res) {
-                notification.success({
-                    message: "Success",
-                    description: "Product deleted successfully"
-                });
-                await loadProducts();
-            }
-        } catch (_error) {
+            console.log(">>> Delete API response:", res);
+            
+            // HTTP 204 No Content means success (no body in response)
+            notification.success({
+                message: "Success",
+                description: "Product deleted successfully"
+            });
+            await loadProducts();
+            
+        } catch (error) {
+            console.error(">>> Delete product error:", error);
+            console.error(">>> Error response:", error.response);
             notification.error({
                 message: "Error",
-                description: "Failed to delete product"
+                description: error.response?.data?.message || error?.message || "Failed to delete product"
             });
         }
     }

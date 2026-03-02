@@ -14,7 +14,7 @@ const UserPage = () => {
     const [loading, setLoading] = useState(false);
     const [keyword, setKeyword] = useState("");
     const [role, setRole] = useState("");
-    const [status, setStatus] = useState("");
+    const [status, setStatus] = useState("ACTIVED"); // Default to show only active users
 
     useEffect(() => {
         console.log("Loading user page with new API");
@@ -33,14 +33,17 @@ const UserPage = () => {
             } else {
                 // Fallback to mock data if API fails
                 console.log("API failed, using mock data");
-                setDataUsers(mockUsers);
-                setTotal(mockUsers.length);
+                // Filter mock data to show only active users
+                const activeMockUsers = mockUsers.filter(user => user.status === 'ACTIVED');
+                setDataUsers(activeMockUsers);
+                setTotal(activeMockUsers.length);
             }
         } catch (error) {
             console.error("Error loading users:", error);
             // Fallback to mock data
-            setDataUsers(mockUsers);
-            setTotal(mockUsers.length);
+            const activeMockUsers = mockUsers.filter(user => user.status === 'ACTIVED');
+            setDataUsers(activeMockUsers);
+            setTotal(activeMockUsers.length);
         }
         setLoading(false);
     };

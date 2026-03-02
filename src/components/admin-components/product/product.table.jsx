@@ -17,7 +17,12 @@ const ProductTable = ({
 }) => {
 
     const confirmDelete = (id) => {
-        handleDeleteProduct(id);
+        console.log(">>> confirmDelete called with ID:", id);
+        if (handleDeleteProduct) {
+            handleDeleteProduct(id);
+        } else {
+            console.error(">>> handleDeleteProduct is not defined!");
+        }
     };
 
     const [isDetailOpen, setIsDetailOpen] = useState(false);

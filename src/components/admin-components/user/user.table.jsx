@@ -32,23 +32,6 @@ const UserTable = (props) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [dataUpdate, setDataUpdate] = useState(null);
 
-    // Function to get initials from name
-    const getInitials = (name) => {
-        if (!name) return '?';
-        return name
-            .split(' ')
-            .map(word => word[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-    };
-
-    // Function to get avatar color
-    const getAvatarColor = (index) => {
-        const colors = ['color-blue', 'color-orange', 'color-purple', 'color-red', 'color-teal', 'color-pink'];
-        return colors[index % colors.length];
-    };
-
     const columns = [
         {
             title: 'STT',
@@ -80,26 +63,6 @@ const UserTable = (props) => {
                     </a>
                 );
             }
-        },
-        {
-            title: 'Avatar',
-            dataIndex: 'avatar',
-            width: 80,
-            render: (avatar, record, index) => (
-                <div className="avatar-wrapper">
-                    {avatar ? (
-                        <img
-                            src={avatar}
-                            alt="avatar"
-                            className="user-avatar"
-                        />
-                    ) : (
-                        <div className={`initials-avatar ${getAvatarColor(index)}`}>
-                            {getInitials(record.fullName)}
-                        </div>
-                    )}
-                </div>
-            )
         },
         {
             title: 'Full Name',
