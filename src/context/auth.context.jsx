@@ -7,7 +7,8 @@ const DEFAULT_USER = {
     id: "",
     accessKey: "",
     refreshKey: "",
-    role: ""
+    role: "",
+    fullName: ""
 };
 
 export const AuthWrapper = (props) => {
@@ -41,7 +42,7 @@ export const AuthWrapper = (props) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, setUser, isLoading, setIsLoading }}>
+        <AuthContext.Provider value={{ user, setUser: setUserAndPersist, isLoading, setIsLoading }}>
             {props.children}
         </AuthContext.Provider>
     );

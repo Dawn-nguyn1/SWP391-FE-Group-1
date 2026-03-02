@@ -80,8 +80,8 @@ const Header = () => {
         }] : []),
 
         ...(user?.id ? [{
-            // label: `Welcome ${user.profile?.fullName ?? user.email}`,
-            label: `Welcome Manager`,
+            label: `Welcome ${user.fullName ?? user.email}`,
+            // label: `Welcome Manager`,
             key: 'setting',
             icon: <AliwangwangOutlined />,
             children: [
@@ -92,7 +92,7 @@ const Header = () => {
             ],
         }] : []),
     ];
-
+console.log ("check user tai header", user)
     return (
         <div
             style={{
