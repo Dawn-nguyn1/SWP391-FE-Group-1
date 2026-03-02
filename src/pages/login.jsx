@@ -26,8 +26,8 @@ const LoginPage = () => {
             setUser(userInfo); // also persists to localStorage via auth.context
             // Role-based redirect
             const role = String(res.role).toUpperCase();
-            if (role === 'SUPPORT_STAFF') navigate('/staff/support/orders');
-            else if (role === 'OPERATION_STAFF') navigate('/staff/operations/orders');
+            if (role === 'SUPPORT_STAFF') navigate('/staff/support');
+            else if (role === 'OPERATION_STAFF') navigate('/staff/operations');
             else if (role === 'CUSTOMER') navigate('/customer');
             else if (role === 'MANAGER' || role === 'ADMIN') navigate('/admin/homepage');
             else navigate('/admin/homepage');

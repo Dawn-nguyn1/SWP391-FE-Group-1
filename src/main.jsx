@@ -32,11 +32,14 @@ import OperationsOrdersPage from './pages/staff-pages/operations-orders.jsx';
 import { AuthWrapper } from './context/auth.context.jsx';
 import CustomerLayout from './CustomerLayout.jsx';
 import AdminLayout from './AdminLayout.jsx';
+import ErrorPage from './pages/error/error.page.jsx';
+import PrivateRoute from './pages/admin-pages/private.route.jsx';
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <App />,
+    errorElement: <ErrorPage />,
     children: [
       // Root redirect
       { index: true, element: <Navigate to="/login" replace /> },
@@ -62,7 +65,7 @@ const router = createBrowserRouter([
         path: "admin",
         element: <AdminLayout />,
         children: [
-          { index: true, element: <Navigate to="/admin/homepage" replace /> },
+          { index: true, element: <Navigate to="/login" replace /> },
           { path: "homepage", element: <AdminHomePage /> },
           { path: "users", element: <UserPage /> },
           { path: "products", element: <ProductPage /> },
@@ -96,7 +99,11 @@ const router = createBrowserRouter([
   { path: "/register", element: <RegisterPage /> },
   { path: "/forget-password", element: <ForgetPasswordPage /> },
   { path: "/reset-password", element: <ResetPasswordPage /> },
-]);
+  // Catch-all route for 404
+  {
+    path: "*",
+    element: <ErrorPage />
+  }]);
 
 createRoot(document.getElementById('root')).render(
   <AuthWrapper>

@@ -3,7 +3,12 @@ import React, { createContext, useState, useEffect } from "react";
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext({});
 
-const DEFAULT_USER = { id: "", accessKey: "", refreshKey: "", role: "" };
+const DEFAULT_USER = {
+    id: "",
+    accessKey: "",
+    refreshKey: "",
+    role: ""
+};
 
 export const AuthWrapper = (props) => {
     const [isLoading, setIsLoading] = useState(true);
@@ -36,7 +41,7 @@ export const AuthWrapper = (props) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, setUser: setUserAndPersist, isLoading, setIsLoading }}>
+        <AuthContext.Provider value={{ user, setUser, isLoading, setIsLoading }}>
             {props.children}
         </AuthContext.Provider>
     );

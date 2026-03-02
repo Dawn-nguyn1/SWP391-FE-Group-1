@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button, Drawer, notification } from 'antd';
 import { useState, useEffect } from 'react';
-import { handleUploadFile, updateUserAvatarAPI, getUserDetailAPI } from '../../../services/api.service';
+import { getUserByIdAPI } from '../../../services/api.service';
 
 const ViewUserDetail = (props) => {
 
@@ -16,13 +16,22 @@ const ViewUserDetail = (props) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [preview, setPreview] = useState(null);
     const [userDetail, setUserDetail] = useState(null);
+    const [loading, setLoading] = useState(false);
+
+    // Fetch user detail khi drawer mở
+    useEffect(() => {
+        if (isDetailOpen && dataDetail?.id) {
+            fetchUserDetail();
+        }
+    }, [isDetailOpen, dataDetail]);
 
     const fetchUserDetail = async () => {
+        setLoading(true);
         try {
-            const res = await getUserDetailAPI(dataDetail._id);
+            const res = await getUserByIdAPI(dataDetail.id);
+            console.log("User detail response:", res);
             
-            // API trả về user object trực tiếp với smart interceptor
-            if (res && res._id) {
+            if (res && res.id) {
                 setUserDetail(res);
             } else {
                 notification.error({
@@ -31,12 +40,13 @@ const ViewUserDetail = (props) => {
                 });
             }
         } catch (error) {
-            console.error("Fetch user detail error:", error);
+            console.error("Error fetching user detail:", error);
             notification.error({
                 message: "Error",
                 description: error?.message || "Lỗi khi tải thông tin user"
             });
         }
+        setLoading(false);
     };
 
     // Fetch user detail khi drawer mở

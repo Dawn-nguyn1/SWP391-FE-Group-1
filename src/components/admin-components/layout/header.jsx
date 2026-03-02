@@ -20,7 +20,7 @@ const Header = () => {
     const handleLogout = () => {
         localStorage.removeItem("access_token");
         setUser({
-            _id: "",
+            id: "",
             email: "",
             profile: {
                 fullName: ""
@@ -80,7 +80,8 @@ const Header = () => {
         }] : []),
 
         ...(user?.id ? [{
-            label: `Welcome ${user.profile?.fullName || user.email || user.fullName || "User"}`,
+            // label: `Welcome ${user.profile?.fullName ?? user.email}`,
+            label: `Welcome Manager`,
             key: 'setting',
             icon: <AliwangwangOutlined />,
             children: [
