@@ -26,22 +26,42 @@ const CheckoutPage = () => {
     const [provinces, setProvinces] = useState([]);
     const [districts, setDistricts] = useState([]);
     const [wards, setWards] = useState([]);
+    const [locationUnavailable, setLocationUnavailable] = useState(false);
 
     useEffect(() => {
-        Promise.all([getCartAPI(), getAddressesAPI(), getProvincesAPI()])
-            .then(([c, addrs, provs]) => {
+        const loadCheckoutData = async () => {
+            try {
+                const [c, addrs] = await Promise.all([getCartAPI(), getAddressesAPI()]);
                 setCart(c);
                 const addrList = Array.isArray(addrs) ? addrs : [];
                 setAddresses(addrList);
-                if (provs?.data) setProvinces(provs.data);
                 const def = addrList.find(a => a.isDefault) || addrList[0];
                 if (def) setSelectedAddressId(def.id);
-            })
-            .catch(() => message.error('Không thể tải thông tin'))
-            .finally(() => setLoading(false));
+            } catch {
+                message.error('Không thể tải giỏ hàng/địa chỉ');
+            }
+
+            try {
+                const provs = await getProvincesAPI();
+                if (provs?.data) {
+                    setProvinces(provs.data);
+                    setLocationUnavailable(false);
+                } else {
+                    setLocationUnavailable(true);
+                }
+            } catch {
+                setLocationUnavailable(true);
+                message.warning('Không tải được danh sách tỉnh/thành. Bạn có thể nhập thủ công.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadCheckoutData();
     }, []);
 
     const handleProvinceChange = async (provinceId) => {
+        if (locationUnavailable) return;
         addrForm.setFieldsValue({ districtId: undefined, wardCode: undefined });
         setWards([]);
         try {
@@ -51,6 +71,7 @@ const CheckoutPage = () => {
     };
 
     const handleDistrictChange = async (districtId) => {
+        if (locationUnavailable) return;
         addrForm.setFieldsValue({ wardCode: undefined });
         try {
             const res = await getWardsAPI(districtId);
@@ -60,9 +81,15 @@ const CheckoutPage = () => {
 
     const handleAddAddress = async (vals) => {
         try {
-            const provinceName = provinces.find(p => p.ProvinceID === vals.provinceId)?.ProvinceName;
-            const districtName = districts.find(d => d.DistrictID === vals.districtId)?.DistrictName;
-            const wardName = wards.find(w => w.WardCode === vals.wardCode)?.WardName;
+            const provinceName = locationUnavailable
+                ? vals.province
+                : provinces.find(p => p.ProvinceID === vals.provinceId)?.ProvinceName;
+            const districtName = locationUnavailable
+                ? vals.district
+                : districts.find(d => d.DistrictID === vals.districtId)?.DistrictName;
+            const wardName = locationUnavailable
+                ? vals.ward
+                : wards.find(w => w.WardCode === vals.wardCode)?.WardName;
 
             const dto = {
                 receiverName: vals.receiverName,
@@ -70,10 +97,12 @@ const CheckoutPage = () => {
                 province: provinceName,
                 district: districtName,
                 ward: wardName,
-                addressLine: vals.addressLine,
-                districtId: vals.districtId,
-                wardCode: vals.wardCode
+                addressLine: vals.addressLine
             };
+            if (!locationUnavailable) {
+                dto.districtId = vals.districtId;
+                dto.wardCode = vals.wardCode;
+            }
 
             const newAddr = await createAddressAPI(dto);
             setAddresses(prev => [...prev, newAddr]);
@@ -91,6 +120,7 @@ const CheckoutPage = () => {
 
     const handleCheckout = async () => {
         if (!selectedAddressId) { message.warning('Vui lòng chọn địa chỉ giao hàng'); return; }
+        if (!cart?.items?.length) { message.warning('Giỏ hàng đang trống'); return; }
         setSubmitting(true);
         try {
             const res = await checkoutAPI({ addressId: selectedAddressId, paymentMethod });
@@ -129,6 +159,11 @@ const CheckoutPage = () => {
                         {step === 0 && (
                             <div className="step-card">
                                 <h3>Địa chỉ giao hàng</h3>
+                                {!cart?.items?.length && (
+                                    <div style={{ marginBottom: 12, color: '#d97706' }}>
+                                        Giỏ hàng đang trống. Vui lòng thêm sản phẩm trước khi thanh toán.
+                                    </div>
+                                )}
                                 {addresses.length === 0 ? (
                                     <p style={{ color: '#94a3b8' }}>Bạn chưa có địa chỉ nào.</p>
                                 ) : (
@@ -147,7 +182,17 @@ const CheckoutPage = () => {
                                     </Radio.Group>
                                 )}
                                 <Button onClick={() => setAddrModalOpen(true)} style={{ marginTop: 12 }}>+ Thêm địa chỉ mới</Button>
-                                <Button type="primary" className="next-btn" onClick={() => setStep(1)} disabled={!selectedAddressId}>
+                                {!cart?.items?.length && (
+                                    <Button style={{ marginLeft: 8 }} onClick={() => navigate('/customer/cart')}>
+                                        Đi tới giỏ hàng
+                                    </Button>
+                                )}
+                                <Button
+                                    type="primary"
+                                    className="next-btn"
+                                    onClick={() => setStep(1)}
+                                    disabled={!selectedAddressId || !cart?.items?.length}
+                                >
                                     Tiếp tục
                                 </Button>
                             </div>
@@ -173,7 +218,14 @@ const CheckoutPage = () => {
                                 </Radio.Group>
                                 <div className="step-btns">
                                     <Button onClick={() => setStep(0)}>Quay lại</Button>
-                                    <Button type="primary" className="next-btn" onClick={() => setStep(2)}>Xem lại đơn hàng</Button>
+                                    <Button
+                                        type="primary"
+                                        className="next-btn"
+                                        onClick={() => setStep(2)}
+                                        disabled={!cart?.items?.length}
+                                    >
+                                        Xem lại đơn hàng
+                                    </Button>
                                 </div>
                             </div>
                         )}
@@ -204,7 +256,7 @@ const CheckoutPage = () => {
                                 </div>
                                 <div className="step-btns">
                                     <Button onClick={() => setStep(1)}>Quay lại</Button>
-                                    <Button type="primary" className="next-btn order-btn" loading={submitting} onClick={handleCheckout}>
+                                    <Button type="primary" className="next-btn order-btn" loading={submitting} onClick={handleCheckout} disabled={!cart?.items?.length}>
                                         {paymentMethod === 'VNPAY' ? '💳 Thanh toán VNPay' : '✅ Đặt hàng COD'}
                                     </Button>
                                 </div>
@@ -233,21 +285,37 @@ const CheckoutPage = () => {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         <Form.Item name="receiverName" label="Họ tên người nhận" rules={[{ required: true }]}><Input /></Form.Item>
                         <Form.Item name="phone" label="Số điện thoại" rules={[{ required: true }]}><Input /></Form.Item>
-                        <Form.Item name="provinceId" label="Tỉnh / Thành phố" rules={[{ required: true }]}>
-                            <Select placeholder="Chọn tỉnh thành" onChange={handleProvinceChange}>
-                                {provinces.map(p => <Option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</Option>)}
-                            </Select>
-                        </Form.Item>
-                        <Form.Item name="districtId" label="Quận / Huyện" rules={[{ required: true }]}>
-                            <Select placeholder="Chọn quận huyện" onChange={handleDistrictChange} disabled={!districts.length}>
-                                {districts.map(d => <Option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</Option>)}
-                            </Select>
-                        </Form.Item>
-                        <Form.Item name="wardCode" label="Phường / Xã" rules={[{ required: true }]}>
-                            <Select placeholder="Chọn phường xã" disabled={!wards.length}>
-                                {wards.map(w => <Option key={w.WardCode} value={w.WardCode}>{w.WardName}</Option>)}
-                            </Select>
-                        </Form.Item>
+                        {locationUnavailable ? (
+                            <>
+                                <Form.Item name="province" label="Tỉnh / Thành phố" rules={[{ required: true }]}>
+                                    <Input placeholder="Nhập tỉnh/thành phố" />
+                                </Form.Item>
+                                <Form.Item name="district" label="Quận / Huyện" rules={[{ required: true }]}>
+                                    <Input placeholder="Nhập quận/huyện" />
+                                </Form.Item>
+                                <Form.Item name="ward" label="Phường / Xã" rules={[{ required: true }]}>
+                                    <Input placeholder="Nhập phường/xã" />
+                                </Form.Item>
+                            </>
+                        ) : (
+                            <>
+                                <Form.Item name="provinceId" label="Tỉnh / Thành phố" rules={[{ required: true }]}>
+                                    <Select placeholder="Chọn tỉnh thành" onChange={handleProvinceChange}>
+                                        {provinces.map(p => <Option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</Option>)}
+                                    </Select>
+                                </Form.Item>
+                                <Form.Item name="districtId" label="Quận / Huyện" rules={[{ required: true }]}>
+                                    <Select placeholder="Chọn quận huyện" onChange={handleDistrictChange} disabled={!districts.length}>
+                                        {districts.map(d => <Option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</Option>)}
+                                    </Select>
+                                </Form.Item>
+                                <Form.Item name="wardCode" label="Phường / Xã" rules={[{ required: true }]}>
+                                    <Select placeholder="Chọn phường xã" disabled={!wards.length}>
+                                        {wards.map(w => <Option key={w.WardCode} value={w.WardCode}>{w.WardName}</Option>)}
+                                    </Select>
+                                </Form.Item>
+                            </>
+                        )}
                         <Form.Item name="addressLine" label="Địa chỉ chi tiết" rules={[{ required: true }]}><Input placeholder="Số nhà, tên đường..." /></Form.Item>
                     </div>
                     <Button type="primary" htmlType="submit" block style={{ marginTop: 12 }}>Lưu địa chỉ</Button>

@@ -145,16 +145,75 @@
 .addr-form-wrap {
     border-top: 1px solid #f0f0f0;
     padding-top: 20px;
+    margin-top: 8px;
 }
 
-.addr-form-wrap h4 {
+.addr-form-head h4 {
     font-size: 15px;
     font-weight: 700;
-    margin-bottom: 16px;
+    margin: 0;
+}
+
+.addr-form-head p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 6px 0 14px;
+}
+
+.addr-form {
+    background: linear-gradient(180deg, #faf8ff 0%, #ffffff 100%);
+    border: 1px solid #ece6fb;
+    border-radius: 14px;
+    padding: 14px 14px 10px;
 }
 
 .addr-form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0 16px;
+    gap: 0 14px;
+}
+
+.addr-form-grid .full-span {
+    grid-column: 1 / -1;
+}
+
+.addr-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 2px;
+}
+
+.addr-empty {
+    border: 1px dashed #cfc8e9;
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #64748b;
+    font-size: 13px;
+    background: #fcfbff;
+}
+
+@media (max-width: 768px) {
+    .addr-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .addr-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .addr-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .addr-form-actions {
+        justify-content: stretch;
+    }
+
+    .addr-form-actions .ant-btn {
+        flex: 1;
+    }
 }

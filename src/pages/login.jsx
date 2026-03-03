@@ -10,32 +10,39 @@ const LoginPage = () => {
     const { user, setUser } = useContext(AuthContext);
 
     const onFinish = async (values) => {
-        const res = await loginAPI(values.username, values.password);
-        if (res && res.accessKey) {
-            notification.success({
-                message: "Đăng nhập thành công!",
-            });
-            localStorage.setItem("access_token", res.accessKey);
-            // Normalize response: backend returns { id, accessKey, role }
-            const userInfo = {
-                id: res.id,
-                accessKey: res.accessKey,
-                refreshKey: res.refreshKey || "",
-                role: res.role,
-                fullName: res.fullName || ""
-            };
-            setUser(userInfo); // also persists to localStorage via auth.context
-            // Role-based redirect
-            const role = String(res.role).toUpperCase();
-            if (role === 'SUPPORT_STAFF') navigate('/staff/support');
-            else if (role === 'OPERATION_STAFF') navigate('/staff/operations');
-            else if (role === 'CUSTOMER') navigate('/customer');
-            else if (role === 'MANAGER' || role === 'ADMIN') navigate('/admin/homepage');
-            else navigate('/admin/homepage');
-        } else {
+        try {
+            const res = await loginAPI(values.username, values.password);
+            if (res && res.accessKey) {
+                notification.success({
+                    message: "Đăng nhập thành công!",
+                });
+                localStorage.setItem("access_token", res.accessKey);
+                // Normalize response: backend returns { id, accessKey, role }
+                const userInfo = {
+                    id: res.id,
+                    accessKey: res.accessKey,
+                    refreshKey: res.refreshKey || "",
+                    role: res.role,
+                    fullName: res.fullName || ""
+                };
+                setUser(userInfo); // also persists to localStorage via auth.context
+                // Role-based redirect
+                const role = String(res.role).toUpperCase();
+                if (role === 'SUPPORT_STAFF') navigate('/staff/support');
+                else if (role === 'OPERATION_STAFF') navigate('/staff/operations');
+                else if (role === 'CUSTOMER') navigate('/customer');
+                else if (role === 'MANAGER' || role === 'ADMIN') navigate('/admin/homepage');
+                else navigate('/admin/homepage');
+                return;
+            }
             notification.error({
                 message: "Đăng nhập thất bại!",
                 description: res?.message || "Sai email hoặc mật khẩu.",
+            });
+        } catch (error) {
+            notification.error({
+                message: "Đăng nhập thất bại!",
+                description: error?.message || "Sai email hoặc mật khẩu.",
             });
         }
     };
