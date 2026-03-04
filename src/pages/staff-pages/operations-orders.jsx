@@ -33,15 +33,24 @@ const OperationsOrdersPage = () => {
         finally { setActioning(null); }
     };
 
+    const statusTag = (status) => {
+        if (status === 'WAITING_CONFIRM') return <Tag color="orange">Chờ support duyệt</Tag>;
+        if (status === 'SUPPORT_CONFIRMED') return <Tag color="blue">Đã xác nhận</Tag>;
+        if (status === 'SHIPPING') return <Tag color="geekblue">Đang giao</Tag>;
+        if (status === 'COMPLETED') return <Tag color="green">Hoàn thành</Tag>;
+        if (status === 'CANCELLED') return <Tag color="red">Đã hủy</Tag>;
+        return <Tag>{status || '—'}</Tag>;
+    };
+
     const columns = [
         { title: 'Mã đơn', dataIndex: 'id', key: 'id', render: id => <strong>#{id}</strong>, width: 80 },
-        { title: 'Khách hàng', key: 'customer', render: (_, r) => r.user?.email || r.userId || '—' },
+        { title: 'Khách hàng', key: 'customer', render: (_, r) => r.userEmail || r.user?.email || r.userId || '—' },
         { title: 'Địa chỉ giao', key: 'address', render: (_, r) => {
             const a = r.address;
-            return a ? `${a.recipientName} – ${a.street}, ${a.district}, ${a.city}` : '—';
+            return a ? `${a.receiverName || a.recipientName || ''} – ${a.addressLine || a.street || ''}, ${a.ward || ''}, ${a.district || ''}, ${a.province || a.city || ''}`.replace(/^( – |, )+|(, )+$/g, '') : '—';
         }},
         { title: 'Thanh toán', dataIndex: 'paymentMethod', key: 'payment', render: v => <Tag color={v === 'VNPAY' ? 'blue' : 'orange'}>{v}</Tag>, width: 100 },
-        { title: 'Trạng thái', key: 'status', render: () => <Tag color="blue">Đã xác nhận</Tag>, width: 120 },
+        { title: 'Trạng thái', key: 'status', render: (_, r) => statusTag(r.orderStatus), width: 160 },
         { title: 'Tổng tiền', dataIndex: 'totalAmount', key: 'total', render: v => <strong style={{ color: '#764ba2' }}>{formatVND(v)}</strong>, width: 130 },
         {
             title: 'Thao tác', key: 'actions', width: 160,
@@ -52,9 +61,17 @@ const OperationsOrdersPage = () => {
                     onConfirm={() => handleShip(r.id)}
                     okText="Giao hàng"
                     cancelText="Huỷ"
+                    disabled={r.orderStatus !== 'SUPPORT_CONFIRMED'}
                 >
-                    <Button type="primary" size="small" icon={<SendOutlined />} loading={actioning === r.id} className="ship-btn">
-                        Giao GHN
+                    <Button
+                        type="primary"
+                        size="small"
+                        icon={<SendOutlined />}
+                        loading={actioning === r.id}
+                        className="ship-btn"
+                        disabled={r.orderStatus !== 'SUPPORT_CONFIRMED'}
+                    >
+                        {r.orderStatus === 'SUPPORT_CONFIRMED' ? 'Giao GHN' : 'Chờ duyệt'}
                     </Button>
                 </Popconfirm>
             ),
