@@ -12,6 +12,7 @@
   "dependencies": {
     "antd": "^6.1.4",
     "axios": "^1.13.2",
+    "dayjs": "^1.11.19",
     "leaflet": "^1.9.4",
     "leaflet-draw": "^1.0.4",
     "moment": "^2.30.1",

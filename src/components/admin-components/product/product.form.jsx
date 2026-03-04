@@ -233,9 +233,31 @@ const ProductForm = (props) => {
                                         attr.attributeValue
                                     );
                                     
+                                    console.log("=== ATTRIBUTE CREATION DEBUG ===");
+                                    console.log("createAttributeAPI response:", resAttr);
+                                    console.log("Type of resAttr:", typeof resAttr);
+                                    console.log("resAttr keys:", Object.keys(resAttr || {}));
+                                    console.log("resAttr.data:", resAttr?.data);
+                                    console.log("attr.images:", attr.images);
+                                    
+                                    // Try multiple ways to get ID
+                                    let attributeId = null;
+                                    if (resAttr) {
+                                        attributeId = resAttr.id || resAttr.attributeId || resAttr.data?.id || resAttr.data?.attributeId;
+                                    }
+                                    console.log("Extracted Attribute ID:", attributeId);
+                                    console.log("attr.images.length:", attr.images?.length);
+                                    console.log("Condition check:", attributeId && attr.images && attr.images.length > 0);
+                                    console.log("=================================");
+                                    
                                     // Upload images for new attribute
-                                    if (resAttr && resAttr.id && attr.images && attr.images.length > 0) {
-                                        await addImagesToAttributeAPI(resAttr.id, attr.images);
+                                    if (attributeId && attr.images && attr.images.length > 0) {
+                                        console.log("=== UPLOADING IMAGES ===");
+                                        console.log("Attribute ID:", attributeId);
+                                        console.log("Images to upload:", attr.images);
+                                        const imageRes = await addImagesToAttributeAPI(attributeId, attr.images);
+                                        console.log("Image upload response:", imageRes);
+                                        console.log("========================");
                                     }
                                 }
                             }
@@ -273,7 +295,7 @@ const ProductForm = (props) => {
                 initialValues={{ variants: [{}] }}
             >
                 {/* PRODUCT INFO */}
-                <Divider orientation="left">Product Info</Divider>
+                <Divider titlePlacement="left">Product Info</Divider>
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item
@@ -311,7 +333,7 @@ const ProductForm = (props) => {
                 </Form.Item>
 
                 {/* VARIANTS */}
-                <Divider orientation="left">Variants</Divider>
+                <Divider titlePlacement="left">Variants</Divider>
                 <Form.List name="variants">
                     {(fields, { add, remove }) => (
                         <>
