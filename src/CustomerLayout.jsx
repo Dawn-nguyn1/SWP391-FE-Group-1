@@ -1,19 +1,21 @@
 import React from 'react'
 import { Outlet } from 'react-router-dom'
-import Header from './components/admin-components/layout/header'
-import Footer from './components/admin-components/layout/footer'
+import CustomerHeader from './components/customer-components/header/CustomerHeader'
+import CustomerFooter from './components/customer-components/footer/CustomerFooter'
+import { CartWrapper } from './context/cart.context'
+import './customer-layout.css'
 
 const CustomerLayout = () => {
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Header />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+    <CartWrapper>
+      <div className="customer-layout">
+        <CustomerHeader />
+        <main className="customer-main">
           <Outlet />
-        </div>
-        <Footer />
+        </main>
+        <CustomerFooter />
       </div>
-    </div>
+    </CartWrapper>
   )
 }
 

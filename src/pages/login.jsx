@@ -7,27 +7,39 @@ import { AuthContext } from "../context/auth.context";
 const LoginPage = () => {
     const [form] = Form.useForm();
     const navigate = useNavigate();
-    const {user,setUser} = useContext(AuthContext);
+    const { user, setUser } = useContext(AuthContext);
 
     const onFinish = async (values) => {
         const res = await loginAPI(values.username, values.password);
         if (res && res.accessKey) {
             notification.success({
-                title: "Login success",
-                description: "Đăng nhập thành công!",
+                message: "Đăng nhập thành công!",
             });
             localStorage.setItem("access_token", res.accessKey);
-            setUser(res);
-            navigate('/admin/homepage');
+            // Normalize response: backend returns { id, accessKey, role }
+            const userInfo = {
+                id: res.id,
+                accessKey: res.accessKey,
+                refreshKey: res.refreshKey || "",
+                role: res.role,
+                fullName: res.fullName || ""
+            };
+            setUser(userInfo); // also persists to localStorage via auth.context
+            // Role-based redirect
+            const role = String(res.role).toUpperCase();
+            if (role === 'SUPPORT_STAFF') navigate('/staff/support');
+            else if (role === 'OPERATION_STAFF') navigate('/staff/operations');
+            else if (role === 'CUSTOMER') navigate('/customer');
+            else if (role === 'MANAGER' || role === 'ADMIN') navigate('/admin/homepage');
+            else navigate('/admin/homepage');
         } else {
             notification.error({
-                title: "Login failed",
-                // description: JSON.stringify(res.message),
-                description: "Đăng nhập thất bại!",
+                message: "Đăng nhập thất bại!",
+                description: res?.message || "Sai email hoặc mật khẩu.",
             });
         }
-        
     };
+
 
     const handleTabChange = (key) => {
         if (key === 'register') {
@@ -50,7 +62,7 @@ const LoginPage = () => {
                         <h2>Chào mừng bạn!</h2>
                         <p>Vui lòng nhập thông tin để đăng nhập.</p>
                     </div>
-                    
+
                     <Form.Item
                         label="Username (email)"
                         name="username"
@@ -59,8 +71,8 @@ const LoginPage = () => {
                             { type: "email", message: 'username không đúng định dạng!' },
                         ]}
                     >
-                        <Input 
-                            placeholder="Nhập username của bạn" 
+                        <Input
+                            placeholder="Nhập username của bạn"
                             className="modern-input"
                             size="large"
                         />
@@ -73,19 +85,19 @@ const LoginPage = () => {
                             { required: true, message: 'Password không được để trống!' },
                         ]}
                     >
-                        <Input.Password 
-                            placeholder="Nhập mật khẩu của bạn" 
+                        <Input.Password
+                            placeholder="Nhập mật khẩu của bạn"
                             className="modern-input"
                             size="large"
                             onKeyDown={(event) => {
                                 if (event.key === 'Enter') form.submit()
-                            }} 
+                            }}
                         />
                     </Form.Item>
 
                     <Form.Item className="form-actions">
                         <Button
-                            type="primary" 
+                            type="primary"
                             onClick={() => form.submit()}
                             className="modern-button"
                             size="large"
@@ -98,7 +110,7 @@ const LoginPage = () => {
                     <div className="forget-password">
                         <Link to="/forget-password" className="forget-link">Quên mật khẩu?</Link>
                     </div>
-                    
+
                     <div className="form-footer">
                         <span>Chưa có tài khoản? </span>
                         <Link to="/register" className="modern-link">Đăng ký tại đây</Link>
@@ -108,11 +120,11 @@ const LoginPage = () => {
         },
         {
             key: 'register',
-            label: 'Đăng ký', 
+            label: 'Đăng ký',
         },
     ];
-    
-    console.log(">>>>> user:",user );
+
+    console.log(">>>>> user:", user);
     return (
         <div className="login-container">
             <Row className="login-row">
@@ -131,7 +143,7 @@ const LoginPage = () => {
                             centered
                             items={items}
                             className="modern-tabs"
-                            onChange={handleTabChange} 
+                            onChange={handleTabChange}
                         />
                     </div>
                 </Col>

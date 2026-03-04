@@ -38,22 +38,103 @@ const Header = () => {
         setCurrent(e.key);
     };
 
+    // const items = [
+    //     ...(user?.role === 'ADMIN' || user?.role === 'MANAGER' ? [
+    //         {
+    //             label: <Link to={"/admin/homepage"}>Home</Link>,
+    //             key: 'home',
+    //             icon: <HomeOutlined />,
+    //         },
+    //         {
+    //             label: <Link to={"/admin/users"}>Users</Link>,
+    //             key: 'users',
+    //             icon: <UsergroupAddOutlined />
+    //         },
+    //         {
+    //             label: <Link to={"/admin/products"}>Products</Link>,
+    //             key: 'products',
+    //             icon: <PlayCircleOutlined />
+    //         }
+    //     ] : []),
+
+    //     ...(user?.role === 'SUPPORT_STAFF' ? [
+    //         {
+    //             label: <Link to={"/staff/support/orders"}>Support Orders</Link>,
+    //             key: 'support-orders',
+    //             icon: <AliwangwangOutlined />
+    //         }
+    //     ] : []),
+
+    //     ...(user?.role === 'OPERATION_STAFF' ? [
+    //         {
+    //             label: <Link to={"/staff/operations/orders"}>Operation Orders</Link>,
+    //             key: 'op-orders',
+    //             icon: <PlayCircleOutlined />
+    //         }
+    //     ] : []),
+
+    //     ...(!user?.id ? [{
+    //         label: <Link to={"/login"}>Đăng nhập</Link>,
+    //         key: 'login',
+    //         icon: <LoginOutlined />,
+    //     }] : []),
+
+    //     ...(user?.id ? [{
+    //         label: `Welcome ${user.fullName ?? user.email}`,
+    //         // label: `Welcome Manager`,
+    //         key: 'setting',
+    //         icon: <AliwangwangOutlined />,
+    //         children: [
+    //             {
+    //                 label: <span >Đăng xuất</span>,
+    //                 key: 'logout',
+    //             },
+    //         ],
+    //     }] : []),
+    // ];
+
     const items = [
-        {
-            label: <Link to={"/admin/homepage"}>Home</Link>,
-            key: 'home',
-            icon: <HomeOutlined />,
-        },
-        {
-            label: <Link to={"/admin/users"}>Users</Link>,
-            key: 'users',
-            icon: <UsergroupAddOutlined />
-        },
-        {
-            label: <Link to={"/admin/products"}>Products</Link>,
-            key: 'products',
-            icon: <PlayCircleOutlined />
-        },
+        ...(user?.role === 'ADMIN' ? [
+            {
+                label: <Link to={"/admin/homepage"}>Home</Link>,
+                key: 'home',
+                icon: <HomeOutlined />,
+            },
+            {
+                label: <Link to={"/admin/users"}>Users</Link>,
+                key: 'users',
+                icon: <UsergroupAddOutlined />
+            },
+        ] : []),
+
+        ...(user?.role === 'MANAGER' ? [
+            {
+                label: <Link to={"/admin/homepage"}>Home</Link>,
+                key: 'home',
+                icon: <HomeOutlined />,
+            },
+            {
+                label: <Link to={"/admin/products"}>Products</Link>,
+                key: 'products',
+                icon: <PlayCircleOutlined />
+            }
+        ] : []),
+
+        ...(user?.role === 'SUPPORT_STAFF' ? [
+            {
+                label: <Link to={"/staff/support/orders"}>Support Orders</Link>,
+                key: 'support-orders',
+                icon: <AliwangwangOutlined />
+            }
+        ] : []),
+
+        ...(user?.role === 'OPERATION_STAFF' ? [
+            {
+                label: <Link to={"/staff/operations/orders"}>Operation Orders</Link>,
+                key: 'op-orders',
+                icon: <PlayCircleOutlined />
+            }
+        ] : []),
 
         ...(!user?.id ? [{
             label: <Link to={"/login"}>Đăng nhập</Link>,
@@ -62,19 +143,19 @@ const Header = () => {
         }] : []),
 
         ...(user?.id ? [{
-            // label: `Welcome ${user.profile?.fullName ?? user.email}`,
-            label: `Welcome Manager`,
+            label: `Welcome ${user.fullName ?? user.role}`,
             key: 'setting',
             icon: <AliwangwangOutlined />,
             children: [
                 {
-                    label: <span >Đăng xuất</span>,
+                    label: <span>Đăng xuất</span>,
                     key: 'logout',
                 },
             ],
         }] : []),
     ];
 
+    console.log("check user tai header", user)
     return (
         <div
             style={{

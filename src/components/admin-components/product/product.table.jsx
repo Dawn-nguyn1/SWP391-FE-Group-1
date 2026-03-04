@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Table, Button, Space, Popconfirm, message, notification } from 'antd';
+import { Table, Button, Space, Popconfirm } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import ProductDetail from './product.detail';
 
@@ -12,13 +12,17 @@ const ProductTable = ({
     total,
     setCurrent,
     setPageSize,
-    loadProducts,
     handleEditProduct,
     handleDeleteProduct
 }) => {
 
     const confirmDelete = (id) => {
-        handleDeleteProduct(id);
+        console.log(">>> confirmDelete called with ID:", id);
+        if (handleDeleteProduct) {
+            handleDeleteProduct(id);
+        } else {
+            console.error(">>> handleDeleteProduct is not defined!");
+        }
     };
 
     const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -127,7 +131,7 @@ const ProductTable = ({
         },
     ];
 
-    const onChange = (pagination, filters, sorter, extra) => {
+    const onChange = (pagination, _filters, _sorter, _extra) => {
         if (pagination && pagination.current !== current) {
             setCurrent(pagination.current);
         }

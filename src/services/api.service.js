@@ -61,6 +61,11 @@ const updateUserAvatarAPI = (avatar, _id, fullName, phone) => {
     return axios.put(URL_BACKEND, data);
 }
 
+const getUserDetailAPI = (id) => {
+    const URL_BACKEND = `/api/v1/user/${id}`;
+    return axios.get(URL_BACKEND);
+}
+
 const registerUserAPI = (fullName, email, password, confirmPassword, phone, dob, gender) => {
     const URL_BACKEND = "/api/auth/register";
     const data = {
@@ -85,6 +90,7 @@ const resetPasswordAPI = (email, otp, newPassword) => {
     return axios.post(URL_BACKEND);
 }
 
+// DOC1 version - đúng hơn
 const loginAPI = (username, password) => {
     const URL_BACKEND = "/api/auth/login";
     const data = {
@@ -106,7 +112,7 @@ const logoutAPI = () => {
 }
 
 
-//product API
+// product API
 
 const fetchProductsAPI = () => {
     const URL_BACKEND = `/api/manager/products`;
@@ -217,12 +223,57 @@ const deleteComboAPI = (id) => {
     return axios.delete(URL_BACKEND);
 }
 
+// ===== PUBLIC PRODUCT APIs =====
+const getPublicProductsAPI = (params) => axios.get('/api/public/products', { params });
+const searchProductsAPI = (params) => axios.get('/api/public/products/search', { params });
+const getPublicProductDetailAPI = (id) => axios.get(`/api/public/products/${id}`);
+const getBrandsAPI = () => axios.get('/api/public/products/brands');
+
+// ===== CART APIs =====
+const getCartAPI = () => axios.get('/api/customer/cart');
+const addToCartAPI = (productVariantId, quantity) => axios.post('/api/customer/cart/add', { productVariantId, quantity });
+const updateCartItemAPI = (itemId, quantity) => axios.put(`/api/customer/cart/items/${itemId}`, { quantity });
+const removeCartItemAPI = (itemId) => axios.delete(`/api/customer/cart/items/${itemId}`);
+const clearCartAPI = () => axios.delete('/api/customer/cart/clear');
+const checkoutAPI = (dto) => axios.post('/api/customer/cart/checkout', dto);
+
+// ===== CUSTOMER PROFILE APIs =====
+const getProfileAPI = () => axios.get('/api/customer/profile');
+const updateProfileAPI = (dto) => axios.put('/api/customer/profile', dto);
+const changePasswordAPI = (dto) => axios.put('/api/customer/profile/change-password', dto);
+const getAddressesAPI = () => axios.get('/api/customer/addresses');
+const createAddressAPI = (dto) => axios.post('/api/customer/addresses', dto);
+const updateAddressAPI = (addressId, dto) => axios.put(`/api/customer/addresses/${addressId}`, dto);
+const setDefaultAddressAPI = (addressId) => axios.patch(`/api/customer/addresses/${addressId}/default`);
+const deleteAddressAPI = (addressId) => axios.delete(`/api/customer/addresses/${addressId}`);
+const getProvincesAPI = () => axios.get('/api/public/location/provinces');
+const getDistrictsAPI = (provinceId) => axios.get(`/api/public/location/districts?provinceId=${provinceId}`);
+const getWardsAPI = (districtId) => axios.get(`/api/public/location/wards?districtId=${districtId}`);
+const cancelOrderByCustomerAPI = (orderId) => axios.put(`/api/customer/orders/${orderId}/cancel`);
+const getCustomerOrdersAPI = () => axios.get('/api/customer/orders');
+
+// ===== SUPPORT STAFF APIs =====
+const getSupportOrdersAPI = (status = '', page = 0, size = 20) =>
+    axios.get('/api/support_staff/orders', { params: { status, page, size } });
+const supportConfirmOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/confirm`);
+const supportCancelOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/cancel`);
+const supportShipOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/ship`);
+const supportCompleteOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/complete`);
+
+// ===== OPERATIONS STAFF APIs =====
+const getApprovedOrdersAPI = (page = 0, size = 20) =>
+    axios.get('/api/operation_staff/orders/approved', { params: { page, size } });
+const operationsConfirmOrderAPI = (orderId) => axios.post(`/api/operation_staff/orders/${orderId}/confirm`);
+
+// ===== PAYMENT APIS =====
+const vnpayReturnAPI = (params) => axios.get('/api/payment/vnpay-return', { params });
+
 export {
     // Updated User APIs
     createUserAPI, updateUserAPI, fetchAllUserAPI,
     deleteUserAPI, getUserByIdAPI, updateUserStatusAPI,
     // File & Auth APIs
-    handleUploadFile, updateUserAvatarAPI,
+    handleUploadFile, updateUserAvatarAPI, getUserDetailAPI,
     registerUserAPI, forgotPasswordAPI, resetPasswordAPI, loginAPI, getAccountAPI,
     logoutAPI,
     // Product APIs
@@ -234,6 +285,21 @@ export {
     addImagesToAttributeAPI, deleteAttributeImageAPI,
     // Combo Management APIs
     fetchCombosAPI, fetchComboByIdAPI,
-    createComboAPI, updateComboAPI, deleteComboAPI
+    createComboAPI, updateComboAPI, deleteComboAPI,
+    // Public product APIs
+    getPublicProductsAPI, searchProductsAPI, getPublicProductDetailAPI, getBrandsAPI,
+    // Cart APIs
+    getCartAPI, addToCartAPI, updateCartItemAPI, removeCartItemAPI, clearCartAPI, checkoutAPI,
+    // Customer profile/address/order APIs
+    getProfileAPI, updateProfileAPI, changePasswordAPI,
+    getAddressesAPI, createAddressAPI, updateAddressAPI, setDefaultAddressAPI, deleteAddressAPI,
+    cancelOrderByCustomerAPI, getCustomerOrdersAPI,
+    getProvincesAPI, getDistrictsAPI, getWardsAPI,
+    // Support Staff APIs
+    getSupportOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
+    supportShipOrderAPI, supportCompleteOrderAPI,
+    // Operations Staff APIs
+    getApprovedOrdersAPI, operationsConfirmOrderAPI,
+    // Payment APIs
+    vnpayReturnAPI,
 }
-

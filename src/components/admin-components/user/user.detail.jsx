@@ -49,6 +49,14 @@ const ViewUserDetail = (props) => {
         setLoading(false);
     };
 
+    // Fetch user detail khi drawer mở
+    useEffect(() => {
+        if (isDetailOpen && dataDetail?._id) {
+            fetchUserDetail();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isDetailOpen, dataDetail?._id]);
+
     const handleOnChangeFile = (event) => {
 
         if (!event.target.files || event.target.files.length === 0) { //ko chon file hoac rong

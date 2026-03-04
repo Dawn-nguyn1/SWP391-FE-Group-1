@@ -6,7 +6,7 @@ import {
     fetchProductByIdAPI,
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
     deleteVariantAPI, deleteAttributeAPI,
-    addImagesToAttributeAPI, deleteAttributeImageAPI
+    addImagesToAttributeAPI
 } from '../../../services/api.service';
 
 const ProductForm = (props) => {
@@ -27,6 +27,7 @@ const ProductForm = (props) => {
                 setCreatedProductId(null);
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isModalOpen, dataUpdate]);
 
     const loadProductDetail = async (id) => {
@@ -333,7 +334,7 @@ const ProductForm = (props) => {
                                                                 await deleteVariantAPI(variant.id);
                                                                 message.success('Variant deleted');
                                                                 remove(name);
-                                                            } catch (e) {
+                                                            } catch (_e) {
                                                                 message.error('Failed to delete variant');
                                                             }
                                                         }
@@ -473,7 +474,7 @@ const ProductForm = (props) => {
                                                                                 await deleteAttributeAPI(attribute.id);
                                                                                 message.success('Attribute deleted');
                                                                                 removeAttr(attrName);
-                                                                            } catch (e) {
+                                                                            } catch (_e) {
                                                                                 message.error('Failed to delete attribute');
                                                                             }
                                                                         }
