@@ -90,6 +90,11 @@ const resetPasswordAPI = (email, otp, newPassword) => {
     return axios.post(URL_BACKEND);
 }
 
+const verifyRegisterOTPAPI = (email, otp) => {
+    const URL_BACKEND = `/api/auth/register/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`;
+    return axios.post(URL_BACKEND);
+}
+
 // DOC1 version - đúng hơn
 const loginAPI = (username, password) => {
     const URL_BACKEND = "/api/auth/login";
@@ -274,7 +279,7 @@ export {
     deleteUserAPI, getUserByIdAPI, updateUserStatusAPI,
     // File & Auth APIs
     handleUploadFile, updateUserAvatarAPI, getUserDetailAPI,
-    registerUserAPI, forgotPasswordAPI, resetPasswordAPI, loginAPI, getAccountAPI,
+    registerUserAPI, forgotPasswordAPI, resetPasswordAPI, verifyRegisterOTPAPI, loginAPI, getAccountAPI,
     logoutAPI,
     // Product APIs
     fetchProductsAPI, fetchProductByIdAPI,

@@ -8,6 +8,7 @@ import LoginPage from './pages/login.jsx';
 import RegisterPage from './pages/register.jsx';
 import ForgetPasswordPage from './pages/forget-password.jsx';
 import ResetPasswordPage from './pages/reset-password.jsx';
+import VerifyRegisterOTPPage from './pages/verify-register-otp.jsx';
 
 // Admin pages
 import AdminHomePage from './pages/admin-pages/homepage.jsx';
@@ -103,6 +104,7 @@ const router = createBrowserRouter([
   // Auth routes (outside layout)
   { path: "/login", element: <LoginPage /> },
   { path: "/register", element: <RegisterPage /> },
+  { path: "/verify-register-otp", element: <VerifyRegisterOTPPage /> },
   { path: "/forget-password", element: <ForgetPasswordPage /> },
   { path: "/reset-password", element: <ResetPasswordPage /> },
   // Catch-all route for 404

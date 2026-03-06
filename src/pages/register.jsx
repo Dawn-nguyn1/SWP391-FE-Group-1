@@ -23,12 +23,13 @@ const RegisterPage = () => {
 
         const res = await registerUserAPI(formattedValues.fullName, formattedValues.email, formattedValues.password, formattedValues.confirmPassword, formattedValues.phone, formattedValues.dob, formattedValues.gender);
         console.log("Response:", res);
-        if (res && res.id) {
+        if (res) {
             notification.success({
-                title: "Register success",
-                description: "Tạo tài khoản thành công!",
+                title: "OTP Sent",
+                description: "Mã OTP đã được gửi đến email của bạn!",
             });
-            navigate('/login');
+            // Navigate to OTP verification page with email
+            navigate('/verify-register-otp', { state: { email: formattedValues.email } });
         } else {
             notification.error({
                 title: "Register failed",
