@@ -142,9 +142,29 @@ const createVariantAPI = (productId, sku, price, stockQuantity) => {
     return axios.post(URL_BACKEND, data);
 }
 
-const createAttributeAPI = (variantId, attributeName, attributeValue) => {
+const createAttributeAPI = (variantId, attributeName, attributeValue, images = []) => {
     const URL_BACKEND = `/api/manager/variants/${variantId}/attributes`;
-    const data = { attributeName, attributeValue };
+    // images có thể là:
+    // - mảng string: ["https://..."]
+    // - mảng object: [{ imageUrl, sortOrder }]
+    const normalizedImages = Array.isArray(images)
+        ? images
+            .map((img, index) => {
+                if (!img) return null;
+                if (typeof img === "string") {
+                    const url = img.trim();
+                    if (!url) return null;
+                    return { imageUrl: url, sortOrder: index };
+                }
+                const imageUrl = (img.imageUrl ?? "").toString().trim();
+                if (!imageUrl) return null;
+                const sortOrder = Number.isFinite(Number(img.sortOrder)) ? Number(img.sortOrder) : index;
+                return { imageUrl, sortOrder };
+            })
+            .filter(Boolean)
+        : [];
+
+    const data = { attributeName, attributeValue, images: normalizedImages };
     return axios.post(URL_BACKEND, data);
 }
 
