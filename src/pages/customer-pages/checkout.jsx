@@ -1,14 +1,13 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Steps, Radio, Button, Select, Modal, Form, Input, message, Spin } from 'antd';
+import { Steps, Radio, Button, Modal, Form, Input, message, Spin } from 'antd';
 import { EnvironmentOutlined, CreditCardOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import {
-    getCartAPI, getAddressesAPI, createAddressAPI, checkoutAPI, getProvincesAPI, getDistrictsAPI, getWardsAPI
+    getCartAPI, getAddressesAPI, createAddressAPI, checkoutAPI
 } from '../../services/api.service';
 import { CartContext } from '../../context/cart.context';
 import './checkout.css';
 
-const { Option } = Select;
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
 const CheckoutPage = () => {
@@ -23,17 +22,13 @@ const CheckoutPage = () => {
     const [submitting, setSubmitting] = useState(false);
     const [addrModalOpen, setAddrModalOpen] = useState(false);
     const [addrForm] = Form.useForm();
-    const [provinces, setProvinces] = useState([]);
-    const [districts, setDistricts] = useState([]);
-    const [wards, setWards] = useState([]);
 
     useEffect(() => {
-        Promise.all([getCartAPI(), getAddressesAPI(), getProvincesAPI()])
-            .then(([c, addrs, provs]) => {
+        Promise.all([getCartAPI(), getAddressesAPI()])
+            .then(([c, addrs]) => {
                 setCart(c);
                 const addrList = Array.isArray(addrs) ? addrs : [];
                 setAddresses(addrList);
-                if (provs?.data) setProvinces(provs.data);
                 const def = addrList.find(a => a.isDefault) || addrList[0];
                 if (def) setSelectedAddressId(def.id);
             })
@@ -41,38 +36,15 @@ const CheckoutPage = () => {
             .finally(() => setLoading(false));
     }, []);
 
-    const handleProvinceChange = async (provinceId) => {
-        addrForm.setFieldsValue({ districtId: undefined, wardCode: undefined });
-        setWards([]);
-        try {
-            const res = await getDistrictsAPI(provinceId);
-            if (res?.data) setDistricts(res.data);
-        } catch { message.error('Không thể tải quận huyện'); }
-    };
-
-    const handleDistrictChange = async (districtId) => {
-        addrForm.setFieldsValue({ wardCode: undefined });
-        try {
-            const res = await getWardsAPI(districtId);
-            if (res?.data) setWards(res.data);
-        } catch { message.error('Không thể tải phường xã'); }
-    };
-
     const handleAddAddress = async (vals) => {
         try {
-            const provinceName = provinces.find(p => p.ProvinceID === vals.provinceId)?.ProvinceName;
-            const districtName = districts.find(d => d.DistrictID === vals.districtId)?.DistrictName;
-            const wardName = wards.find(w => w.WardCode === vals.wardCode)?.WardName;
-
             const dto = {
                 receiverName: vals.receiverName,
                 phone: vals.phone,
-                province: provinceName,
-                district: districtName,
-                ward: wardName,
-                addressLine: vals.addressLine,
-                districtId: vals.districtId,
-                wardCode: vals.wardCode
+                province: vals.province,
+                district: vals.district,
+                ward: vals.ward,
+                addressLine: vals.addressLine
             };
 
             const newAddr = await createAddressAPI(dto);
@@ -80,8 +52,6 @@ const CheckoutPage = () => {
             setSelectedAddressId(newAddr.id);
             setAddrModalOpen(false);
             addrForm.resetFields();
-            setDistricts([]);
-            setWards([]);
             message.success('Đã thêm địa chỉ');
         } catch (e) {
             console.error('Add address error:', e);
@@ -232,22 +202,19 @@ const CheckoutPage = () => {
                 <Form form={addrForm} layout="vertical" onFinish={handleAddAddress}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                         <Form.Item name="receiverName" label="Họ tên người nhận" rules={[{ required: true }]}><Input /></Form.Item>
-                        <Form.Item name="phone" label="Số điện thoại" rules={[{ required: true }]}><Input /></Form.Item>
-                        <Form.Item name="provinceId" label="Tỉnh / Thành phố" rules={[{ required: true }]}>
-                            <Select placeholder="Chọn tỉnh thành" onChange={handleProvinceChange}>
-                                {provinces.map(p => <Option key={p.ProvinceID} value={p.ProvinceID}>{p.ProvinceName}</Option>)}
-                            </Select>
+                        <Form.Item
+                            name="phone"
+                            label="Số điện thoại"
+                            rules={[
+                                { required: true, message: 'Vui lòng nhập số điện thoại' },
+                                { pattern: /^0\d{9}$/, message: 'Số điện thoại phải gồm 10 số và bắt đầu bằng 0' }
+                            ]}
+                        >
+                            <Input />
                         </Form.Item>
-                        <Form.Item name="districtId" label="Quận / Huyện" rules={[{ required: true }]}>
-                            <Select placeholder="Chọn quận huyện" onChange={handleDistrictChange} disabled={!districts.length}>
-                                {districts.map(d => <Option key={d.DistrictID} value={d.DistrictID}>{d.DistrictName}</Option>)}
-                            </Select>
-                        </Form.Item>
-                        <Form.Item name="wardCode" label="Phường / Xã" rules={[{ required: true }]}>
-                            <Select placeholder="Chọn phường xã" disabled={!wards.length}>
-                                {wards.map(w => <Option key={w.WardCode} value={w.WardCode}>{w.WardName}</Option>)}
-                            </Select>
-                        </Form.Item>
+                        <Form.Item name="province" label="Tỉnh / Thành phố" rules={[{ required: true }]}><Input /></Form.Item>
+                        <Form.Item name="district" label="Quận / Huyện" rules={[{ required: true }]}><Input /></Form.Item>
+                        <Form.Item name="ward" label="Phường / Xã" rules={[{ required: true }]}><Input /></Form.Item>
                         <Form.Item name="addressLine" label="Địa chỉ chi tiết" rules={[{ required: true }]}><Input placeholder="Số nhà, tên đường..." /></Form.Item>
                     </div>
                     <Button type="primary" htmlType="submit" block style={{ marginTop: 12 }}>Lưu địa chỉ</Button>
