@@ -639,3 +639,234 @@ Code	Description	Links
 No Content
 
 No links
+
+# manager combo
+GET
+/api/manager/combos
+
+
+Parameters
+Try it out
+Name	Description
+page
+integer($int32)
+(query)
+Default value : 0
+
+0
+size
+integer($int32)
+(query)
+Default value : 10
+
+10
+Responses
+Code	Description	Links
+200	
+OK
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "totalPages": 0,
+  "totalElements": 0,
+  "size": 0,
+  "content": [
+    {
+      "id": 0,
+      "name": "string",
+      "description": "string",
+      "comboPrice": 0,
+      "active": true,
+      "items": [
+        {
+          "id": 0,
+          "productVariantId": 0,
+          "quantity": 0
+        }
+      ]
+    }
+  ],
+  "number": 0,
+  "first": true,
+  "last": true,
+  "numberOfElements": 0,
+  "sort": {
+    "empty": true,
+    "sorted": true,
+    "unsorted": true
+  },
+  "pageable": {
+    "offset": 0,
+    "paged": true,
+    "sort": {
+      "empty": true,
+      "sorted": true,
+      "unsorted": true
+    },
+    "pageSize": 0,
+    "pageNumber": 0,
+    "unpaged": true
+  },
+  "empty": true
+}
+----
+POST
+/api/manager/combos
+
+
+Parameters
+Try it out
+No parameters
+
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "name": "string",
+  "description": "string",
+  "items": [
+    {
+      "variantId": 0,
+      "quantity": 1
+    }
+  ]
+}
+Responses
+Code	Description	Links
+201	
+Created
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "name": "string",
+  "description": "string",
+  "comboPrice": 0,
+  "active": true,
+  "items": [
+    {
+      "id": 0,
+      "productVariantId": 0,
+      "quantity": 0
+    }
+  ]
+}
+----
+GET
+/api/manager/combos/{id}
+
+
+Parameters
+Try it out
+Name	Description
+id *
+integer($int64)
+(path)
+id
+Responses
+Code	Description	Links
+200	
+OK
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "name": "string",
+  "description": "string",
+  "comboPrice": 0,
+  "active": true,
+  "items": [
+    {
+      "id": 0,
+      "productVariantId": 0,
+      "quantity": 0
+    }
+  ]
+}
+----
+PUT
+/api/manager/combos/{id}
+
+
+Parameters
+Try it out
+Name	Description
+id *
+integer($int64)
+(path)
+id
+Request body
+
+application/json
+Example Value
+Schema
+{
+  "name": "string",
+  "description": "string",
+  "items": [
+    {
+      "variantId": 0,
+      "quantity": 1
+    }
+  ]
+}
+Responses
+Code	Description	Links
+204	
+No Content
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "name": "string",
+  "description": "string",
+  "comboPrice": 0,
+  "active": true,
+  "items": [
+    {
+      "id": 0,
+      "productVariantId": 0,
+      "quantity": 0
+    }
+  ]
+}
+----
+DELETE
+/api/manager/combos/{id}
+
+
+Parameters
+Try it out
+Name	Description
+id *
+integer($int64)
+(path)
+id
+Responses
+Code	Description	Links
+204	
+No Content
+
+# 

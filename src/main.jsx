@@ -35,6 +35,7 @@ import CustomerLayout from './CustomerLayout.jsx';
 import AdminLayout from './AdminLayout.jsx';
 import ErrorPage from './pages/error/error.page.jsx';
 import PrivateRoute from './pages/admin-pages/private.route.jsx';
+import ComboPage from './components/admin-components/combo/combo.jsx';
 
 const router = createBrowserRouter([
   {
@@ -76,6 +77,9 @@ const router = createBrowserRouter([
           {
             path: "products", element: (<PrivateRoute><ProductPage /></PrivateRoute>),
           },
+          {
+            path: "combo", element: (<PrivateRoute><ComboPage/></PrivateRoute>),
+          }
         ]
       },
 

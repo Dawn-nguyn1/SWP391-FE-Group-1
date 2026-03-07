@@ -124,6 +124,11 @@ const fetchProductsAPI = () => {
     return axios.get(URL_BACKEND);
 }
 
+const fetchVariantsAPI = () => {
+    const URL_BACKEND = `/api/manager/variants`;
+    return axios.get(URL_BACKEND);
+}
+
 const fetchProductByIdAPI = (id) => {
     const URL_BACKEND = `/api/manager/products/${id}`;
     return axios.get(URL_BACKEND);
@@ -302,7 +307,7 @@ export {
     registerUserAPI, forgotPasswordAPI, resetPasswordAPI, verifyRegisterOTPAPI, loginAPI, getAccountAPI,
     logoutAPI,
     // Product APIs
-    fetchProductsAPI, fetchProductByIdAPI,
+    fetchProductsAPI, fetchVariantsAPI, fetchProductByIdAPI,
     createProductAPI, createVariantAPI, createAttributeAPI,
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
     deleteProductAPI, deleteVariantAPI, deleteAttributeAPI,
