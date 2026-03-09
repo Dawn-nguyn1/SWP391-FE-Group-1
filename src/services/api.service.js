@@ -210,7 +210,8 @@ const deleteAttributeAPI = (attributeId) => {
 // Image Management APIs
 const addImagesToAttributeAPI = (attributeId, images) => {
     const URL_BACKEND = `/api/manager/attributes/${attributeId}/images`;
-    const data = { images };
+    // API expects array directly, not wrapped in object
+    const data = images;
     return axios.post(URL_BACKEND, data);
 }
 
