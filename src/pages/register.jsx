@@ -1,5 +1,6 @@
 import React from 'react';
 import { Button, Form, Input, Row, Col, Tabs, notification, DatePicker, Select } from "antd";
+import dayjs from 'dayjs';
 import { Link, useNavigate } from "react-router-dom";
 import Glasses_1 from '../assets/glasses_1.jpg';
 import './styles/register.css';
@@ -10,14 +11,25 @@ const RegisterPage = () => {
     const navigate = useNavigate();
 
     const onFinish = async (values) => {
-        const res = await registerUserAPI(values.fullName, values.email, values.password, values.confirmPassword, values.phone, values.dob, values.gender);
-        console.log("response tu customize:", res);
-        if (res && res.id) {
+        console.log("Register data:", values);
+
+        // Convert dob dayjs object to string
+        const formattedValues = {
+            ...values,
+            dob: values.dob ? dayjs(values.dob).format('YYYY-MM-DD') : null // Use dayjs format method
+        };
+
+        console.log("Formatted values:", formattedValues);
+
+        const res = await registerUserAPI(formattedValues.fullName, formattedValues.email, formattedValues.password, formattedValues.confirmPassword, formattedValues.phone, formattedValues.dob, formattedValues.gender);
+        console.log("Response:", res);
+        if (res) {
             notification.success({
-                title: "Register success",
-                description: "Tạo tài khoản thành công!",
+                title: "OTP Sent",
+                description: "Mã OTP đã được gửi đến email của bạn!",
             });
-            navigate('/login');
+            // Navigate to OTP verification page with email
+            navigate('/verify-register-otp', { state: { email: formattedValues.email } });
         } else {
             notification.error({
                 title: "Register failed",
@@ -151,6 +163,7 @@ const RegisterPage = () => {
                             options={[
                                 { value: 0, label: 'Nam' },
                                 { value: 1, label: 'Nữ' },
+                                { value: 2, label: 'Khác' },
                             ]}
                         />
                     </Form.Item>

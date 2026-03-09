@@ -227,15 +227,79 @@ const ProductForm = (props) => {
                             const variantId = resVariant.id;
                             if (variant.attributes) {
                                 for (const attr of variant.attributes) {
+                                    // Tránh gọi API với attribute rỗng → backend trả 400 (BAD_REQUEST)
+                                    const attributeName = (attr?.attributeName ?? "").toString().trim();
+                                    const attributeValue = (attr?.attributeValue ?? "").toString().trim();
+                                    if (!attributeName || !attributeValue) continue;
+
                                     const resAttr = await createAttributeAPI(
                                         variantId,
-                                        attr.attributeName,
-                                        attr.attributeValue
+                                        attributeName,
+                                        attributeValue,
+                                        attr.images || []
                                     );
                                     
-                                    // Upload images for new attribute
-                                    if (resAttr && resAttr.id && attr.images && attr.images.length > 0) {
-                                        await addImagesToAttributeAPI(resAttr.id, attr.images);
+                                    console.log("=== ATTRIBUTE CREATION DEBUG ===");
+                                    console.log("createAttributeAPI response:", resAttr);
+                                    console.log("Type of resAttr:", typeof resAttr);
+                                    console.log("resAttr keys:", Object.keys(resAttr || {}));
+                                    console.log("resAttr.data:", resAttr?.data);
+                                    console.log("attr.images:", attr.images);
+                                    
+                                    // Try multiple ways to get ID
+                                    let attributeId = null;
+                                    if (resAttr) {
+                                        attributeId = resAttr.id || resAttr.attributeId || resAttr.data?.id || resAttr.data?.attributeId;
+                                    }
+                                    console.log("Extracted Attribute ID:", attributeId);
+                                    console.log("attr.images.length:", attr.images?.length);
+                                    console.log("================================");
+
+                                    // Thực tế BE có thể trả 201 nhưng không lưu images trong body create-attribute.
+                                    // Fallback: nếu chưa có attributeId từ response thì reload detail để tìm id,
+                                    // sau đó gọi API /api/manager/attributes/{attributeId}/images để tạo ảnh.
+                                    if (Array.isArray(attr.images) && attr.images.length > 0) {
+                                        const imagesToUpload = attr.images
+                                            .map((img, index) => ({
+                                                imageUrl: (img?.imageUrl ?? "").toString().trim(),
+                                                sortOrder: Number.isFinite(Number(img?.sortOrder))
+                                                    ? Number(img.sortOrder)
+                                                    : index
+                                            }))
+                                            .filter(i => !!i.imageUrl);
+
+                                        if (imagesToUpload.length > 0) {
+                                            let resolvedAttributeId = attributeId;
+
+                                            if (!resolvedAttributeId) {
+                                                // Reload product detail để tìm attribute vừa tạo
+                                                const detail = await fetchProductByIdAPI(productId);
+                                                const productData = detail?.data?.id ? detail.data : detail;
+                                                const matchedVariant = productData?.variants?.find(v => v?.id === variantId);
+                                                const matchedAttrs = matchedVariant?.attributes
+                                                    ?.filter(a =>
+                                                        (a?.attributeName ?? "") === attributeName &&
+                                                        (a?.attributeValue ?? "") === attributeValue
+                                                    ) || [];
+
+                                                // Nếu trùng name/value nhiều cái, lấy cái có id lớn nhất (mới nhất)
+                                                resolvedAttributeId = matchedAttrs
+                                                    .map(a => a?.id)
+                                                    .filter(Boolean)
+                                                    .sort((a, b) => b - a)[0] || null;
+                                            }
+
+                                            if (resolvedAttributeId) {
+                                                await addImagesToAttributeAPI(resolvedAttributeId, imagesToUpload);
+                                            } else {
+                                                console.warn("Could not resolve attributeId to upload images", {
+                                                    productId,
+                                                    variantId,
+                                                    attributeName,
+                                                    attributeValue
+                                                });
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -250,7 +314,13 @@ const ProductForm = (props) => {
 
         } catch (error) {
             console.error("Error saving product:", error);
-            message.error("Failed to save product: " + (error.message || "Unknown error"));
+            const backendMessage = error?.message;
+            const backendPath = error?.path;
+            message.error(
+                "Failed to save product: " +
+                (backendMessage || "Unknown error") +
+                (backendPath ? ` (API: ${backendPath})` : "")
+            );
         }
         setLoading(false);
     };
@@ -273,7 +343,7 @@ const ProductForm = (props) => {
                 initialValues={{ variants: [{}] }}
             >
                 {/* PRODUCT INFO */}
-                <Divider orientation="left">Product Info</Divider>
+                <Divider titlePlacement="left">Product Info</Divider>
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item
@@ -311,7 +381,7 @@ const ProductForm = (props) => {
                 </Form.Item>
 
                 {/* VARIANTS */}
-                <Divider orientation="left">Variants</Divider>
+                <Divider titlePlacement="left">Variants</Divider>
                 <Form.List name="variants">
                     {(fields, { add, remove }) => (
                         <>

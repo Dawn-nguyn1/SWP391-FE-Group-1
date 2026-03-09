@@ -1,4 +1,4 @@
-manager-controller
+manager API
 
 
 PUT
@@ -66,97 +66,12 @@ GET
 
 
 Parameters
-Cancel
+Try it out
 Name	Description
 id *
 integer($int64)
 (path)
-6
-Execute
-Clear
-Responses
-Curl
-
-curl -X 'GET' \
-  'http://localhost:8080/api/manager/products/6' \
-  -H 'accept: */*' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2Iiwicm9sZSI6Ik1BTkFHRVIiLCJpYXQiOjE3NzE4OTU1NjgsImV4cCI6MTc3MTg5NjQ2OH0.STPMMmCgQi5_toqJWm95oHpKAfuiAOHLohQKskU9MElBMVHDCtaLSr5SAd6Q19l1OWW-y4LQNJYDE3JLPwJshw'
-Request URL
-http://localhost:8080/api/manager/products/6
-Server response
-Code	Details
-200	
-Response body
-Download
-{
-  "brandName": "asdasdasd",
-  "description": "asdasdasdasdasdasdasdasdasd",
-  "id": 6,
-  "name": "asdasdasd",
-  "productImage": "https://images.ctfassets.net/zcryw81f0g1x/ZwYzq8uyqTVBtfmWO4hr6/a12605fdd6772b52900387cf5ce4842f/Cat-Eye-Glasses-Nav-Card-33136813.jpg",
-  "variants": [
-    {
-      "attributes": [
-        {
-          "id": 19,
-          "attributeName": "Color",
-          "attributeValue": "Pink",
-          "images": []
-        },
-        {
-          "id": 20,
-          "attributeName": "Size",
-          "attributeValue": "42",
-          "images": []
-        }
-      ],
-      "id": 6,
-      "price": 1222,
-      "saleType": "IN_STOCK",
-      "sku": "SKU-002",
-      "stockQuantity": 22
-    },
-    {
-      "attributes": [
-        {
-          "id": 18,
-          "attributeName": "Size",
-          "attributeValue": "41",
-          "images": [
-            "https://tse1.explicit.bing.net/th/id/OIP.J25dXRQG6c0AGkj7IYwZPAHaHM?w=668&h=649&rs=1&pid=ImgDetMain&o=7&rm=3",
-            "https://tse1.explicit.bing.net/th/id/OIP.J25dXRQG6c0AGkj7IYwZPAHaHM?w=668&h=649&rs=1&pid=ImgDetMain&o=7&rm=3",
-            "https://tse1.explicit.bing.net/th/id/OIP.J25dXRQG6c0AGkj7IYwZPAHaHM?w=668&h=649&rs=1&pid=ImgDetMain&o=7&rm=3",
-            "https://tse1.explicit.bing.net/th/id/OIP.J25dXRQG6c0AGkj7IYwZPAHaHM?w=668&h=649&rs=1&pid=ImgDetMain&o=7&rm=3"
-          ]
-        },
-        {
-          "id": 17,
-          "attributeName": "Color",
-          "attributeValue": "Black",
-          "images": []
-        }
-      ],
-      "id": 5,
-      "price": 1000,
-      "saleType": "IN_STOCK",
-      "sku": "SKU-002",
-      "stockQuantity": 10
-    }
-  ]
-}
-Response headers
- cache-control: no-cache,no-store,max-age=0,must-revalidate 
- connection: keep-alive 
- content-type: application/json 
- date: Tue,24 Feb 2026 01:17:17 GMT 
- expires: 0 
- keep-alive: timeout=60 
- pragma: no-cache 
- transfer-encoding: chunked 
- vary: Origin,Access-Control-Request-Method,Access-Control-Request-Headers 
- x-content-type-options: nosniff 
- x-frame-options: DENY 
- x-xss-protection: 0 
+id
 Responses
 Code	Description	Links
 200	
@@ -201,7 +116,7 @@ PUT
 
 
 Parameters
-Cancel
+Try it out
 Name	Description
 id *
 integer($int64)
@@ -210,7 +125,7 @@ id
 Request body
 
 application/json
-Edit Value
+Example Value
 Schema
 {
   "name": "string",
@@ -218,7 +133,6 @@ Schema
   "brandName": "string",
   "productImage": "string"
 }
-Execute
 Responses
 Code	Description	Links
 201	
@@ -475,13 +389,13 @@ POST
 
 
 Parameters
-Cancel
+Try it out
 No parameters
 
 Request body
 
 application/json
-Edit Value
+Example Value
 Schema
 {
   "name": "string",
@@ -489,7 +403,6 @@ Schema
   "brandName": "string",
   "productImage": "string"
 }
-Execute
 Responses
 Code	Description	Links
 201	
@@ -614,14 +527,14 @@ Schema
   },
   "pageable": {
     "offset": 0,
-    "paged": true,
     "sort": {
       "empty": true,
       "sorted": true,
       "unsorted": true
     },
-    "pageSize": 0,
+    "paged": true,
     "pageNumber": 0,
+    "pageSize": 0,
     "unpaged": true
   },
   "empty": true
@@ -683,69 +596,25 @@ POST
 
 
 Parameters
-Cancel
-Reset
+Try it out
 Name	Description
 attributeId *
 integer($int64)
 (path)
-18
+attributeId
 Request body
 
 application/json
-Edit Value
+Example Value
 Schema
 {
   "images": [
     {
-      "imageUrl": "https://tse1.explicit.bing.net/th/id/OIP.J25dXRQG6c0AGkj7IYwZPAHaHM?w=668&h=649&rs=1&pid=ImgDetMain&o=7&rm=3",
-      "sortOrder": 1
-    },
-    {
-      "imageUrl": "https://tse1.explicit.bing.net/th/id/OIP.J25dXRQG6c0AGkj7IYwZPAHaHM?w=668&h=649&rs=1&pid=ImgDetMain&o=7&rm=3",
-      "sortOrder": 2
+      "imageUrl": "string",
+      "sortOrder": 0
     }
   ]
 }
-Execute
-Clear
-Responses
-Curl
-
-curl -X 'POST' \
-  'http://localhost:8080/api/manager/attributes/18/images' \
-  -H 'accept: */*' \
-  -H 'Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2Iiwicm9sZSI6Ik1BTkFHRVIiLCJpYXQiOjE3NzE4OTU1NjgsImV4cCI6MTc3MTg5NjQ2OH0.STPMMmCgQi5_toqJWm95oHpKAfuiAOHLohQKskU9MElBMVHDCtaLSr5SAd6Q19l1OWW-y4LQNJYDE3JLPwJshw' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "images": [
-    {
-      "imageUrl": "https://tse1.explicit.bing.net/th/id/OIP.J25dXRQG6c0AGkj7IYwZPAHaHM?w=668&h=649&rs=1&pid=ImgDetMain&o=7&rm=3",
-      "sortOrder": 1
-    },
-    {
-      "imageUrl": "https://tse1.explicit.bing.net/th/id/OIP.J25dXRQG6c0AGkj7IYwZPAHaHM?w=668&h=649&rs=1&pid=ImgDetMain&o=7&rm=3",
-      "sortOrder": 2
-    }
-  ]
-}'
-Request URL
-http://localhost:8080/api/manager/attributes/18/images
-Server response
-Code	Details
-201	
-Response headers
- cache-control: no-cache,no-store,max-age=0,must-revalidate 
- connection: keep-alive 
- content-length: 0 
- date: Tue,24 Feb 2026 01:17:12 GMT 
- expires: 0 
- keep-alive: timeout=60 
- pragma: no-cache 
- vary: Origin,Access-Control-Request-Method,Access-Control-Request-Headers 
- x-content-type-options: nosniff 
- x-frame-options: DENY 
- x-xss-protection: 0 
 Responses
 Code	Description	Links
 201	
@@ -771,20 +640,26 @@ No Content
 
 No links
 
-# admin-controller
-
-
+# manager combo
 GET
-/api/admin/users/{id}
+/api/manager/combos
 
 
 Parameters
 Try it out
 Name	Description
-id *
-integer($int64)
-(path)
-id
+page
+integer($int32)
+(query)
+Default value : 0
+
+0
+size
+integer($int32)
+(query)
+Default value : 10
+
+10
 Responses
 Code	Description	Links
 200	
@@ -797,146 +672,23 @@ Controls Accept header.
 Example Value
 Schema
 {
-  "id": 0,
-  "email": "string",
-  "phone": "string",
-  "fullName": "string",
-  "role": "CUSTOMER",
-  "status": "ACTIVED",
-  "createdAt": "2026-02-26T14:41:15.528Z"
-}
-No links
-
-PUT
-/api/admin/users/{id}
-
-
-Parameters
-Try it out
-Name	Description
-id *
-integer($int64)
-(path)
-id
-Request body
-
-application/json
-Example Value
-Schema
-{
-  "fullName": "string",
-  "dob": "2026-02-26",
-  "gender": 2,
-  "role": "CUSTOMER"
-}
-Responses
-Code	Description	Links
-201	
-Created
-
-Media type
-
-*/*
-Controls Accept header.
-Example Value
-Schema
-{
-  "id": 0,
-  "email": "string",
-  "phone": "string",
-  "fullName": "string",
-  "role": "CUSTOMER",
-  "status": "ACTIVED",
-  "createdAt": "2026-02-26T14:41:15.530Z"
-}
-No links
-
-DELETE
-/api/admin/users/{id}
-
-
-Parameters
-Try it out
-Name	Description
-id *
-integer($int64)
-(path)
-id
-Responses
-Code	Description	Links
-204	
-No Content
-
-Media type
-
-*/*
-Controls Accept header.
-Example Value
-Schema
-{}
-No links
-
-GET
-/api/admin/users
-
-
-Parameters
-Try it out
-Name	Description
-keyword
-string
-(query)
-keyword
-role
-string
-(query)
-Available values : CUSTOMER, SUPPORT_STAFF, OPERATION_STAFF, MANAGER, ADMIN
-
-
---
-status
-string
-(query)
-Available values : ACTIVED, INACTIVE
-
-
---
-pageable *
-object
-(query)
-Example Value
-Schema
-{
-  "page": 0,
-  "size": 1,
-  "sort": [
-    "string"
-  ]
-}
-Responses
-Code	Description	Links
-200	
-OK
-
-Media type
-
-*/*
-Controls Accept header.
-Example Value
-Schema
-{
-  "totalElements": 0,
   "totalPages": 0,
+  "totalElements": 0,
   "size": 0,
   "content": [
     {
       "id": 0,
-      "email": "string",
-      "phone": "string",
-      "fullName": "string",
-      "role": "CUSTOMER",
-      "status": "ACTIVED",
-      "createdAt": "2026-02-26T14:41:15.533Z"
+      "name": "string",
+      "description": "string",
+      "comboPrice": 0,
+      "active": true,
+      "items": [
+        {
+          "id": 0,
+          "productVariantId": 0,
+          "quantity": 0
+        }
+      ]
     }
   ],
   "number": 0,
@@ -956,21 +708,19 @@ Schema
       "sorted": true,
       "unsorted": true
     },
-    "pageNumber": 0,
     "pageSize": 0,
+    "pageNumber": 0,
     "unpaged": true
   },
   "empty": true
 }
-No links
-
+----
 POST
-/api/admin/users
+/api/manager/combos
 
 
 Parameters
 Try it out
-Reset
 No parameters
 
 Request body
@@ -979,13 +729,14 @@ application/json
 Example Value
 Schema
 {
-  "email": "user@example.com",
-  "phone": "84758748337",
-  "password": "stringst",
-  "fullName": "string",
-  "dob": "2026-02-26",
-  "gender": 2,
-  "role": "CUSTOMER"
+  "name": "string",
+  "description": "string",
+  "items": [
+    {
+      "variantId": 0,
+      "quantity": 1
+    }
+  ]
 }
 Responses
 Code	Description	Links
@@ -1000,17 +751,58 @@ Example Value
 Schema
 {
   "id": 0,
-  "email": "string",
-  "phone": "string",
-  "fullName": "string",
-  "role": "CUSTOMER",
-  "status": "ACTIVED",
-  "createdAt": "2026-02-26T14:41:15.535Z"
+  "name": "string",
+  "description": "string",
+  "comboPrice": 0,
+  "active": true,
+  "items": [
+    {
+      "id": 0,
+      "productVariantId": 0,
+      "quantity": 0
+    }
+  ]
 }
-No links
+----
+GET
+/api/manager/combos/{id}
 
-PATCH
-/api/admin/users/{id}/status
+
+Parameters
+Try it out
+Name	Description
+id *
+integer($int64)
+(path)
+id
+Responses
+Code	Description	Links
+200	
+OK
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "name": "string",
+  "description": "string",
+  "comboPrice": 0,
+  "active": true,
+  "items": [
+    {
+      "id": 0,
+      "productVariantId": 0,
+      "quantity": 0
+    }
+  ]
+}
+----
+PUT
+/api/manager/combos/{id}
 
 
 Parameters
@@ -1026,12 +818,19 @@ application/json
 Example Value
 Schema
 {
-  "status": "ACTIVED"
+  "name": "string",
+  "description": "string",
+  "items": [
+    {
+      "variantId": 0,
+      "quantity": 1
+    }
+  ]
 }
 Responses
 Code	Description	Links
-200	
-OK
+204	
+No Content
 
 Media type
 
@@ -1041,10 +840,33 @@ Example Value
 Schema
 {
   "id": 0,
-  "email": "string",
-  "phone": "string",
-  "fullName": "string",
-  "role": "CUSTOMER",
-  "status": "ACTIVED",
-  "createdAt": "2026-02-26T14:41:15.536Z"
+  "name": "string",
+  "description": "string",
+  "comboPrice": 0,
+  "active": true,
+  "items": [
+    {
+      "id": 0,
+      "productVariantId": 0,
+      "quantity": 0
+    }
+  ]
 }
+----
+DELETE
+/api/manager/combos/{id}
+
+
+Parameters
+Try it out
+Name	Description
+id *
+integer($int64)
+(path)
+id
+Responses
+Code	Description	Links
+204	
+No Content
+
+# 
