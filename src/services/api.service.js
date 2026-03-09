@@ -215,6 +215,12 @@ const addImagesToAttributeAPI = (attributeId, images) => {
     return axios.post(URL_BACKEND, data);
 }
 
+const updateAttributeImageAPI = (imageId, imageUrl, sortOrder) => {
+    const URL_BACKEND = `/api/manager/attributes/images/${imageId}`;
+    const data = { imageUrl, sortOrder };
+    return axios.put(URL_BACKEND, data);
+}
+
 const deleteAttributeImageAPI = (imageId) => {
     const URL_BACKEND = `/api/manager/attributes/images/${imageId}`;
     return axios.delete(URL_BACKEND);
@@ -313,7 +319,7 @@ export {
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
     deleteProductAPI, deleteVariantAPI, deleteAttributeAPI,
     fetchManagerProductByIdAPI,
-    addImagesToAttributeAPI, deleteAttributeImageAPI,
+    addImagesToAttributeAPI, updateAttributeImageAPI, deleteAttributeImageAPI,
     // Combo Management APIs
     fetchCombosAPI, fetchComboByIdAPI,
     createComboAPI, updateComboAPI, deleteComboAPI,
