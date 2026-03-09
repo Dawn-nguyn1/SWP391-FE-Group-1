@@ -140,7 +140,38 @@ const RegisterPage = () => {
                     <Form.Item
                         label="Date of Birth"
                         name="dob"
-                        rules={[{ required: true, message: 'Please select your date of birth!' }]}
+                        rules={[
+                            { required: true, message: 'Please select your date of birth!' },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    if (!value) {
+                                        return Promise.resolve();
+                                    }
+                                    
+                                    // Calculate age
+                                    const today = new Date();
+                                    const birthDate = new Date(value);
+                                    let age = today.getFullYear() - birthDate.getFullYear();
+                                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                                    
+                                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                                        age--;
+                                    }
+                                    
+                                    // Check if user is at least 16 years old
+                                    if (age < 16) {
+                                        return Promise.reject(new Error('Bạn phải đủ 16 tuổi trở lên!'));
+                                    }
+                                    
+                                    // Check if date is in the future
+                                    if (birthDate > today) {
+                                        return Promise.reject(new Error('Ngày sinh không thể là ngày trong tương lai!'));
+                                    }
+                                    
+                                    return Promise.resolve();
+                                },
+                            }),
+                        ]}
                     >
                         <DatePicker
                             placeholder="Chọn ngày sinh, ví dụ: 2026-03-02"
