@@ -27,7 +27,7 @@ const ProductForm = (props) => {
                 setCreatedProductId(null);
             }
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isModalOpen, dataUpdate]);
 
     const loadProductDetail = async (id) => {
@@ -35,22 +35,22 @@ const ProductForm = (props) => {
         try {
             const res = await fetchProductByIdAPI(id);
             console.log("Product detail response:", res);
-            
+
             // Handle different response structures
             let productData = res;
-            
+
             // If response is nested in data property
             if (res && res.data && !res.id) {
                 productData = res.data;
             }
-            
+
             // If response is nested in result property  
             if (res && res.result && !res.id) {
                 productData = res.result;
             }
-            
+
             console.log("Processed product data:", productData);
-            
+
             if (productData && productData.id) {
                 // Transform data to match form structure
                 const formattedVariants = productData.variants?.map(v => ({
@@ -92,12 +92,12 @@ const ProductForm = (props) => {
                         description: dataUpdate.description,
                         variants: []
                     });
-                    notification.warning({ 
+                    notification.warning({
                         message: "Limited data loaded",
                         description: "Could not load variants and attributes. Using basic product info."
                     });
                 } else {
-                    notification.error({ 
+                    notification.error({
                         message: "Invalid product data received",
                         description: "Please check the API response structure"
                     });
@@ -115,12 +115,12 @@ const ProductForm = (props) => {
                     description: dataUpdate.description,
                     variants: []
                 });
-                notification.warning({ 
+                notification.warning({
                     message: "Using limited data",
                     description: "Server error occurred. Editing basic product info only."
                 });
             } else {
-                notification.error({ 
+                notification.error({
                     message: "Error loading product detail",
                     description: error.message || "Unknown error occurred"
                 });
@@ -141,7 +141,7 @@ const ProductForm = (props) => {
             if (dataUpdate) {
                 // === UPDATE MODE ===
                 console.log("Updating product with values:", values);
-                
+
                 // Update basic product info
                 await updateProductAPI(dataUpdate.id, values.name, values.description, values.brandName, values.productImage);
                 console.log("Product info updated successfully");
@@ -159,7 +159,7 @@ const ProductForm = (props) => {
                                 for (const attr of variant.attributes) {
                                     if (attr.id) {
                                         await updateAttributeAPI(attr.id, attr.attributeName, attr.attributeValue);
-                                        
+
                                         // Upload images for existing attribute
                                         if (attr.images && attr.images.length > 0) {
                                             const imagesToUpload = attr.images.filter(img => img.imageUrl && !img.id);
@@ -169,11 +169,33 @@ const ProductForm = (props) => {
                                         }
                                     } else {
                                         // New attribute on existing variant
-                                        const resAttr = await createAttributeAPI(variant.id, attr.attributeName, attr.attributeValue);
-                                        
-                                        // Upload images for new attribute
-                                        if (resAttr && resAttr.id && attr.images && attr.images.length > 0) {
-                                            await addImagesToAttributeAPI(resAttr.id, attr.images);
+                                        const attributeName = (attr?.attributeName ?? "").toString().trim();
+                                        const attributeValue = (attr?.attributeValue ?? "").toString().trim();
+                                        if (!attributeName || !attributeValue) continue;
+
+                                        // Create attribute with images
+                                        const resAttr = await createAttributeAPI(
+                                            variant.id,
+                                            attributeName,
+                                            attributeValue,
+                                            attr.images || []
+                                        );
+
+                                        // Upload remaining images if any
+                                        const attributeId = resAttr?.id;
+                                        if (attributeId && Array.isArray(attr.images) && attr.images.length > 0) {
+                                            const imagesToUpload = attr.images
+                                                .map((img, index) => ({
+                                                    imageUrl: (img?.imageUrl ?? "").toString().trim(),
+                                                    sortOrder: Number.isFinite(Number(img?.sortOrder))
+                                                        ? Number(img.sortOrder)
+                                                        : index
+                                                }))
+                                                .filter(i => !!i.imageUrl);
+
+                                            if (imagesToUpload.length > 0) {
+                                                await addImagesToAttributeAPI(attributeId, imagesToUpload);
+                                            }
                                         }
                                     }
                                 }
@@ -185,7 +207,35 @@ const ProductForm = (props) => {
                             if (resVar && resVar.id) {
                                 if (variant.attributes) {
                                     for (const attr of variant.attributes) {
-                                        await createAttributeAPI(resVar.id, attr.attributeName, attr.attributeValue);
+                                        // Validate attribute data
+                                        const attributeName = (attr?.attributeName ?? "").toString().trim();
+                                        const attributeValue = (attr?.attributeValue ?? "").toString().trim();
+                                        if (!attributeName || !attributeValue) continue;
+
+                                        // Create attribute with images
+                                        const resAttr = await createAttributeAPI(
+                                            resVar.id,
+                                            attributeName,
+                                            attributeValue,
+                                            attr.images || []
+                                        );
+
+                                        // Upload remaining images if any
+                                        const attributeId = resAttr?.id;
+                                        if (attributeId && Array.isArray(attr.images) && attr.images.length > 0) {
+                                            const imagesToUpload = attr.images
+                                                .map((img, index) => ({
+                                                    imageUrl: (img?.imageUrl ?? "").toString().trim(),
+                                                    sortOrder: Number.isFinite(Number(img?.sortOrder))
+                                                        ? Number(img.sortOrder)
+                                                        : index
+                                                }))
+                                                .filter(i => !!i.imageUrl);
+
+                                            if (imagesToUpload.length > 0) {
+                                                await addImagesToAttributeAPI(attributeId, imagesToUpload);
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -204,6 +254,12 @@ const ProductForm = (props) => {
                         values.brandName,
                         values.productImage
                     );
+                    console.log("Product creation data:", {
+                        name: values.name,
+                        description: values.description,
+                        brandName: values.brandName,
+                        productImage: values.productImage
+                    });
 
                     if (resProduct && resProduct.id) {
                         productId = resProduct.id;
@@ -227,15 +283,44 @@ const ProductForm = (props) => {
                             const variantId = resVariant.id;
                             if (variant.attributes) {
                                 for (const attr of variant.attributes) {
+                                    // Tránh gọi API với attribute rỗng → backend trả 400 (BAD_REQUEST)
+                                    const attributeName = (attr?.attributeName ?? "").toString().trim();
+                                    const attributeValue = (attr?.attributeValue ?? "").toString().trim();
+                                    if (!attributeName || !attributeValue) continue;
+
+                                    // Create attribute with images
                                     const resAttr = await createAttributeAPI(
                                         variantId,
-                                        attr.attributeName,
-                                        attr.attributeValue
+                                        attributeName,
+                                        attributeValue,
+                                        attr.images || []
                                     );
-                                    
-                                    // Upload images for new attribute
-                                    if (resAttr && resAttr.id && attr.images && attr.images.length > 0) {
-                                        await addImagesToAttributeAPI(resAttr.id, attr.images);
+
+                                    console.log("=== ATTRIBUTE CREATION DEBUG ===");
+                                    console.log("createAttributeAPI response:", resAttr);
+                                    console.log("Type of resAttr:", typeof resAttr);
+                                    console.log("resAttr keys:", Object.keys(resAttr || {}));
+                                    console.log("resAttr.id:", resAttr?.id);
+                                    console.log("attr.images:", attr.images);
+                                    console.log("================================");
+
+                                    // Get attribute ID directly from response
+                                    const attributeId = resAttr?.id;
+
+                                    // If have images and got attribute ID, upload remaining images
+                                    if (attributeId && Array.isArray(attr.images) && attr.images.length > 0) {
+                                        const imagesToUpload = attr.images
+                                            .map((img, index) => ({
+                                                imageUrl: (img?.imageUrl ?? "").toString().trim(),
+                                                sortOrder: Number.isFinite(Number(img?.sortOrder))
+                                                    ? Number(img.sortOrder)
+                                                    : index
+                                            }))
+                                            .filter(i => !!i.imageUrl);
+
+                                        if (imagesToUpload.length > 0) {
+                                            await addImagesToAttributeAPI(attributeId, imagesToUpload);
+                                        }
                                     }
                                 }
                             }
@@ -250,7 +335,13 @@ const ProductForm = (props) => {
 
         } catch (error) {
             console.error("Error saving product:", error);
-            message.error("Failed to save product: " + (error.message || "Unknown error"));
+            const backendMessage = error?.message;
+            const backendPath = error?.path;
+            message.error(
+                "Failed to save product: " +
+                (backendMessage || "Unknown error") +
+                (backendPath ? ` (API: ${backendPath})` : "")
+            );
         }
         setLoading(false);
     };
@@ -273,7 +364,7 @@ const ProductForm = (props) => {
                 initialValues={{ variants: [{}] }}
             >
                 {/* PRODUCT INFO */}
-                <Divider orientation="left">Product Info</Divider>
+                <Divider titlePlacement="left">Product Info</Divider>
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item
@@ -311,7 +402,7 @@ const ProductForm = (props) => {
                 </Form.Item>
 
                 {/* VARIANTS */}
-                <Divider orientation="left">Variants</Divider>
+                <Divider titlePlacement="left">Variants</Divider>
                 <Form.List name="variants">
                     {(fields, { add, remove }) => (
                         <>
@@ -449,10 +540,10 @@ const ProductForm = (props) => {
                                                                             />
                                                                         </div>
                                                                     ))}
-                                                                    <Button 
-                                                                        type="dashed" 
-                                                                        onClick={() => addImg({ sortOrder: imgFields.length + 1 })} 
-                                                                        block 
+                                                                    <Button
+                                                                        type="dashed"
+                                                                        onClick={() => addImg({ sortOrder: imgFields.length + 1 })}
+                                                                        block
                                                                         icon={<PlusOutlined />}
                                                                         size="small"
                                                                     >

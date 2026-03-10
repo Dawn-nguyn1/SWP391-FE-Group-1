@@ -90,6 +90,11 @@ const resetPasswordAPI = (email, otp, newPassword) => {
     return axios.post(URL_BACKEND);
 }
 
+const verifyRegisterOTPAPI = (email, otp) => {
+    const URL_BACKEND = `/api/auth/register/verify-otp?email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`;
+    return axios.post(URL_BACKEND);
+}
+
 // DOC1 version - đúng hơn
 const loginAPI = (username, password) => {
     const URL_BACKEND = "/api/auth/login";
@@ -119,6 +124,11 @@ const fetchProductsAPI = () => {
     return axios.get(URL_BACKEND);
 }
 
+const fetchVariantsAPI = () => {
+    const URL_BACKEND = `/api/manager/variants`;
+    return axios.get(URL_BACKEND);
+}
+
 const fetchProductByIdAPI = (id) => {
     const URL_BACKEND = `/api/manager/products/${id}`;
     return axios.get(URL_BACKEND);
@@ -137,9 +147,29 @@ const createVariantAPI = (productId, sku, price, stockQuantity) => {
     return axios.post(URL_BACKEND, data);
 }
 
-const createAttributeAPI = (variantId, attributeName, attributeValue) => {
+const createAttributeAPI = (variantId, attributeName, attributeValue, images = []) => {
     const URL_BACKEND = `/api/manager/variants/${variantId}/attributes`;
-    const data = { attributeName, attributeValue };
+    // images có thể là:
+    // - mảng string: ["https://..."]
+    // - mảng object: [{ imageUrl, sortOrder }]
+    const normalizedImages = Array.isArray(images)
+        ? images
+            .map((img, index) => {
+                if (!img) return null;
+                if (typeof img === "string") {
+                    const url = img.trim();
+                    if (!url) return null;
+                    return { imageUrl: url, sortOrder: index };
+                }
+                const imageUrl = (img.imageUrl ?? "").toString().trim();
+                if (!imageUrl) return null;
+                const sortOrder = Number.isFinite(Number(img.sortOrder)) ? Number(img.sortOrder) : index;
+                return { imageUrl, sortOrder };
+            })
+            .filter(Boolean)
+        : [];
+
+    const data = { attributeName, attributeValue, images: normalizedImages };
     return axios.post(URL_BACKEND, data);
 }
 
@@ -180,8 +210,15 @@ const deleteAttributeAPI = (attributeId) => {
 // Image Management APIs
 const addImagesToAttributeAPI = (attributeId, images) => {
     const URL_BACKEND = `/api/manager/attributes/${attributeId}/images`;
-    const data = { images };
+    // API expects array directly, not wrapped in object
+    const data = images;
     return axios.post(URL_BACKEND, data);
+}
+
+const updateAttributeImageAPI = (imageId, imageUrl, sortOrder) => {
+    const URL_BACKEND = `/api/manager/attributes/images/${imageId}`;
+    const data = { imageUrl, sortOrder };
+    return axios.put(URL_BACKEND, data);
 }
 
 const deleteAttributeImageAPI = (imageId) => {
@@ -275,15 +312,15 @@ export {
     deleteUserAPI, getUserByIdAPI, updateUserStatusAPI,
     // File & Auth APIs
     handleUploadFile, updateUserAvatarAPI, getUserDetailAPI,
-    registerUserAPI, forgotPasswordAPI, resetPasswordAPI, loginAPI, getAccountAPI,
+    registerUserAPI, forgotPasswordAPI, resetPasswordAPI, verifyRegisterOTPAPI, loginAPI, getAccountAPI,
     logoutAPI,
     // Product APIs
-    fetchProductsAPI, fetchProductByIdAPI,
+    fetchProductsAPI, fetchVariantsAPI, fetchProductByIdAPI,
     createProductAPI, createVariantAPI, createAttributeAPI,
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
     deleteProductAPI, deleteVariantAPI, deleteAttributeAPI,
     fetchManagerProductByIdAPI,
-    addImagesToAttributeAPI, deleteAttributeImageAPI,
+    addImagesToAttributeAPI, updateAttributeImageAPI, deleteAttributeImageAPI,
     // Combo Management APIs
     fetchCombosAPI, fetchComboByIdAPI,
     createComboAPI, updateComboAPI, deleteComboAPI,
