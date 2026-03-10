@@ -14,17 +14,8 @@ const STATUS_CONFIG = {
     RETURNED:          { label: 'Hoàn trả',       color: 'volcano' },
 };
 
-const PAYMENT_STATUS_CONFIG = {
-    PENDING:   { label: 'Đang chờ thanh toán', color: 'gold' },
-    SUCCESS:   { label: 'Thanh toán thành công', color: 'green' },
-    FAILED:    { label: 'Thanh toán thất bại', color: 'red' },
-    UNPAID:    { label: 'Chưa thanh toán', color: 'orange' },
-    CANCELLED: { label: 'Đã hủy', color: 'default' },
-    REFUNDED:  { label: 'Đã hoàn tiền', color: 'volcano' },
-};
-
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
-const formatDate = d => d ? new Date(d).toLocaleDateString('vi-VN') : '';
+const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : '';
 
 const OrdersPage = () => {
     const [orders, setOrders] = useState([]);
@@ -62,39 +53,18 @@ const OrdersPage = () => {
                 ) : (
                     <div className="orders-list">
                         {orders.map(order => {
-                            if (order?.paymentId && !order?.id) {
-                                const paymentStatusCfg = PAYMENT_STATUS_CONFIG[order.status] || { label: order.status, color: 'default' };
-                                return (
-                                    <div key={order.paymentId} className="order-card">
-                                        <div className="order-header">
-                                            <div>
-                                                <span className="order-id">Mã đơn {order.orderCode || '-'}</span>
-                                                <span className="order-date">{formatDate(order.paidAt || order.createAt)}</span>
-                                            </div>
-                                            <div className="order-header-right">
-                                                <Tag color={paymentStatusCfg.color}>{paymentStatusCfg.label}</Tag>
-                                                <span className="order-pay-method">{order.method || '-'}</span>
-                                            </div>
-                                        </div>
-                                        <div className="order-footer">
-                                            <span className="order-total">Số tiền: <strong>{formatVND(order.amount)}</strong></span>
-                                        </div>
-                                    </div>
-                                );
-                            }
-
                             const statusCfg = STATUS_CONFIG[order.orderStatus] || { label: order.orderStatus, color: 'default' };
                             const canCancel = order.orderStatus === 'WAITING_CONFIRM' && order.paymentMethod === 'COD';
                             return (
                                 <div key={order.id} className="order-card">
                                     <div className="order-header">
                                         <div>
-                                            <span className="order-id">Đơn #{order.id}</span>
+                                            <span className="order-id">{order.orderCode || `Đơn #${order.id}`}</span>
                                             <span className="order-date">{formatDate(order.createdAt)}</span>
                                         </div>
                                         <div className="order-header-right">
                                             <Tag color={statusCfg.color}>{statusCfg.label}</Tag>
-                                            <span className="order-pay-method">{order.paymentMethod}</span>
+                                            <span className="order-pay-method">{order.paymentMethod || '-'}</span>
                                         </div>
                                     </div>
 

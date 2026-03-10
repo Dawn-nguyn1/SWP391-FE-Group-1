@@ -22,6 +22,7 @@ import CartPage from './pages/customer-pages/cart.jsx';
 import CheckoutPage from './pages/customer-pages/checkout.jsx';
 import PaymentResultPage from './pages/customer-pages/payment-result.jsx';
 import OrdersPage from './pages/customer-pages/orders.jsx';
+import PaymentsPage from './pages/customer-pages/payments.jsx';
 import ProfilePage from './pages/customer-pages/profile.jsx';
 
 // Staff pages
@@ -56,6 +57,7 @@ const router = createBrowserRouter([
           { path: "checkout", element: <CheckoutPage /> },
           { path: "payment-result", element: <PaymentResultPage /> },
           { path: "orders", element: <OrdersPage /> },
+          { path: "payments", element: <PaymentsPage /> },
           { path: "profile", element: <ProfilePage /> },
         ]
       },

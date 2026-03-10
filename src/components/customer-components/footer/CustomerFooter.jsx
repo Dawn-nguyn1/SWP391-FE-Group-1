@@ -26,7 +26,8 @@ const CustomerFooter = () => (
             <div className="footer-col">
                 <h4>Tài khoản</h4>
                 <Link to="/customer/profile">Hồ sơ cá nhân</Link>
-                <Link to="/customer/orders">Đơn hàng</Link>
+                <Link to="/customer/orders">Đơn hàng của tôi</Link>
+                <Link to="/customer/payments">Lịch sử thanh toán</Link>
                 <Link to="/customer/cart">Giỏ hàng</Link>
             </div>
             <div className="footer-col">
