@@ -1,4 +1,4 @@
-import { Button, Input, notification, Modal, Select, Form, DatePicker, Radio } from "antd";
+import { Button, Input, notification, Modal, Select, Form, Radio } from "antd";
 import { useState } from "react";
 import { createUserAPI, updateUserAPI } from '../../../services/api.service';
 import React from "react";
@@ -16,23 +16,11 @@ const UserForm = (props) => {
 
   const onFinish = async (values) => {
     setLoading(true);
-    console.log("Form values:", values);
-    
     try {
-      // Format date for API
-      const formattedValues = {
-        ...values,
-        dob: values.dob // Already in YYYY-MM-DD format from input
-      };
-
-      console.log("Payload gửi lên:", JSON.stringify(formattedValues, null, 2));
-      console.log("Data update:", dataUpdate);
-
+      const formattedValues = { ...values, dob: values.dob };
       let res;
       if (dataUpdate) {
-        // Update mode
         res = await updateUserAPI(dataUpdate.id, formattedValues.fullName, formattedValues.dob, formattedValues.gender, formattedValues.role);
-        
         if (res && res.id) {
           notification.success({
             message: "Update user",
@@ -40,17 +28,7 @@ const UserForm = (props) => {
           });
         }
       } else {
-        // Create mode
-        res = await createUserAPI(
-          formattedValues.fullName, 
-          formattedValues.email, 
-          formattedValues.password, 
-          formattedValues.phone,
-          formattedValues.dob,
-          formattedValues.gender,
-          formattedValues.role
-        );
-        
+        res = await createUserAPI(formattedValues.fullName, formattedValues.email, formattedValues.password, formattedValues.phone, formattedValues.dob, formattedValues.gender, formattedValues.role);
         if (res && res.id) {
           notification.success({
             message: "Create user",
@@ -58,18 +36,12 @@ const UserForm = (props) => {
           });
         }
       }
-      
       resetAndCloseModal();
       await loadUser();
     } catch (error) {
-      console.error("Save user error:", error);
-      console.error("Error response:", error.response);
-      console.error("Error status:", error.response?.status);
-      console.error("Error data:", error.response?.data);
-      
       notification.error({
         message: dataUpdate ? "Error update user" : "Error create user",
-        description: error.response?.data?.message || error?.message || `${dataUpdate ? "Cập nhật" : "Tạo"} user thất bại, vui lòng thử lại!`
+        description: error.response?.data?.message || error?.message || `${dataUpdate ? "Cập nhật" : "Tạo"} user thất bại!`
       });
     }
     setLoading(false);
@@ -80,41 +52,97 @@ const UserForm = (props) => {
     form.resetFields();
     setDataUpdate(null);
     setLoading(false);
-  }
-
-  const handleEditUser = (user) => {
-    setDataUpdate(user);
-    form.setFieldsValue({
-      fullName: user.fullName,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      gender: user.gender,
-      dob: user.dob // Already in YYYY-MM-DD format
-    });
-    setIsModalOpen(true);
   };
 
   const handleCreateUser = () => {
-    setDataUpdate(null); // Clear any existing data
-    form.resetFields(); // Reset form fields
+    setDataUpdate(null);
+    form.resetFields();
     setIsModalOpen(true);
   };
 
   return (
-    <div className="user-form" style={{ margin: "10px 0" }}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h3>Table Users</h3>
-        <Button
-          onClick={handleCreateUser}
-          type="primary"> Create User </Button>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap');
+
+        :root {
+          --cyan: #0891b2;
+          --violet: #7c3aed;
+          --white: #ffffff;
+          --ink: #1e1b4b;
+          --border: rgba(124,58,237,0.15);
+        }
+
+        /* ── Table header ── */
+        .uf-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 14px 20px;
+          background: var(--white);
+          border-radius: 14px;
+          border: 1px solid var(--border);
+          box-shadow: 0 2px 12px rgba(8,145,178,0.06);
+          margin: 10px 0;
+        }
+
+        .uf-title {
+          font-family: 'Sora', sans-serif;
+          font-size: 17px;
+          font-weight: 700;
+          color: var(--ink);
+          letter-spacing: -0.3px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .uf-title::before {
+          content: '';
+          width: 4px; height: 20px;
+          border-radius: 99px;
+          background: linear-gradient(180deg, var(--cyan), var(--violet));
+          display: inline-block;
+        }
+
+        .uf-create-btn.ant-btn {
+          background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%) !important;
+          border: none !important;
+          border-radius: 10px !important;
+          height: 38px !important;
+          padding: 0 20px !important;
+          font-family: 'Sora', sans-serif !important;
+          font-size: 13px !important;
+          font-weight: 600 !important;
+          color: #fff !important;
+          box-shadow: 0 4px 14px rgba(124,58,237,0.3) !important;
+          transition: all 0.25s ease !important;
+        }
+
+        .uf-create-btn.ant-btn:hover {
+          transform: translateY(-1px) !important;
+          box-shadow: 0 6px 20px rgba(124,58,237,0.4) !important;
+          opacity: 0.9 !important;
+        }
+      `}</style>
+
+      {/* Áp dụng class vào phần Header */}
+      <div className="uf-header">
+        <span className="uf-title">Table Users</span>
+        <Button 
+          className="uf-create-btn" 
+          onClick={handleCreateUser} 
+          type="primary"
+        >
+          + Create User
+        </Button>
       </div>
 
       <Modal
         title={dataUpdate ? "Update User" : "Create User"}
         open={isModalOpen}
         onOk={() => form.submit()}
-        onCancel={() => resetAndCloseModal()}
+        onCancel={resetAndCloseModal}
         maskClosable={false}
         confirmLoading={loading}
         okText={dataUpdate ? "UPDATE" : "CREATE"}
@@ -123,68 +151,39 @@ const UserForm = (props) => {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{
-            role: "MANAGER",
-            gender: 2
-          }}
+          initialValues={{ role: "MANAGER", gender: 2 }}
         >
           <Form.Item
-            label={<span>Full Name <span style={{ color: 'red' }}>*</span></span>}
+            label="Full Name"
             name="fullName"
-            rules={[
-              { required: true, message: 'Full Name không được để trống!' },
-              { min: 2, message: 'Full Name phải có ít nhất 2 ký tự!' },
-              { max: 50, message: 'Full Name không quá 50 ký tự!' }
-            ]}
+            rules={[{ required: true, message: 'Không được để trống!' }]}
           >
-            <Input
-              placeholder="Nhập full name của bạn"
-              size="large"
-            />
+            <Input placeholder="Nhập họ tên" size="large" />
           </Form.Item>
 
           <Form.Item
-            label={<span>Email <span style={{ color: 'red' }}>*</span></span>}
+            label="Email"
             name="email"
-            rules={[
-              { required: true, message: 'Email không được để trống!' },
-              { type: "email", message: 'Email không đúng định dạng!' },
-            ]}
+            rules={[{ required: true, type: 'email', message: 'Email không hợp lệ!' }]}
           >
-            <Input
-              placeholder="Nhập email của bạn"
-              size="large"
-              disabled={!!dataUpdate} // Disable email in edit mode
-            />
+            <Input placeholder="example@email.com" size="large" disabled={!!dataUpdate} />
           </Form.Item>
 
           <Form.Item
-            label={<span>Phone <span style={{ color: 'red' }}>*</span></span>}
+            label="Phone"
             name="phone"
-            rules={[
-              { required: true, message: 'Phone không được để trống!' },
-              { pattern: /^[0-9]{10,11}$/, message: 'Phone phải có 10-11 số!' }
-            ]}
+            rules={[{ required: true, pattern: /^[0-9]{10,11}$/, message: '10-11 chữ số!' }]}
           >
-            <Input
-              placeholder="Nhập số điện thoại của bạn"
-              size="large"
-            />
+            <Input placeholder="0987..." size="large" />
           </Form.Item>
 
           {!dataUpdate && (
             <Form.Item
-              label={<span>Password <span style={{ color: 'red' }}>*</span></span>}
+              label="Password"
               name="password"
-              rules={[
-                { required: true, message: 'Password không được để trống!' },
-                { min: 6, message: 'Password phải có ít nhất 6 ký tự!' }
-              ]}
+              rules={[{ required: true, min: 6, message: 'Ít nhất 6 ký tự!' }]}
             >
-              <Input.Password
-                placeholder="Nhập mật khẩu của bạn"
-                size="large"
-              />
+              <Input.Password placeholder="Nhập mật khẩu" size="large" />
             </Form.Item>
           )}
 
@@ -192,38 +191,14 @@ const UserForm = (props) => {
             label="Date of Birth (YYYY-MM-DD)"
             name="dob"
             rules={[
-              { required: true, message: 'Date of Birth không được để trống!' },
-              { 
-                pattern: /^\d{4}-\d{2}-\d{2}$/, 
-                message: 'Format phải là YYYY-MM-DD (ví dụ: 2004-03-03)' 
-              },
-              {
-                validator: (_, value) => {
-                  if (!value) return Promise.resolve();
-                  const date = moment(value, 'YYYY-MM-DD', true);
-                  if (!date.isValid()) {
-                    return Promise.reject(new Error('Ngày không hợp lệ'));
-                  }
-                  if (date.isBefore(moment(), 'day')) {
-                    return Promise.resolve();
-                  }
-                  return Promise.reject(new Error('Ngày sinh phải là ngày trong quá khứ'));
-                }
-              }
+              { required: true, message: 'Không được để trống!' },
+              { pattern: /^\d{4}-\d{2}-\d{2}$/, message: 'Định dạng YYYY-MM-DD' }
             ]}
           >
-            <Input
-              style={{ width: '100%' }}
-              size="large"
-              placeholder="2004-03-03"
-            />
+            <Input placeholder="2004-03-03" size="large" />
           </Form.Item>
 
-          <Form.Item
-            label="Gender"
-            name="gender"
-            rules={[{ required: true, message: 'Gender không được để trống!' }]}
-          >
+          <Form.Item label="Gender" name="gender">
             <Radio.Group size="large">
               <Radio value={1}>Male</Radio>
               <Radio value={2}>Female</Radio>
@@ -231,25 +206,18 @@ const UserForm = (props) => {
             </Radio.Group>
           </Form.Item>
 
-        <Form.Item
-          label="Role"
-          name="role"
-          rules={[{ required: true, message: 'Role không được để trống!' }]}
-        >
-          <Select
-            style={{ width: '100%' }}
-            size="large"
-          >
-            <Option value="ADMIN">Admin</Option>
-            <Option value="MANAGER">Manager</Option>
-            <Option value="OPERATION_STAFF">Operation Staff</Option>
-            <Option value="SUPPORT_STAFF">Support Staff</Option>
-          </Select>
-        </Form.Item>
-      </Form>
-    </Modal>
-  </div>
-)
-}
+          <Form.Item label="Role" name="role">
+            <Select size="large">
+              <Option value="ADMIN">Admin</Option>
+              <Option value="MANAGER">Manager</Option>
+              <Option value="OPERATION_STAFF">Operation Staff</Option>
+              <Option value="SUPPORT_STAFF">Support Staff</Option>
+            </Select>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </>
+  );
+};
 
 export default UserForm;

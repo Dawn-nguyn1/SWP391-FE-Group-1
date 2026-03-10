@@ -251,108 +251,160 @@ const UserTable = (props) => {
     };
 
     return (
-        <div className="user-table-wrapper">
-            {/* Filters */}
-            <div style={{ margin: 25, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-                <Space>
-                    <span>Search:</span>
-                    <Input
-                        placeholder="Search by name, email..."
-                        value={keyword}
-                        onChange={(e) => {
-                            setKeyword(e.target.value);
-                            setCurrent(0); // Reset to first page when searching
-                        }}
-                        style={{ width: 200 }}
-                        prefix={<SearchOutlined />}
-                    />
-                </Space>
+    <div className="user-table-wrapper" style={{ border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* Style cục bộ để xử lý màu sắc đặc trưng */}
+        <style>{`
+            .custom-filter-section .ant-input-affix-wrapper, 
+            .custom-filter-section .ant-select-selector {
+                border-radius: 8px !important;
+                border: 1px solid #e2e8f0 !important;
+                height: 38px !important;
+                display: flex !important;
+                align-items: center !important;
+                transition: all 0.3s !important;
+            }
+            .custom-filter-section .ant-input-affix-wrapper:hover,
+            .custom-filter-section .ant-select:hover .ant-select-selector {
+                border-color: #7c3aed !important;
+                box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.1) !important;
+            }
+            .custom-filter-section .ant-input-affix-wrapper-focused {
+                border-color: #0891b2 !important;
+                box-shadow: 0 0 0 2px rgba(8, 145, 178, 0.1) !important;
+            }
+            .ant-switch-checked { background-color: #7c3aed !important; }
+            .filter-label {
+                font-size: 11px;
+                font-weight: 700;
+                color: #64748b;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                margin-bottom: 4px;
+                display: block;
+            }
+        `}</style>
 
-                <Space>
-                    <span>Role:</span>
-                    <Select
-                        value={role}
-                        onChange={(value) => {
-                            setRole(value);
-                            setCurrent(0); // Reset to first page when filtering
-                        }}
-                        style={{ width: 150 }}
-                        allowClear
-                        placeholder="All roles"
-                    >
-                        <Option value="ADMIN">Admin</Option>
-                        <Option value="MANAGER">Manager</Option>
-                        <Option value="OPERATION_STAFF">Operation Staff</Option>
-                        <Option value="SUPPORT_STAFF">Support Staff</Option>
-                        <Option value="CUSTOMER">Customer</Option>
-                    </Select>
-                </Space>
-
-                <Space>
-                    <span>Status:</span>
-                    <Select
-                        value={status}
-                        onChange={(value) => {
-                            setStatus(value);
-                            setCurrent(0); // Reset to first page when filtering
-                        }}
-                        style={{ width: 120 }}
-                        allowClear
-                        placeholder="All status"
-                    >
-                        <Option value="ACTIVED">Active</Option>
-                        <Option value="INACTIVE">Inactive</Option>
-                    </Select>
-                </Space>
-
-                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span>Xóa liên tục:</span>
-                    <Switch
-                        checked={confirmDelete}
-                        onChange={setConfirmDelete}
-                    />
-                </div>
+        {/* Filters Container */}
+        <div className="custom-filter-section" style={{ 
+            padding: '24px', 
+            display: 'flex', 
+            gap: '20px', 
+            alignItems: 'flex-end', 
+            flexWrap: 'wrap',
+            background: '#ffffff',
+            borderBottom: '1px solid #f1f5f9'
+        }}>
+            {/* Search Input */}
+            <div style={{ flex: '1 1 220px', maxWidth: '300px' }}>
+                <span className="filter-label">Search</span>
+                <Input
+                    placeholder="Name, email..."
+                    value={keyword}
+                    onChange={(e) => {
+                        setKeyword(e.target.value);
+                        setCurrent(0);
+                    }}
+                    prefix={<SearchOutlined style={{ color: '#0891b2' }} />}
+                />
             </div>
 
-            <Table
-                className="user-table"
-                columns={columns}
-                dataSource={dataUsers}
-                rowKey="id"
-                loading={loading}
-                pagination={{
-                    current: current + 1, // Display uses 1-based indexing
-                    pageSize: pageSize,
-                    showSizeChanger: true,
-                    total: total,
-                    showTotal: (total, range) => {
-                        return (
-                            <span>
-                                Showing {range[0]}-{range[1]} of {total} users
-                            </span>
-                        );
-                    }
-                }}
-                onChange={onChange}
-            />
+            {/* Role Select */}
+            <div style={{ width: '160px' }}>
+                <span className="filter-label">Role</span>
+                <Select
+                    value={role}
+                    onChange={(value) => {
+                        setRole(value);
+                        setCurrent(0);
+                    }}
+                    style={{ width: '100%' }}
+                    allowClear
+                    placeholder="All roles"
+                >
+                    <Option value="ADMIN">Admin</Option>
+                    <Option value="MANAGER">Manager</Option>
+                    <Option value="OPERATION_STAFF">Operation Staff</Option>
+                    <Option value="SUPPORT_STAFF">Support Staff</Option>
+                    <Option value="CUSTOMER">Customer</Option>
+                </Select>
+            </div>
 
-            <ViewUserDetail
-                dataDetail={dataDetail}
-                setDataDetail={setDataDetail}
-                isDetailOpen={isDetailOpen}
-                setIsDetailOpen={setIsDetailOpen}
-                loadUser={loadUser}
-            />
+            {/* Status Select */}
+            <div style={{ width: '140px' }}>
+                <span className="filter-label">Status</span>
+                <Select
+                    value={status}
+                    onChange={(value) => {
+                        setStatus(value);
+                        setCurrent(0);
+                    }}
+                    style={{ width: '100%' }}
+                    allowClear
+                    placeholder="All status"
+                >
+                    <Option value="ACTIVED">Active</Option>
+                    <Option value="INACTIVE">Inactive</Option>
+                </Select>
+            </div>
 
-            <UpdateUserModal
-                isUpdateOpen={isUpdateOpen}
-                setIsUpdateOpen={setIsUpdateOpen}
-                dataUpdate={dataUpdate}
-                setDataUpdate={setDataUpdate}
-                loadUser={loadUser}
-            />
+            {/* Continuous Delete Switch - Nút bấm được bao bọc đẹp mắt */}
+            <div style={{ 
+                marginLeft: 'auto', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '12px',
+                padding: '10px 16px',
+                background: '#f8fafc',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)'
+            }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Xóa liên tục:</span>
+                <Switch
+                    checked={confirmDelete}
+                    onChange={setConfirmDelete}
+                />
+            </div>
         </div>
-    );
+
+        {/* Table Section */}
+        <Table
+            className="user-table"
+            columns={columns}
+            dataSource={dataUsers}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+                current: current + 1,
+                pageSize: pageSize,
+                showSizeChanger: true,
+                total: total,
+                showTotal: (total, range) => (
+                    <span style={{ fontWeight: 500, color: '#64748b' }}>
+                        Showing <b>{range[0]}-{range[1]}</b> of {total} users
+                    </span>
+                )
+            }}
+            onChange={onChange}
+        />
+
+        <ViewUserDetail
+            dataDetail={dataDetail}
+            setDataDetail={setDataDetail}
+            isDetailOpen={isDetailOpen}
+            setIsDetailOpen={setIsDetailOpen}
+            loadUser={loadUser}
+        />
+
+        <UpdateUserModal
+            isUpdateOpen={isUpdateOpen}
+            setIsUpdateOpen={setIsUpdateOpen}
+            dataUpdate={dataUpdate}
+            setDataUpdate={setDataUpdate}
+            loadUser={loadUser}
+        />
+    </div>
+);
 };
 
 export default UserTable;
