@@ -102,7 +102,12 @@ Schema
           "attributeName": "string",
           "attributeValue": "string",
           "images": [
-            "string"
+            {
+              "id": 0,
+              "imageUrl": "string",
+              "sortOrder": 0,
+              "attributeId": 0
+            }
           ]
         }
       ]

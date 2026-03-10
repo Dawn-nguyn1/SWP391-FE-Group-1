@@ -21,19 +21,33 @@ const RegisterPage = () => {
 
         console.log("Formatted values:", formattedValues);
 
-        const res = await registerUserAPI(formattedValues.fullName, formattedValues.email, formattedValues.password, formattedValues.confirmPassword, formattedValues.phone, formattedValues.dob, formattedValues.gender);
-        console.log("Response:", res);
-        if (res) {
-            notification.success({
-                title: "OTP Sent",
-                description: "Mã OTP đã được gửi đến email của bạn!",
-            });
-            // Navigate to OTP verification page with email
-            navigate('/verify-register-otp', { state: { email: formattedValues.email } });
-        } else {
+        try {
+            const res = await registerUserAPI(formattedValues.fullName, formattedValues.email, formattedValues.password, formattedValues.confirmPassword, formattedValues.phone, formattedValues.dob, formattedValues.gender);
+            console.log("Response:", res);
+            if (res) {
+                notification.success({
+                    title: "OTP Sent",
+                    description: "Mã OTP đã được gửi đến email của bạn!",
+                });
+                // Navigate to OTP verification page with email
+                navigate('/verify-register-otp', { state: { email: formattedValues.email } });
+            }
+        } catch (error) {
+            console.log("Register error:", error);
+            
+            // Get error message from API response
+            // let errorMessage = "Tạo tài khoản thất bại!";
+            // if (error?.message) {
+            //     errorMessage = error.message;
+            // } else if (error?.error) {
+            //     errorMessage = error.error;
+            // } else if (typeof error === 'string') {
+            //     errorMessage = error;
+            // }
+            
             notification.error({
                 title: "Register failed",
-                description: "Tạo tài khoản thất bại!",
+                description: error.message,
             });
         }
     };
