@@ -1,93 +1,268 @@
-.staff-page {
+.support-page {
     min-height: 100vh;
-    background: #f0f2f5;
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
     padding: 32px 0;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
 }
 
-.staff-inner {
+.support-inner {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 24px;
+    padding: 0 28px;
 }
 
-.staff-header {
+/* ── Header area ── */
+.support-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 28px;
+}
+
+.support-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.support-brand h2 {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(90deg, #a78bfa, #c084fc, #e879f9);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+}
+
+.support-brand span {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 400;
+}
+
+/* ── Stats pill ── */
+.support-stats {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.stat-pill {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 24px;
-}
-
-.staff-card {
-    background: #fff;
-    border-radius: 16px;
-    padding: 24px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
-}
-
-.confirm-btn {
-    background: linear-gradient(135deg, #667eea, #764ba2) !important;
-    border: none !important;
-}
-
-.ship-btn {
-    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
-    border: none !important;
-}
-
-.expanded-items {
-    padding: 8px 16px;
-    background: #fafafa;
-    border-radius: 8px;
-}
-
-.exp-item {
-    display: flex;
-    gap: 16px;
-    padding: 6px 0;
-    border-bottom: 1px dashed #e5e7eb;
-    font-size: 13px;
-}
-
-.exp-item:last-child {
-    border-bottom: none;
-}
-
-/* Custom Tabs Styling */
-.staff-card .ant-tabs-card>.ant-tabs-nav .ant-tabs-tab {
-    background: #f0f2f5;
-    border-color: #e8e8e8;
-    border-radius: 8px 8px 0 0;
-    transition: all 0.3s;
-}
-
-.staff-card .ant-tabs-card>.ant-tabs-nav .ant-tabs-tab-active {
-    background: #fff;
-    border-bottom-color: transparent;
-}
-
-.staff-card .ant-tabs-card>.ant-tabs-nav .ant-tabs-tab-active .ant-tabs-tab-btn {
-    color: #764ba2;
-    font-weight: 600;
-}
-
-/* Order Detail Modal Styling */
-.order-detail-content {
-    padding: 10px 0;
-}
-
-.order-detail-content .ant-descriptions-item-content {
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    border-radius: 24px;
+    padding: 8px 18px;
+    color: #e2e8f0;
     font-size: 14px;
     font-weight: 500;
+    transition: all 0.3s ease;
 }
 
-.order-detail-content .ant-table-wrapper {
-    margin-top: 16px;
-    border: 1px solid #f0f0f0;
-    border-radius: 8px;
-    overflow: hidden;
+.stat-pill:hover {
+    background: rgba(255, 255, 255, 0.12);
+    transform: translateY(-1px);
 }
 
-.order-detail-content .ant-table-thead>tr>th {
-    background: #fafafa;
+.stat-pill .stat-count {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ── Glass card ── */
+.support-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(16px);
+    border-radius: 20px;
+    padding: 28px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    animation: cardFadeIn 0.5s ease;
+}
+
+@keyframes cardFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Ant Table overrides (dark theme) ── */
+.support-card .ant-table {
+    background: transparent !important;
+    color: #e2e8f0;
+}
+
+.support-card .ant-table-thead > tr > th {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: rgba(255, 255, 255, 0.65) !important;
     font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 14px 16px;
+}
+
+.support-card .ant-table-tbody > tr > td {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    color: #e2e8f0;
+    padding: 14px 16px;
+    transition: background 0.2s ease;
+}
+
+.support-card .ant-table-tbody > tr:hover > td {
+    background: rgba(167, 139, 250, 0.08) !important;
+}
+
+.support-card .ant-table-tbody > tr {
+    cursor: pointer;
+}
+
+.support-card .ant-table-placeholder {
+    background: transparent !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.support-card .ant-table-placeholder .ant-empty-description {
+    color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.support-card .ant-table-cell-row-hover {
+    background: rgba(167, 139, 250, 0.08) !important;
+}
+
+/* ── Pagination ── */
+.support-card .ant-pagination .ant-pagination-item {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.support-card .ant-pagination .ant-pagination-item a {
+    color: #e2e8f0;
+}
+
+.support-card .ant-pagination .ant-pagination-item-active {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-color: transparent;
+}
+
+.support-card .ant-pagination .ant-pagination-item-active a {
+    color: #fff;
+}
+
+.support-card .ant-pagination .ant-pagination-prev .ant-pagination-item-link,
+.support-card .ant-pagination .ant-pagination-next .ant-pagination-item-link {
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Action buttons ── */
+.btn-confirm {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    border: none !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+    transition: all 0.25s ease !important;
+}
+
+.btn-confirm:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.5) !important;
+}
+
+.btn-cancel {
+    background: rgba(239, 68, 68, 0.15) !important;
+    border: 1px solid rgba(239, 68, 68, 0.3) !important;
+    color: #f87171 !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    transition: all 0.25s ease !important;
+}
+
+.btn-cancel:hover {
+    background: rgba(239, 68, 68, 0.25) !important;
+    transform: translateY(-1px);
+}
+
+/* ── Status tag ── */
+.status-waiting {
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15), rgba(245, 158, 11, 0.15)) !important;
+    border: 1px solid rgba(251, 191, 36, 0.3) !important;
+    color: #fbbf24 !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    padding: 2px 10px !important;
+    font-size: 11px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ── Order detail modal (dark) ── */
+.order-detail-modal .ant-modal-content {
+    background: #1e1b4b;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+}
+
+.order-detail-modal .ant-modal-header {
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.order-detail-modal .ant-modal-title {
+    color: #e2e8f0 !important;
+    font-weight: 700;
+}
+
+.order-detail-modal .ant-modal-close-x {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.order-detail-modal .ant-descriptions-item-label {
+    color: rgba(255, 255, 255, 0.5) !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.order-detail-modal .ant-descriptions-item-content {
+    color: #e2e8f0 !important;
+    background: transparent !important;
+}
+
+.order-detail-modal .ant-descriptions-bordered .ant-descriptions-view {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.order-detail-modal .ant-descriptions-bordered .ant-descriptions-row {
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.order-detail-modal .ant-descriptions-bordered .ant-descriptions-item-label,
+.order-detail-modal .ant-descriptions-bordered .ant-descriptions-item-content {
+    border-inline-end-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ── Empty state ── */
+.support-card .ant-empty-image svg {
+    fill: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+    .support-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    .support-card {
+        padding: 16px;
+    }
 }

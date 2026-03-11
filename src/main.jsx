@@ -113,6 +113,7 @@ const router = createBrowserRouter([
   { path: "/verify-register-otp", element: <VerifyRegisterOTPPage /> },
   { path: "/forget-password", element: <ForgetPasswordPage /> },
   { path: "/reset-password", element: <ResetPasswordPage /> },
+  { path: "/payment-result", element: <PaymentResultPage /> },
   // Catch-all route for 404
   {
     path: "*",

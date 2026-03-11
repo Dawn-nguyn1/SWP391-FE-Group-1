@@ -291,12 +291,10 @@ const getCustomerOrdersAPI = () => axios.get('/api/customer/orders');
 const getCustomerPaymentsAPI = () => axios.get('/api/customer/payments');
 
 // ===== SUPPORT STAFF APIs =====
-const getSupportOrdersAPI = (status = '', page = 0, size = 20) =>
-    axios.get('/api/support_staff/orders', { params: { status, page, size } });
+const getSupportWaitingOrdersAPI = (page = 0, size = 20) =>
+    axios.get('/api/support_staff/orders/waiting', { params: { page, size } });
 const supportConfirmOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/confirm`);
 const supportCancelOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/cancel`);
-const supportShipOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/ship`);
-const supportCompleteOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/complete`);
 
 // ===== OPERATIONS STAFF APIs =====
 const getApprovedOrdersAPI = (page = 0, size = 20) =>
@@ -334,8 +332,7 @@ export {
     cancelOrderByCustomerAPI, getCustomerOrdersAPI, getCustomerPaymentsAPI,
     getProvincesAPI, getDistrictsAPI, getWardsAPI,
     // Support Staff APIs
-    getSupportOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
-    supportShipOrderAPI, supportCompleteOrderAPI,
+    getSupportWaitingOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
     // Operations Staff APIs
     getApprovedOrdersAPI, operationsConfirmOrderAPI,
     // Payment APIs
