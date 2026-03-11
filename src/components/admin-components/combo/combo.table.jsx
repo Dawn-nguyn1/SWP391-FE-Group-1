@@ -133,19 +133,13 @@ const ComboTable = (props) => {
 
     const handleDeleteCombo = async (id) => {
         try {
-            const res = await deleteComboAPI(id);
-            if (res) {
-                notification.success({
-                    message: "Delete Combo",
-                    description: "Combo deleted successfully"
-                });
-                await loadCombos();
-            } else {
-                notification.error({
-                    message: "Error delete combo",
-                    description: "Failed to delete combo"
-                });
-            }
+            await deleteComboAPI(id);
+            // API returns 204 No Content for successful deletion
+            notification.success({
+                message: "Delete Combo",
+                description: "Combo deleted successfully"
+            });
+            await loadCombos();
         } catch (error) {
             console.error("Delete combo error:", error);
             notification.error({
