@@ -1,8 +1,9 @@
-
 import React, { useState } from 'react';
-import { Table, Button, Space, Popconfirm } from 'antd';
+import { Table, Button, Space, Popconfirm, notification } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import ProductDetail from './product.detail';
+import UpdateProductModal from './update.product.modal';
+import { deleteProductAPI } from '../../../services/api.service';
 
 const ProductTable = ({
     dataSource,
@@ -12,21 +13,50 @@ const ProductTable = ({
     total,
     setCurrent,
     setPageSize,
-    handleEditProduct,
-    handleDeleteProduct
+    loadProducts
 }) => {
 
-    const confirmDelete = (id) => {
-        console.log(">>> confirmDelete called with ID:", id);
-        if (handleDeleteProduct) {
-            handleDeleteProduct(id);
-        } else {
-            console.error(">>> handleDeleteProduct is not defined!");
+    // State for Detail Modal
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [selectedProductId, setSelectedProductId] = useState(null);
+
+    // State for Update Modal
+    const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+    const [dataUpdate, setDataUpdate] = useState(null);
+
+    const handleViewDetail = (record) => {
+        setSelectedProductId(record.id);
+        setIsDetailOpen(true);
+        console.log("View product detail:", record);
+    };
+
+    const handleEditProduct = (record) => {
+        setDataUpdate(record);
+        setIsUpdateOpen(true);
+        console.log("Editing product:", record);
+    };
+
+    const handleDeleteProduct = async (id) => {
+        console.log(">>> Attempting to delete product with ID:", id);
+        try {
+            const res = await deleteProductAPI(id);
+            console.log(">>> Delete API response:", res);
+            
+            notification.success({
+                message: "Success",
+                description: "Product deleted successfully"
+            });
+            await loadProducts();
+            
+        } catch (error) {
+            console.error(">>> Delete product error:", error);
+            notification.error({
+                message: "Error",
+                description: error.response?.data?.message || error?.message || "Failed to delete product"
+            });
         }
     };
 
-    const [isDetailOpen, setIsDetailOpen] = useState(false);
-    const [selectedProductId, setSelectedProductId] = useState(null);
     const columns = [
         {
             title: 'ID',
@@ -91,22 +121,14 @@ const ProductTable = ({
                 <div className="action-buttons">
                     <button
                         className="action-btn-icon view-btn"
-                        onClick={() => {
-                            setSelectedProductId(record.id);
-                            setIsDetailOpen(true);
-                            console.log("Dữ liệu record khi nhấn:", record);
-                        }}
+                        onClick={() => handleViewDetail(record)}
                         title="View"
                     >
                         <EyeOutlined />
                     </button>
                     <button
                         className="action-btn-icon edit-btn"
-                        onClick={() => {
-                            if (handleEditProduct) {
-                                handleEditProduct(record);
-                            }
-                        }}
+                        onClick={() => handleEditProduct(record)}
                         title="Edit"
                     >
                         <EditOutlined />
@@ -114,7 +136,7 @@ const ProductTable = ({
                     <Popconfirm
                         title="Delete the product"
                         description="Are you sure to delete this product?"
-                        onConfirm={() => confirmDelete(record.id)}
+                        onConfirm={() => handleDeleteProduct(record.id)}
                         okText="Yes"
                         cancelText="No"
                         placement="left"
@@ -161,6 +183,13 @@ const ProductTable = ({
                 isDetailOpen={isDetailOpen}
                 setIsDetailOpen={setIsDetailOpen}
                 productId={selectedProductId}
+            />
+            <UpdateProductModal
+                isUpdateOpen={isUpdateOpen}
+                setIsUpdateOpen={setIsUpdateOpen}
+                dataUpdate={dataUpdate}
+                setDataUpdate={setDataUpdate}
+                loadProducts={loadProducts}
             />
         </>
     );

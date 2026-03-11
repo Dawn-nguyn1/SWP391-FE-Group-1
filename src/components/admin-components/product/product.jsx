@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import ProductTable from './product.table';
 import ProductForm from './product.form';
-import { fetchProductsAPI, deleteProductAPI } from '../../../services/api.service';
-import { Button, notification, Popconfirm } from 'antd';
+import { fetchProductsAPI } from '../../../services/api.service';
+import { Button } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
 import './product.css';
 
@@ -13,11 +13,8 @@ const ProductPage = () => {
     const [current, setCurrent] = useState(1);
     const [pageSize, setPageSize] = useState(10);
 
-    // State for Edit
-    const [dataUpdate, setDataUpdate] = useState(null);
-
-    // Modal state
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    // Modal state for Create
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
 
     const loadProducts = async () => {
         setLoading(true);
@@ -31,48 +28,14 @@ const ProductPage = () => {
                 setTotal(activeProducts.length);
             }
         } catch (_error) {
-            notification.error({
-                message: "Error",
-                description: "Failed to load products"
-            });
+            console.error("Failed to load products", _error);
         }
         setLoading(false);
     };
 
-    /* eslint-disable react-hooks/set-state-in-effect */
     useEffect(() => {
         loadProducts();
     }, [current, pageSize]);
-    /* eslint-enable react-hooks/set-state-in-effect */
-
-    const handleEditProduct = (product) => {
-        console.log("Editing product:", product);
-        setDataUpdate(product);
-        setIsModalOpen(true);
-    }
-
-    const handleDeleteProduct = async (id) => {
-        console.log(">>> Attempting to delete product with ID:", id);
-        try {
-            const res = await deleteProductAPI(id);
-            console.log(">>> Delete API response:", res);
-            
-            // HTTP 204 No Content means success (no body in response)
-            notification.success({
-                message: "Success",
-                description: "Product deleted successfully"
-            });
-            await loadProducts();
-            
-        } catch (error) {
-            console.error(">>> Delete product error:", error);
-            console.error(">>> Error response:", error.response);
-            notification.error({
-                message: "Error",
-                description: error.response?.data?.message || error?.message || "Failed to delete product"
-            });
-        }
-    }
 
     return (
         <div className="product-page-container">
@@ -84,10 +47,7 @@ const ProductPage = () => {
                 <Button
                     type="primary"
                     icon={<PlusOutlined />}
-                    onClick={() => {
-                        setDataUpdate(null);
-                        setIsModalOpen(true);
-                    }}
+                    onClick={() => setIsCreateOpen(true)}
                 >
                     Create Product
                 </Button>
@@ -102,16 +62,12 @@ const ProductPage = () => {
                 setCurrent={setCurrent}
                 setPageSize={setPageSize}
                 loadProducts={loadProducts}
-                handleEditProduct={handleEditProduct}
-                handleDeleteProduct={handleDeleteProduct}
             />
 
             <ProductForm
-                isModalOpen={isModalOpen}
-                setIsModalOpen={setIsModalOpen}
+                isCreateOpen={isCreateOpen}
+                setIsCreateOpen={setIsCreateOpen}
                 loadProducts={loadProducts}
-                dataUpdate={dataUpdate}
-                setDataUpdate={setDataUpdate}
             />
         </div>
     );

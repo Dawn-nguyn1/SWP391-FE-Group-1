@@ -230,9 +230,53 @@ const ComboTable = (props) => {
                         </Descriptions.Item>
                         <Descriptions.Item label="Variants" span={2}>
                             {dataDetail.items?.map((item, index) => (
-                                <div key={index} style={{ marginBottom: '8px' }}>
-                                    <Tag color="blue">Variant ID: {item.productVariantId}</Tag>
-                                    <span>Quantity: {item.quantity}</span>
+                                <div key={index} style={{ marginBottom: '16px', padding: '12px', border: '1px solid #f0f0f0', borderRadius: '8px' }}>
+                                    <div style={{ marginBottom: '8px' }}>
+                                        <Tag color="blue">Variant ID: {item.productVariantId}</Tag>
+                                        <span style={{ marginLeft: '8px', fontWeight: 'bold' }}>Quantity: {item.quantity}</span>
+                                    </div>
+                                    
+                                    {/* Display attributes with images */}
+                                    {item.attributes && item.attributes.length > 0 && (
+                                        <div style={{ marginTop: '12px' }}>
+                                            <div style={{ fontWeight: 'bold', marginBottom: '8px', color: '#666' }}>Attributes:</div>
+                                            {item.attributes.map((attr, attrIndex) => (
+                                                <div key={attrIndex} style={{ marginBottom: '12px', padding: '8px', backgroundColor: '#fafafa', borderRadius: '4px' }}>
+                                                    <div style={{ marginBottom: '6px' }}>
+                                                        <Tag color="purple">{attr.attributeName}</Tag>
+                                                        <span style={{ marginLeft: '8px' }}>{attr.attributeValue}</span>
+                                                    </div>
+                                                    
+                                                    {/* Display images for this attribute */}
+                                                    {attr.images && attr.images.length > 0 && (
+                                                        <div style={{ marginTop: '8px' }}>
+                                                            <div style={{ fontSize: '12px', color: '#999', marginBottom: '4px' }}>Images:</div>
+                                                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                                                {attr.images.map((img, imgIndex) => (
+                                                                    <div key={imgIndex} style={{ textAlign: 'center' }}>
+                                                                        <img 
+                                                                            src={img.imageUrl} 
+                                                                            alt={`${attr.attributeName} ${attr.attributeValue}`}
+                                                                            style={{ 
+                                                                                width: '60px', 
+                                                                                height: '60px', 
+                                                                                objectFit: 'cover',
+                                                                                border: '1px solid #e0e0e0',
+                                                                                borderRadius: '4px'
+                                                                            }} 
+                                                                        />
+                                                                        <div style={{ fontSize: '10px', color: '#666', marginTop: '2px' }}>
+                                                                            Order: {img.sortOrder}
+                                                                        </div>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </Descriptions.Item>

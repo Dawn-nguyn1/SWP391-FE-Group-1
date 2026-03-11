@@ -101,7 +101,7 @@ const ProductDetail = (props) => {
                                                                         key={imgIndex}
                                                                         width={50}
                                                                         height={50}
-                                                                        src={img}
+                                                                        src={img.imageUrl}
                                                                         style={{ objectFit: 'cover', marginRight: 4 }}
                                                                     />
                                                                 ))}
