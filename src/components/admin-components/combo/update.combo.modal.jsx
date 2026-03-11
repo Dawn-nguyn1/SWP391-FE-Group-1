@@ -3,30 +3,33 @@ import { PlusOutlined } from '@ant-design/icons';
 import React, { useState, useEffect } from 'react';
 import { updateComboAPI, fetchVariantsAPI } from '../../../services/api.service';
 
-const UpdateComboModal = ({ currentCombo, setCurrentCombo, loadCombos }) => {
+const UpdateComboModal = (props) => {
     const [form] = Form.useForm();
+    const { 
+        isUpdateOpen, 
+        setIsUpdateOpen,
+        dataUpdate, 
+        setDataUpdate, 
+        loadCombos 
+    } = props;
     const [loading, setLoading] = useState(false);
     const [variants, setVariants] = useState([]);
-    const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
 
     useEffect(() => {
-        if (currentCombo) {
-            setIsUpdateModalOpen(true);
+        if (dataUpdate) {
             loadVariants();
             // Populate form with current combo data
             form.setFieldsValue({
-                name: currentCombo.name,
-                description: currentCombo.description,
-                items: currentCombo.items?.map(item => ({
+                name: dataUpdate.name,
+                description: dataUpdate.description,
+                imageUrl: dataUpdate.imageUrl || '',
+                items: dataUpdate.items?.map(item => ({
                     variantId: item.productVariantId,
                     quantity: item.quantity
                 })) || []
             });
-        } else {
-            setIsUpdateModalOpen(false);
-            form.resetFields();
         }
-    }, [currentCombo, form]);
+    }, [dataUpdate, form]);
 
     const loadVariants = async () => {
         try {
@@ -41,8 +44,8 @@ const UpdateComboModal = ({ currentCombo, setCurrentCombo, loadCombos }) => {
 
     const resetAndCloseModal = () => {
         form.resetFields();
-        setIsUpdateModalOpen(false);
-        setCurrentCombo(null);
+        setIsUpdateOpen(false);
+        setDataUpdate(null);
     };
 
     const onFinish = async (values) => {
@@ -51,7 +54,7 @@ const UpdateComboModal = ({ currentCombo, setCurrentCombo, loadCombos }) => {
             console.log('Update combo form values:', values);
             
             // Update combo
-            await updateComboAPI(currentCombo.id, values.name, values.description, values.items || []);
+            await updateComboAPI(dataUpdate.id, values.name, values.description, values.imageUrl, values.items || []);
             message.success("Combo updated successfully!");
             
             loadCombos(); // Reload combo table
@@ -71,7 +74,7 @@ const UpdateComboModal = ({ currentCombo, setCurrentCombo, loadCombos }) => {
     return (
         <Modal
             title="Update Combo"
-            open={isUpdateModalOpen}
+            open={isUpdateOpen}
             onOk={() => form.submit()}
             onCancel={() => resetAndCloseModal()}
             maskClosable={false}
@@ -104,6 +107,16 @@ const UpdateComboModal = ({ currentCombo, setCurrentCombo, loadCombos }) => {
                         placeholder="Enter combo description" 
                         rows={3}
                     />
+                </Form.Item>
+
+                <Form.Item
+                    label="Image URL"
+                    name="imageUrl"
+                    rules={[{ required: false, message: 'Please input image URL!' }]}
+                >
+                        <Input 
+                            placeholder="Enter image URL (e.g., https://example.com/image.jpg)" 
+                        />
                 </Form.Item>
 
                 <Form.List name="items">

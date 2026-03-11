@@ -53,7 +53,7 @@ const UserPage = () => {
             {/* Page Header */}
             <div className="page-header">
                 <h1 className="page-title">User Management</h1>
-                <p className="page-subtitle">Manage and view all users in the system</p>
+                <p className="page-subtitle" style={{ color: '#fff' }}>Manage and view all users in the system</p>
             </div>
 
             {/* User Form */}

@@ -482,7 +482,6 @@ const ProductForm = (props) => {
                                             >
                                                 <Select style={{ width: '100%' }}>
                                                     <Select.Option value="IN_STOCK">In Stock</Select.Option>
-                                                    <Select.Option value="OUT_OF_STOCK">Out of Stock</Select.Option>
                                                     <Select.Option value="PRE_ORDER">Pre Order</Select.Option>
                                                 </Select>
                                             </Form.Item>
@@ -500,16 +499,19 @@ const ProductForm = (props) => {
                                                         <Form.Item
                                                             {...attrRestField}
                                                             name={[attrName, 'attributeName']}
-                                                            rules={[{ required: true, message: 'Missing Name' }]}
+                                                            rules={[{ required: true, message: 'Please select attribute type!' }]}
                                                         >
-                                                            <Input placeholder="Attr Name (e.g Color)" />
+                                                            <Select placeholder="Select attribute type" style={{ width: '100%' }}>
+                                                                <Select.Option value="Size">Size</Select.Option>
+                                                                <Select.Option value="Color">Color</Select.Option>
+                                                            </Select>
                                                         </Form.Item>
                                                         <Form.Item
                                                             {...attrRestField}
                                                             name={[attrName, 'attributeValue']}
-                                                            rules={[{ required: true, message: 'Missing Value' }]}
+                                                            rules={[{ required: true, message: 'Missing value!' }]}
                                                         >
-                                                            <Input placeholder="Value (e.g Black)" />
+                                                            <Input placeholder="Enter value (e.g XL or 40 or Red)" />
                                                         </Form.Item>
 
                                                         {/* IMAGES FOR ATTRIBUTE */}
