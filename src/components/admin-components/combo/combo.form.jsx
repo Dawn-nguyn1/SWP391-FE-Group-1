@@ -4,17 +4,18 @@ import React, { useState, useEffect } from 'react';
 import { createComboAPI, fetchVariantsAPI } from '../../../services/api.service';
 
 const ComboForm = (props) => {
+    const { loadCombos } = props;
     const [form] = Form.useForm();
-    const { isModalComboOpen, setIsModalComboOpen, loadCombos } = props;
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [variants, setVariants] = useState([]);
 
     useEffect(() => {
-        if (isModalComboOpen) {
+        if (isModalOpen) {
             loadVariants();
             form.resetFields();
         }
-    }, [isModalComboOpen, form]);
+    }, [isModalOpen, form]);
 
     const loadVariants = async () => {
         try {
@@ -29,7 +30,7 @@ const ComboForm = (props) => {
 
     const resetAndCloseModal = () => {
         form.resetFields();
-        setIsModalComboOpen(false);
+        setIsModalOpen(false);
     };
 
     const onFinish = async (values) => {
@@ -41,7 +42,7 @@ const ComboForm = (props) => {
             await createComboAPI(values.name, values.description, values.imageUrl, values.items || []);
             message.success("Combo created successfully!");
             
-            loadCombos(); // Reload combo table
+            loadCombos();
             resetAndCloseModal();
         } catch (error) {
             console.error("Error creating combo:", error);
@@ -55,11 +56,91 @@ const ComboForm = (props) => {
         console.log('Failed:', errorInfo);
     };
 
+    const handleCreateCombo = () => {
+        form.resetFields();
+        setIsModalOpen(true);
+    };
+
     return (
-        <div className="user-form" style={{ margin: "10px 0" }}>
+        <>
+            <style>{`
+                @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap');
+
+                :root {
+                    --cyan: #0891b2;
+                    --violet: #7c3aed;
+                    --white: #ffffff;
+                    --ink: #1e1b4b;
+                    --border: rgba(124,58,237,0.15);
+                }
+
+                .cf-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    padding: 14px 20px;
+                    background: var(--white);
+                    border-radius: 14px;
+                    border: 1px solid var(--border);
+                    box-shadow: 0 2px 12px rgba(8,145,178,0.06);
+                    margin: 10px 0;
+                }
+
+                .cf-title {
+                    font-family: 'Sora', sans-serif;
+                    font-size: 17px;
+                    font-weight: 700;
+                    color: var(--ink);
+                    letter-spacing: -0.3px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                }
+
+                .cf-title::before {
+                    content: '';
+                    width: 4px; height: 20px;
+                    border-radius: 99px;
+                    background: linear-gradient(180deg, var(--cyan), var(--violet));
+                    display: inline-block;
+                }
+
+                .cf-create-btn.ant-btn {
+                    background: linear-gradient(135deg, var(--cyan) 0%, var(--violet) 100%) !important;
+                    border: none !important;
+                    border-radius: 10px !important;
+                    height: 38px !important;
+                    padding: 0 20px !important;
+                    font-family: 'Sora', sans-serif !important;
+                    font-size: 13px !important;
+                    font-weight: 600 !important;
+                    color: #fff !important;
+                    box-shadow: 0 4px 14px rgba(124,58,237,0.3) !important;
+                    transition: all 0.25s ease !important;
+                }
+
+                .cf-create-btn.ant-btn:hover {
+                    transform: translateY(-1px) !important;
+                    box-shadow: 0 6px 20px rgba(124,58,237,0.4) !important;
+                    opacity: 0.9 !important;
+                }
+            `}</style>
+
+            <div className="cf-header">
+                <span className="cf-title">Table Combos</span>
+                <Button 
+                    className="cf-create-btn" 
+                    onClick={handleCreateCombo} 
+                    type="primary"
+                    icon={<PlusOutlined />}
+                >
+                    + Create Combo
+                </Button>
+            </div>
+
             <Modal
                 title="Create Combo"
-                open={isModalComboOpen}
+                open={isModalOpen}
                 onOk={() => form.submit()}
                 onCancel={() => resetAndCloseModal()}
                 maskClosable={false}
@@ -165,7 +246,7 @@ const ComboForm = (props) => {
                     </Form.List>
                 </Form>
             </Modal>
-        </div>
+        </>
     )
 }
 
