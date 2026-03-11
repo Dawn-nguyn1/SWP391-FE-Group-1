@@ -17,6 +17,7 @@ const UpdateComboModal = ({ currentCombo, setCurrentCombo, loadCombos }) => {
             form.setFieldsValue({
                 name: currentCombo.name,
                 description: currentCombo.description,
+                imageUrl: currentCombo.imageUrl || '',
                 items: currentCombo.items?.map(item => ({
                     variantId: item.productVariantId,
                     quantity: item.quantity
@@ -51,7 +52,7 @@ const UpdateComboModal = ({ currentCombo, setCurrentCombo, loadCombos }) => {
             console.log('Update combo form values:', values);
             
             // Update combo
-            await updateComboAPI(currentCombo.id, values.name, values.description, values.items || []);
+            await updateComboAPI(currentCombo.id, values.name, values.description, values.imageUrl, values.items || []);
             message.success("Combo updated successfully!");
             
             loadCombos(); // Reload combo table
@@ -104,6 +105,16 @@ const UpdateComboModal = ({ currentCombo, setCurrentCombo, loadCombos }) => {
                         placeholder="Enter combo description" 
                         rows={3}
                     />
+                </Form.Item>
+
+                <Form.Item
+                    label="Image URL"
+                    name="imageUrl"
+                    rules={[{ required: false, message: 'Please input image URL!' }]}
+                >
+                        <Input 
+                            placeholder="Enter image URL (e.g., https://example.com/image.jpg)" 
+                        />
                 </Form.Item>
 
                 <Form.List name="items">

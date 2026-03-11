@@ -79,6 +79,24 @@ const ComboPage = () => {
             key: 'id',
         },
         {
+            title: 'Image',
+            dataIndex: 'imageUrl',
+            key: 'imageUrl',
+            render: (imageUrl) => (
+                <img 
+                    src={imageUrl} 
+                    alt="Combo" 
+                    style={{ 
+                        width: '60px', 
+                        height: '60px', 
+                        objectFit: 'cover',
+                        border: '1px solid #d9d9d9',
+                        borderRadius: '4px'
+                    }} 
+                />
+            ),
+        },
+        {
             title: 'Name',
             dataIndex: 'name',
             key: 'name',
@@ -180,6 +198,23 @@ const ComboPage = () => {
                             <Descriptions.Item label="ID">{selectedCombo.id}</Descriptions.Item>
                             <Descriptions.Item label="Name">{selectedCombo.name}</Descriptions.Item>
                             <Descriptions.Item label="Description" span={2}>{selectedCombo.description}</Descriptions.Item>
+                            <Descriptions.Item label="Image" span={2}>
+                                {selectedCombo.imageUrl ? (
+                                    <img 
+                                        src={selectedCombo.imageUrl} 
+                                        alt={selectedCombo.name}
+                                        style={{ 
+                                            width: '150px', 
+                                            height: '150px', 
+                                            objectFit: 'cover',
+                                            border: '1px solid #d9d9d9',
+                                            borderRadius: '4px'
+                                        }} 
+                                    />
+                                ) : (
+                                    <span style={{ color: '#999' }}>No image available</span>
+                                )}
+                            </Descriptions.Item>
                             <Descriptions.Item label="Price">${selectedCombo.comboPrice?.toFixed(2) || '0.00'}</Descriptions.Item>
                             <Descriptions.Item label="Status">
                                 <Tag color={selectedCombo.active ? 'green' : 'red'}>

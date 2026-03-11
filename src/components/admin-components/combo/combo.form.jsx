@@ -38,7 +38,7 @@ const ComboForm = (props) => {
             console.log('Combo form values:', values);
             
             // Create combo
-            await createComboAPI(values.name, values.description, values.items || []);
+            await createComboAPI(values.name, values.description, values.imageUrl, values.items || []);
             message.success("Combo created successfully!");
             
             loadCombos(); // Reload combo table
@@ -91,6 +91,16 @@ const ComboForm = (props) => {
                         <Input.TextArea 
                             placeholder="Enter combo description" 
                             rows={3}
+                        />
+                    </Form.Item>
+
+                    <Form.Item
+                        label="Image URL"
+                        name="imageUrl"
+                        rules={[{ required: false, message: 'Please input image URL!' }]}
+                    >
+                        <Input 
+                            placeholder="Enter image URL (e.g., https://example.com/image.jpg)" 
                         />
                     </Form.Item>
 
