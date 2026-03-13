@@ -59,23 +59,25 @@ const CustomerHeader = () => {
     return (
         <header className="customer-header">
             <div className="header-inner">
-                {/* Logo */}
-                <Link to="/customer" className="header-logo">
-                    <span className="logo-icon">👓</span>
-                    <span className="logo-text">GENETIX</span>
-                </Link>
+                <div className="header-left">
+                    {/* Logo */}
+                    <Link to="/customer" className="header-logo">
+                        <span className="logo-icon">👓</span>
+                        <span className="logo-text">GENETIX</span>
+                    </Link>
 
-                {/* Search */}
-                <div className="header-search">
-                    <Input.Search
-                        placeholder="Tìm kiếm kính mắt, thương hiệu..."
-                        value={searchValue}
-                        onChange={(e) => setSearchValue(e.target.value)}
-                        onSearch={handleSearch}
-                        enterButton={<SearchOutlined />}
-                        size="large"
-                        className="search-input"
-                    />
+                    {/* Search */}
+                    <div className="header-search">
+                        <Input.Search
+                            placeholder="Tìm kiếm kính mắt, thương hiệu..."
+                            value={searchValue}
+                            onChange={(e) => setSearchValue(e.target.value)}
+                            onSearch={handleSearch}
+                            enterButton={<SearchOutlined />}
+                            size="large"
+                            className="search-input"
+                        />
+                    </div>
                 </div>
 
                 {/* Actions */}
