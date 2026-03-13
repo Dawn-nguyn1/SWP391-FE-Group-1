@@ -287,15 +287,14 @@ const getProvincesAPI = () => axios.get('/api/public/location/provinces');
 const getDistrictsAPI = (provinceId) => axios.get(`/api/public/location/districts?provinceId=${provinceId}`);
 const getWardsAPI = (districtId) => axios.get(`/api/public/location/wards?districtId=${districtId}`);
 const cancelOrderByCustomerAPI = (orderId) => axios.put(`/api/customer/orders/${orderId}/cancel`);
-const getCustomerOrdersAPI = () => axios.get('/api/customer/payments');
+const getCustomerOrdersAPI = () => axios.get('/api/customer/my/orders');
+const getCustomerPaymentsAPI = () => axios.get('/api/customer/payments');
 
 // ===== SUPPORT STAFF APIs =====
-const getSupportOrdersAPI = (status = '', page = 0, size = 20) =>
-    axios.get('/api/support_staff/orders', { params: { status, page, size } });
+const getSupportWaitingOrdersAPI = (page = 0, size = 20) =>
+    axios.get('/api/support_staff/orders/waiting', { params: { page, size } });
 const supportConfirmOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/confirm`);
 const supportCancelOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/cancel`);
-const supportShipOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/ship`);
-const supportCompleteOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/complete`);
 
 // ===== OPERATIONS STAFF APIs =====
 const getApprovedOrdersAPI = (page = 0, size = 20) =>
@@ -330,11 +329,10 @@ export {
     // Customer profile/address/order APIs
     getProfileAPI, updateProfileAPI, changePasswordAPI,
     getAddressesAPI, createAddressAPI, updateAddressAPI, setDefaultAddressAPI, deleteAddressAPI,
-    cancelOrderByCustomerAPI, getCustomerOrdersAPI,
+    cancelOrderByCustomerAPI, getCustomerOrdersAPI, getCustomerPaymentsAPI,
     getProvincesAPI, getDistrictsAPI, getWardsAPI,
     // Support Staff APIs
-    getSupportOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
-    supportShipOrderAPI, supportCompleteOrderAPI,
+    getSupportWaitingOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
     // Operations Staff APIs
     getApprovedOrdersAPI, operationsConfirmOrderAPI,
     // Payment APIs

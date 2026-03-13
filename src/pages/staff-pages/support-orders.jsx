@@ -1,74 +1,272 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Tag, Button, Popconfirm, message, Typography, Tabs, Modal, Descriptions, Steps, Timeline, Space } from 'antd';
-import { CheckCircleOutlined, CloseCircleOutlined, CarOutlined, SearchOutlined, EyeOutlined } from '@ant-design/icons';
-import { getSupportOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI, supportShipOrderAPI, supportCompleteOrderAPI } from '../../services/api.service';
+import { Table, Tag, Button, Popconfirm, message, Modal, Descriptions, Space, Tooltip } from 'antd';
+import {
+    CheckCircleOutlined,
+    CloseCircleOutlined,
+    EyeOutlined,
+    ClockCircleOutlined,
+    ReloadOutlined
+} from '@ant-design/icons';
+import { getSupportWaitingOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI } from '../../services/api.service';
 import './staff-orders.css';
 import dayjs from 'dayjs';
 
-const { Title } = Typography;
-const { TabPane } = Tabs;
+const formatVND = n =>
+    new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
-const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
-
-const ORDER_STATUSES = {
-    ALL: '',
-    PENDING: 'WAITING_CONFIRM',
-    CONFIRMED: 'SUPPORT_CONFIRMED',
-    SHIPPING: 'SHIPPING',
-    COMPLETED: 'COMPLETED',
-    CANCELLED: 'CANCELLED'
+const coerceArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === 'object') {
+        const vals = Object.values(value);
+        if (vals.length && vals.every(v => v && typeof v === 'object')) {
+            return vals;
+        }
+    }
+    return null;
 };
 
-const STATUS_COLORS = {
-    WAITING_CONFIRM: 'orange',
-    SUPPORT_CONFIRMED: 'blue',
-    SHIPPING: 'geekblue',
-    COMPLETED: 'green',
-    CANCELLED: 'red',
-    FAILED: 'red'
+const parseMaybeString = (value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    try { return JSON.parse(trimmed); } catch { /* ignore */ }
+    try {
+        const normalized = trimmed
+            .replace(/\\'/g, '__SQUOTE__')
+            .replace(/'/g, '"')
+            .replace(/__SQUOTE__/g, "'");
+        return JSON.parse(normalized);
+    } catch {
+        try {
+            // Fallback for backend strings that look like JS object literals
+            // eslint-disable-next-line no-new-func
+            return new Function(`return (${trimmed})`)();
+        } catch {
+            return value;
+        }
+    }
+};
+
+const extractJsonFromString = (value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    const firstBrace = trimmed.indexOf('{');
+    const lastBrace = trimmed.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+        const sliced = trimmed.slice(firstBrace, lastBrace + 1);
+        const parsed = parseMaybeString(sliced);
+        if (parsed && typeof parsed === 'object') return parsed;
+    }
+    const firstBracket = trimmed.indexOf('[');
+    const lastBracket = trimmed.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket > firstBracket) {
+        const sliced = trimmed.slice(firstBracket, lastBracket + 1);
+        const parsed = parseMaybeString(sliced);
+        if (parsed) return parsed;
+    }
+    return value;
+};
+
+const extractArrayAfterKey = (text, key) => {
+    if (typeof text !== 'string') return null;
+    const keyVariants = [`"${key}"`, key];
+    let startIdx = -1;
+    for (const k of keyVariants) {
+        const idx = text.indexOf(k);
+        if (idx !== -1) {
+            startIdx = idx + k.length;
+            break;
+        }
+    }
+    if (startIdx === -1) return null;
+    const bracketStart = text.indexOf('[', startIdx);
+    if (bracketStart === -1) return null;
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    for (let i = bracketStart; i < text.length; i += 1) {
+        const ch = text[i];
+        if (escape) {
+            escape = false;
+            continue;
+        }
+        if (ch === '\\') {
+            escape = true;
+            continue;
+        }
+        if (ch === '"') {
+            inString = !inString;
+        }
+        if (inString) continue;
+        if (ch === '[') depth += 1;
+        if (ch === ']') depth -= 1;
+        if (depth === 0) {
+            const slice = text.slice(bracketStart, i + 1);
+            const parsed = parseMaybeString(slice);
+            return Array.isArray(parsed) ? parsed : null;
+        }
+    }
+    return null;
+};
+
+const findArrayCandidate = (obj) => {
+    if (!obj || typeof obj !== 'object') return null;
+    const values = Object.values(obj);
+    for (const val of values) {
+        const maybeArray = coerceArray(val);
+        if (maybeArray) {
+            const first = maybeArray[0];
+            if (first && typeof first === 'object' && ('id' in first || 'orderCode' in first || 'order_code' in first)) {
+                return maybeArray;
+            }
+        }
+    }
+    for (const val of values) {
+        if (val && typeof val === 'object') {
+            const nested = Object.values(val);
+            for (const nestedVal of nested) {
+                const maybeArray = coerceArray(nestedVal);
+                if (maybeArray) {
+                    const first = maybeArray[0];
+                    if (first && typeof first === 'object' && ('id' in first || 'orderCode' in first || 'order_code' in first)) {
+                        return maybeArray;
+                    }
+                }
+            }
+        }
+    }
+    return null;
+};
+
+const normalizeOrdersResponse = (res) => {
+    let data = parseMaybeString(res);
+    if (typeof data === 'string') {
+        const extracted =
+            extractArrayAfterKey(data, 'content') ||
+            extractArrayAfterKey(data, 'result') ||
+            extractArrayAfterKey(data, 'items');
+        if (Array.isArray(extracted)) {
+            return { items: extracted, total: extracted.length };
+        }
+        data = extractJsonFromString(data);
+    }
+
+    if (data && typeof data === 'object' && 'data' in data) {
+        data = parseMaybeString(data.data ?? data);
+        if (typeof data === 'string') {
+            const extracted =
+                extractArrayAfterKey(data, 'content') ||
+                extractArrayAfterKey(data, 'result') ||
+                extractArrayAfterKey(data, 'items');
+            if (Array.isArray(extracted)) {
+                return { items: extracted, total: extracted.length };
+            }
+            data = extractJsonFromString(data);
+        }
+    }
+
+    const nestedContent = data?.content?.content;
+    if (typeof nestedContent === 'string') {
+        const parsed = parseMaybeString(nestedContent);
+        const maybeArray = coerceArray(parsed);
+        if (maybeArray) {
+            return { items: maybeArray, total: maybeArray.length };
+        }
+    }
+    const nestedArray = coerceArray(nestedContent);
+    if (nestedArray) {
+        return {
+            items: nestedArray,
+            total: data.content?.totalElements ?? nestedArray.length
+        };
+    }
+
+    if (typeof data?.content === 'string') {
+        const parsed = parseMaybeString(data.content);
+        const maybeArray = coerceArray(parsed);
+        if (maybeArray) {
+            return { items: maybeArray, total: maybeArray.length };
+        }
+    }
+    const contentArray = coerceArray(data?.content);
+    if (contentArray) {
+        return { items: contentArray, total: data.totalElements ?? data.total ?? contentArray.length };
+    }
+
+    const resultArray = coerceArray(data?.result);
+    if (resultArray) {
+        return { items: resultArray, total: data.total ?? resultArray.length };
+    }
+
+    const itemsArray = coerceArray(data?.items);
+    if (itemsArray) {
+        return { items: itemsArray, total: data.total ?? itemsArray.length };
+    }
+
+    if (Array.isArray(data)) {
+        return { items: data, total: data.length };
+    }
+
+    if (data && typeof data === 'object' && data.id != null) {
+        return { items: [data], total: 1 };
+    }
+
+    const candidate = findArrayCandidate(data);
+    if (Array.isArray(candidate)) {
+        return { items: candidate, total: candidate.length };
+    }
+
+    return { items: [], total: 0 };
 };
 
 const SupportOrdersPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actioning, setActioning] = useState(null);
-    const [activeTab, setActiveTab] = useState(ORDER_STATUSES.ALL);
-    
+    const [pagination, setPagination] = useState({ current: 1, pageSize: 15, total: 0 });
+
     // Modal state
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState(null);
 
-    const loadOrders = async (status = activeTab) => {
+    const loadOrders = async (page = pagination.current, size = pagination.pageSize) => {
         setLoading(true);
         try {
-            const res = await getSupportOrdersAPI(status);
-            setOrders(res?.content || (Array.isArray(res) ? res : []));
-        } catch { 
-            message.error('Không thể tải đơn hàng'); 
-        } finally { 
-            setLoading(false); 
+            let res = await getSupportWaitingOrdersAPI(page - 1, size);
+            console.log('[Genetix] raw API response:', res, 'type:', typeof res);
+            if (typeof res === 'string') {
+                res = extractJsonFromString(res);
+            }
+            const { items, total } = normalizeOrdersResponse(res);
+
+            setOrders(items);
+            setPagination(prev => ({
+                ...prev,
+                current: page,
+                total
+            }));
+        } catch (err) {
+            console.error('[Genetix] loadOrders error:', err);
+            message.error('Không thể tải đơn hàng');
+        } finally {
+            setLoading(false);
         }
     };
 
-    useEffect(() => { 
-        loadOrders(); 
-    }, [activeTab]);
+    useEffect(() => {
+        loadOrders();
+    }, []);
 
     const handleAction = async (orderId, actionAPI, successMsg) => {
         setActioning(orderId);
-        try { 
-            await actionAPI(orderId); 
-            message.success(successMsg); 
-            loadOrders(); 
-        } catch { 
-            message.error('Thao tác thất bại'); 
-        } finally { 
-            setActioning(null); 
+        try {
+            await actionAPI(orderId);
+            message.success(successMsg);
+            loadOrders();
+        } catch {
+            message.error('Thao tác thất bại');
+        } finally {
+            setActioning(null);
         }
-    };
-
-    const handleTabChange = (key) => {
-        setActiveTab(key);
     };
 
     const viewOrderDetails = (record) => {
@@ -76,86 +274,162 @@ const SupportOrdersPage = () => {
         setIsModalVisible(true);
     };
 
-    const renderActionButtons = (record) => {
-        const { id, orderStatus } = record;
-        const isLoading = actioning === id;
-
-        switch (orderStatus) {
-            case 'WAITING_CONFIRM':
-                return (
-                    <Space size="small">
-                        <Popconfirm title="Xác nhận đơn hàng này?" onConfirm={() => handleAction(id, supportConfirmOrderAPI, `Đã xác nhận đơn #${id}`)} okText="Xác nhận" cancelText="Huỷ">
-                            <Button type="primary" size="small" icon={<CheckCircleOutlined />} loading={isLoading}>Duyệt</Button>
-                        </Popconfirm>
-                        <Popconfirm title="Hủy đơn hàng này?" onConfirm={() => handleAction(id, supportCancelOrderAPI, `Đã hủy đơn #${id}`)} okText="Hủy đơn" cancelText="Giữ" okButtonProps={{ danger: true }}>
-                            <Button danger size="small" icon={<CloseCircleOutlined />} loading={isLoading}>Hủy</Button>
-                        </Popconfirm>
-                    </Space>
-                );
-            case 'SUPPORT_CONFIRMED':
-                return (
-                    <Popconfirm title="Chuyển sang trạng thái Đang giao?" onConfirm={() => handleAction(id, supportShipOrderAPI, `Đơn #${id} đang được giao`)} okText="Giao hàng" cancelText="Huỷ">
-                        <Button type="default" size="small" icon={<CarOutlined />} loading={isLoading} style={{ borderColor: '#1890ff', color: '#1890ff' }}>Giao hàng</Button>
-                    </Popconfirm>
-                );
-            case 'SHIPPING':
-                return (
-                    <Space size="small">
-                        <Popconfirm title="Xác nhận giao thành công?" onConfirm={() => handleAction(id, supportCompleteOrderAPI, `Đơn #${id} đã giao thành công`)} okText="Hoàn thành" cancelText="Huỷ">
-                            <Button type="primary" success size="small" icon={<CheckCircleOutlined />} loading={isLoading} style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}>Thành công</Button>
-                        </Popconfirm>
-                        <Popconfirm title="Xác nhận giao thất bại/hoàn trả?" onConfirm={() => handleAction(id, supportCancelOrderAPI, `Đơn #${id} giao thất bại`)} okText="Thất bại" cancelText="Giữ" okButtonProps={{ danger: true }}>
-                            <Button danger size="small" icon={<CloseCircleOutlined />} loading={isLoading}>Thất bại</Button>
-                        </Popconfirm>
-                    </Space>
-                );
-            default:
-                return (
-                    <Button type="text" size="small" icon={<EyeOutlined />} onClick={() => viewOrderDetails(record)}>Chi tiết</Button>
-                );
-        }
+    const handleTableChange = (pag) => {
+        loadOrders(pag.current, pag.pageSize);
     };
 
     const columns = [
-        { title: 'Mã đơn', dataIndex: 'id', key: 'id', render: id => <strong>#{id}</strong>, width: 80 },
-        { title: 'Ngày đặt', dataIndex: 'createdAt', key: 'createdAt', render: date => dayjs(date).format('DD/MM/YYYY HH:mm'), width: 140 },
-        { title: 'Khách hàng', dataIndex: 'userEmail', key: 'email', render: (_, r) => r.userEmail || r.userId || '—' },
-        { title: 'Địa chỉ nhận', dataIndex: 'address', key: 'address', render: (_, r) => {
-            const a = r.address;
-            return a ? `${a.addressLine || ''}, ${a.ward || ''}, ${a.district || ''}, ${a.province || ''}`.replace(/^(, )+|(, )+$/g, '') : '—';
-        }, ellipsis: true},
-        { title: 'PTTT', dataIndex: 'paymentMethod', key: 'payment', render: v => <Tag color={v === 'VNPAY' ? 'purple' : 'orange'}>{v}</Tag>, width: 90 },
-        { title: 'Tổng tiền', dataIndex: 'totalAmount', key: 'total', render: v => <strong style={{ color: '#764ba2' }}>{formatVND(v)}</strong>, width: 130 },
-        { title: 'Trạng thái', dataIndex: 'orderStatus', key: 'status', render: v => <Tag color={STATUS_COLORS[v] || 'default'}>{v}</Tag>, width: 130 },
-        { title: 'Thao tác', key: 'actions', width: 220, render: (_, record) => renderActionButtons(record) }
+        {
+            title: 'Mã đơn',
+            dataIndex: 'id',
+            key: 'id',
+            width: 80,
+            render: id => <strong style={{ color: '#2563eb' }}>#{id}</strong>
+        },
+        {
+            title: 'Mã đơn hàng',
+            dataIndex: 'orderCode',
+            key: 'orderCode',
+            width: 140,
+            ellipsis: true,
+            render: code => <span style={{ color: '#6b7280', fontFamily: 'monospace', fontSize: 12 }}>{code || '—'}</span>
+        },
+        {
+            title: 'Ngày đặt',
+            dataIndex: 'createdAt',
+            key: 'createdAt',
+            width: 140,
+            render: date => (
+                <span style={{ color: '#6b7280', fontSize: 13 }}>
+                    {dayjs(date).format('DD/MM/YYYY HH:mm')}
+                </span>
+            )
+        },
+        {
+            title: 'Tổng tiền',
+            dataIndex: 'totalAmount',
+            key: 'total',
+            width: 140,
+            render: v => (
+                <strong style={{ color: '#d97706', fontSize: 14 }}>
+                    {formatVND(v)}
+                </strong>
+            )
+        },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'orderStatus',
+            key: 'status',
+            width: 160,
+            render: () => (
+                <Tag className="status-waiting" icon={<ClockCircleOutlined />}>
+                    Chờ duyệt
+                </Tag>
+            )
+        },
+        {
+            title: 'Thao tác',
+            key: 'actions',
+            width: 260,
+            render: (_, record) => {
+                const isLoading = actioning === record.id;
+                return (
+                    <Space size={8}>
+                        <Popconfirm
+                            title="Xác nhận duyệt đơn hàng này?"
+                            description="Đơn hàng sẽ được chuyển sang trạng thái đã xác nhận."
+                            onConfirm={() => handleAction(record.id, supportConfirmOrderAPI, `Đã duyệt đơn #${record.id}`)}
+                            okText="Duyệt"
+                            cancelText="Không"
+                        >
+                            <Button
+                                type="primary"
+                                size="small"
+                                icon={<CheckCircleOutlined />}
+                                loading={isLoading}
+                                className="btn-confirm"
+                            >
+                                Duyệt
+                            </Button>
+                        </Popconfirm>
+                        <Popconfirm
+                            title="Hủy đơn hàng này?"
+                            description="Hành động này không thể hoàn tác."
+                            onConfirm={() => handleAction(record.id, supportCancelOrderAPI, `Đã hủy đơn #${record.id}`)}
+                            okText="Hủy đơn"
+                            cancelText="Giữ lại"
+                            okButtonProps={{ danger: true }}
+                        >
+                            <Button
+                                size="small"
+                                icon={<CloseCircleOutlined />}
+                                loading={isLoading}
+                                className="btn-cancel"
+                            >
+                                Hủy
+                            </Button>
+                        </Popconfirm>
+                        <Tooltip title="Xem chi tiết">
+                            <Button
+                                type="text"
+                                size="small"
+                                icon={<EyeOutlined />}
+                                onClick={() => viewOrderDetails(record)}
+                                style={{ color: '#6b7280' }}
+                            />
+                        </Tooltip>
+                    </Space>
+                );
+            }
+        }
     ];
 
     return (
-        <div className="staff-page">
-            <div className="staff-inner">
-                <div className="staff-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                     <div>
-                        <Title level={3} style={{ margin: 0 }}>📦 Quản lý đơn hàng (In-Stock)</Title>
-                        <span style={{ color: '#888' }}>Xử lý luồng đơn hàng từ khi chờ xác nhận đến khi hoàn thành</span>
-                     </div>
+        <div className="support-page">
+            <div className="support-inner">
+                {/* ── Header ── */}
+                <div className="support-page-header">
+                    <div className="support-brand">
+                        <h2>Genetix</h2>
+                        <span>Duyệt đơn hàng chờ xác nhận</span>
+                    </div>
+                    <div className="support-stats">
+                        <div className="stat-pill">
+                            <ClockCircleOutlined style={{ color: '#d97706' }} />
+                            <span>Đang chờ:</span>
+                            <span className="stat-count">{pagination.total}</span>
+                        </div>
+                        <Tooltip title="Tải lại">
+                            <Button
+                                type="text"
+                                icon={<ReloadOutlined />}
+                                onClick={() => loadOrders(1)}
+                                style={{ color: '#6b7280' }}
+                                loading={loading}
+                            />
+                        </Tooltip>
+                    </div>
                 </div>
 
-                <div className="staff-card" style={{ background: '#fff', padding: 24, borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-                    <Tabs activeKey={activeTab} onChange={handleTabChange} type="card" style={{ marginBottom: 16 }}>
-                        <TabPane tab="Tất cả" key={ORDER_STATUSES.ALL} />
-                        <TabPane tab="Chờ duyệt" key={ORDER_STATUSES.PENDING} />
-                        <TabPane tab="Đã xác nhận (Chờ giao)" key={ORDER_STATUSES.CONFIRMED} />
-                        <TabPane tab="Đang giao hàng" key={ORDER_STATUSES.SHIPPING} />
-                        <TabPane tab="Hoàn thành" key={ORDER_STATUSES.COMPLETED} />
-                        <TabPane tab="Đã hủy/Thất bại" key={ORDER_STATUSES.CANCELLED} />
-                    </Tabs>
-
+                {/* ── Table ── */}
+                <div className="support-card">
                     <Table
                         columns={columns}
                         dataSource={orders}
                         rowKey="id"
                         loading={loading}
-                        pagination={{ pageSize: 20 }}
+                        pagination={{
+                            current: pagination.current,
+                            pageSize: pagination.pageSize,
+                            total: pagination.total,
+                            showSizeChanger: false,
+                            showTotal: (total) => (
+                                <span style={{ color: '#6b7280' }}>
+                                    Tổng: {total} đơn
+                                </span>
+                            )
+                        }}
+                        onChange={handleTableChange}
                         onRow={(record) => ({
                             onDoubleClick: () => viewOrderDetails(record)
                         })}
@@ -163,48 +437,51 @@ const SupportOrdersPage = () => {
                 </div>
             </div>
 
-            {/* Order Detail Modal */}
+            {/* ── Order Detail Modal ── */}
             <Modal
-                title={`Chi tiết đơn hàng #${selectedOrder?.id}`}
-                visible={isModalVisible}
+                title={`Chi tiết đơn hàng #${selectedOrder?.id || ''}`}
+                open={isModalVisible}
                 onCancel={() => setIsModalVisible(false)}
+                className="order-detail-modal"
                 footer={[
-                    <Button key="close" onClick={() => setIsModalVisible(false)}>Đóng</Button>
+                    <Button key="close" onClick={() => setIsModalVisible(false)}>
+                        Đóng
+                    </Button>
                 ]}
-                width={800}
+                width={700}
             >
                 {selectedOrder && (
-                    <div className="order-detail-content">
-                        <Descriptions bordered size="small" column={2} style={{ marginBottom: 24 }}>
-                            <Descriptions.Item label="Khách hàng">{selectedOrder.userEmail || '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Ngày đặt">{dayjs(selectedOrder.createdAt).format('DD/MM/YYYY HH:mm')}</Descriptions.Item>
-                            <Descriptions.Item label="SĐT nhận hàng">{selectedOrder.address?.phone || '—'}</Descriptions.Item>
-                            <Descriptions.Item label="Phương thức TT"><Tag color={selectedOrder.paymentMethod === 'VNPAY' ? 'purple' : 'orange'}>{selectedOrder.paymentMethod}</Tag></Descriptions.Item>
-                            <Descriptions.Item label="Địa chỉ" span={2}>
-                                {selectedOrder.address ? `${selectedOrder.address.addressLine || ''}, ${selectedOrder.address.ward || ''}, ${selectedOrder.address.district || ''}, ${selectedOrder.address.province || ''}`.replace(/^(, )+|(, )+$/g, '') : '—'}
+                    <div style={{ padding: '8px 0' }}>
+                        <Descriptions bordered size="small" column={2}>
+                            <Descriptions.Item label="Mã đơn">
+                                #{selectedOrder.id}
                             </Descriptions.Item>
-                            <Descriptions.Item label="Trạng thái">
-                                <Tag color={STATUS_COLORS[selectedOrder.orderStatus]}>{selectedOrder.orderStatus}</Tag>
+                            <Descriptions.Item label="Mã đơn hàng">
+                                {selectedOrder.orderCode || '—'}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Ngày đặt">
+                                {dayjs(selectedOrder.createdAt).format('DD/MM/YYYY HH:mm')}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Loại đơn">
+                                <Tag color="purple">{selectedOrder.orderType || '—'}</Tag>
                             </Descriptions.Item>
                             <Descriptions.Item label="Tổng tiền">
-                                <strong style={{ color: '#764ba2', fontSize: 16 }}>{formatVND(selectedOrder.totalAmount)}</strong>
+                                <strong style={{ color: '#d97706', fontSize: 16 }}>
+                                    {formatVND(selectedOrder.totalAmount)}
+                                </strong>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Đặt cọc">
+                                {formatVND(selectedOrder.deposit)}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Còn lại">
+                                {formatVND(selectedOrder.remainingAmount)}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Trạng thái">
+                                <Tag className="status-waiting" icon={<ClockCircleOutlined />}>
+                                    Chờ duyệt
+                                </Tag>
                             </Descriptions.Item>
                         </Descriptions>
-
-                        <Title level={5}>Sản phẩm ({selectedOrder.items?.length})</Title>
-                        <Table 
-                            dataSource={selectedOrder.items} 
-                            rowKey="id" 
-                            pagination={false} 
-                            size="small"
-                            style={{ marginBottom: 24 }}
-                            columns={[
-                                { title: 'Tên sản phẩm', dataIndex: 'productName', key: 'name', render: (_, r) => r.productName || r.name || `Sản phẩm #${r.productId}` },
-                                { title: 'Đơn giá', dataIndex: 'price', key: 'price', render: formatVND },
-                                { title: 'SL', dataIndex: 'quantity', key: 'qty' },
-                                { title: 'Thành tiền', key: 'total', render: (_, r) => formatVND(r.price * r.quantity) }
-                            ]}
-                        />
                     </div>
                 )}
             </Modal>

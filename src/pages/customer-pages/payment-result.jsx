@@ -12,12 +12,38 @@ const PaymentResultPage = () => {
     const [message, setMessage] = React.useState('');
 
     useEffect(() => {
-        // Forward all query params to backend for VNPay verification
-        const params = Object.fromEntries(searchParams.entries());
+        let rawSearch = window.location.search || '';
+        const firstQ = rawSearch.indexOf('?');
+        const secondQ = rawSearch.indexOf('?', firstQ + 1);
+        if (secondQ !== -1) {
+            rawSearch = rawSearch.slice(0, secondQ) + '&' + rawSearch.slice(secondQ + 1);
+        }
+        const normalizedSearchParams = new URLSearchParams(rawSearch);
+        const params = Object.fromEntries(normalizedSearchParams.entries());
+        const hasVnpayParams = Object.keys(params).some((key) => key.startsWith('vnp_'));
+
+        if (!hasVnpayParams && params.status) {
+            const isSuccess = String(params.status).toLowerCase() === 'success';
+            setSuccess(isSuccess);
+            setMessage(
+                params.message ||
+                (isSuccess ? 'Thanh toán thành công!' : 'Thanh toán thất bại')
+            );
+            setLoading(false);
+            return;
+        }
+
+        if (!hasVnpayParams) {
+            setSuccess(false);
+            setMessage('Không tìm thấy thông tin thanh toán');
+            setLoading(false);
+            return;
+        }
+
         vnpayReturnAPI(params)
-            .then(res => {
-                setSuccess(res?.success !== false);
-                setMessage(res?.message || (res?.success !== false ? 'Thanh toán thành công!' : 'Thanh toán thất bại'));
+            .then(() => {
+                setSuccess(true);
+                setMessage('Thanh toán thành công!');
             })
             .catch(() => {
                 setSuccess(false);
