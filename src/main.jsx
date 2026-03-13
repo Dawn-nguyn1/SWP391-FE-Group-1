@@ -86,24 +86,12 @@ const router = createBrowserRouter([
       },
 
       // --- SUPPORT STAFF ---
-      {
-        path: "staff/support",
-        element: <AdminLayout />,
-        children: [
-          { index: true, element: <SupportOrdersPage /> },
-          { path: "orders", element: <SupportOrdersPage /> },
-        ]
-      },
+      { path: "staff/support", element: <SupportOrdersPage /> },
+      { path: "staff/support/orders", element: <SupportOrdersPage /> },
 
       // --- OPERATIONS STAFF ---
-      {
-        path: "staff/operations",
-        element: <AdminLayout />,
-        children: [
-          { index: true, element: <OperationsOrdersPage /> },
-          { path: "orders", element: <OperationsOrdersPage /> },
-        ]
-      },
+      { path: "staff/operations", element: <OperationsOrdersPage /> },
+      { path: "staff/operations/orders", element: <OperationsOrdersPage /> },
     ]
   },
 

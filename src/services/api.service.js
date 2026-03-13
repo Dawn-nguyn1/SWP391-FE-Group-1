@@ -291,15 +291,22 @@ const getCustomerOrdersAPI = () => axios.get('/api/customer/my/orders');
 const getCustomerPaymentsAPI = () => axios.get('/api/customer/payments');
 
 // ===== SUPPORT STAFF APIs =====
-const getSupportWaitingOrdersAPI = (page = 0, size = 20) =>
-    axios.get('/api/support_staff/orders/waiting', { params: { page, size } });
+const getSupportOrdersAPI = () => axios.get('/api/support_staff/orders');
 const supportConfirmOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/confirm`);
 const supportCancelOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/cancel`);
+const getSupportReturnRequestsAPI = () => axios.get('/api/support_staff/return-requests/submitted');
+const supportApproveReturnRequestAPI = (id) => axios.post(`/api/support_staff/return-requests/${id}/approve`);
+const supportRejectReturnRequestAPI = (id, note) =>
+    axios.post(`/api/support_staff/return-requests/${id}/reject`, note ? { note } : {});
 
 // ===== OPERATIONS STAFF APIs =====
 const getApprovedOrdersAPI = (page = 0, size = 20) =>
     axios.get('/api/operation_staff/orders/approved', { params: { page, size } });
 const operationsConfirmOrderAPI = (orderId) => axios.post(`/api/operation_staff/orders/${orderId}/confirm`);
+const getOperationOrdersAPI = () => axios.get('/api/operation_staff/orders');
+const getOperationReturnRequestsAPI = () => axios.get('/api/operation_staff/return-requests/waiting-return');
+const operationReceiveReturnRequestAPI = (id, dto) =>
+    axios.post(`/api/operation_staff/return-requests/${id}/received`, dto);
 
 // ===== PAYMENT APIS =====
 const vnpayReturnAPI = (params) => axios.get('/api/payment/vnpay-return', { params });
@@ -332,9 +339,11 @@ export {
     cancelOrderByCustomerAPI, getCustomerOrdersAPI, getCustomerPaymentsAPI,
     getProvincesAPI, getDistrictsAPI, getWardsAPI,
     // Support Staff APIs
-    getSupportWaitingOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
+    getSupportOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
+    getSupportReturnRequestsAPI, supportApproveReturnRequestAPI, supportRejectReturnRequestAPI,
     // Operations Staff APIs
     getApprovedOrdersAPI, operationsConfirmOrderAPI,
+    getOperationOrdersAPI, getOperationReturnRequestsAPI, operationReceiveReturnRequestAPI,
     // Payment APIs
     vnpayReturnAPI,
 }

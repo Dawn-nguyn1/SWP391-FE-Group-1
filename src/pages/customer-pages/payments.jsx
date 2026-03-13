@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Empty, Spin, Tag, message } from 'antd';
+import { Empty, Spin, Tag, message, Pagination } from 'antd';
 import { getCustomerPaymentsAPI } from '../../services/api.service';
 import './orders.css';
 
@@ -25,6 +25,8 @@ const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : '';
 const PaymentsPage = () => {
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [page, setPage] = useState(1);
+    const pageSize = 6;
 
     useEffect(() => {
         const loadPayments = async () => {
@@ -44,6 +46,9 @@ const PaymentsPage = () => {
 
     if (loading) return <div className="orders-loading"><Spin size="large" /></div>;
 
+    const total = payments.length;
+    const pageItems = payments.slice((page - 1) * pageSize, page * pageSize);
+
     return (
         <div className="orders-page">
             <div className="orders-inner">
@@ -54,7 +59,7 @@ const PaymentsPage = () => {
                     </div>
                 ) : (
                     <div className="orders-list">
-                        {payments.map(payment => {
+                        {pageItems.map(payment => {
                             const statusCfg = PAYMENT_STATUS_CONFIG[payment.status] || { label: payment.status, color: 'default' };
                             const stageCfg = PAYMENT_STAGE_CONFIG[payment.stage] || { label: payment.stage, color: 'default' };
 
@@ -92,6 +97,17 @@ const PaymentsPage = () => {
                                 </div>
                             );
                         })}
+                    </div>
+                )}
+                {total > pageSize && (
+                    <div className="support-pagination">
+                        <Pagination
+                            current={page}
+                            pageSize={pageSize}
+                            total={total}
+                            onChange={(next) => setPage(next)}
+                            showSizeChanger={false}
+                        />
                     </div>
                 )}
             </div>

@@ -58,6 +58,45 @@ Customer → Xem sản phẩm → Thêm giỏ hàng → Checkout
 
 ---
 
+## 2.1 Luồng đổi trả sản phẩm (Return Flow) – Endpoints từ BE
+
+### 🔹 Customer Return Request
+- **POST** `/api/customer/return-requests`  
+  Body:
+  ```json
+  {
+    "orderItemId": 123,
+    "quantity": 1,
+    "reason": "DEFECTIVE" | "WRONG_ITEM" | "OTHER",
+    "note": "Mô tả lỗi",
+    "evidenceUrls": "url1,url2"
+  }
+  ```
+- **GET** `/api/customer/return-requests` → Danh sách yêu cầu trả hàng của khách
+- **GET** `/api/customer/return-requests/{id}` → Chi tiết yêu cầu trả hàng
+
+### 🔹 Support Staff Return Request
+- **GET** `/api/support_staff/return-requests/submitted` → Yêu cầu mới chờ duyệt
+- **POST** `/api/support_staff/return-requests/{id}/approve` → Duyệt yêu cầu
+- **POST** `/api/support_staff/return-requests/{id}/reject`  
+  Body:
+  ```json
+  { "note": "Lý do từ chối" }
+  ```
+
+### 🔹 Operations Return Request
+- **GET** `/api/operation_staff/return-requests/waiting-return` → Yêu cầu đã duyệt chờ nhận hàng
+- **POST** `/api/operation_staff/return-requests/{id}/received`  
+  Body:
+  ```json
+  {
+    "acceptedQuantity": 1,
+    "conditionNote": "Hàng nguyên tem"
+  }
+  ```
+
+---
+
 ## 3. Kế hoạch phát triển – Ưu tiên theo luồng
 
 ### 🔵 GIAI ĐOẠN 1: Customer-Facing – Trang chủ & Sản phẩm
@@ -185,6 +224,42 @@ Customer → Xem sản phẩm → Thêm giỏ hàng → Checkout
   - `POST /api/operation_staff/orders/{id}/confirm`
 
 ---
+
+## 5. Kế hoạch phát triển UI cho luồng đổi trả
+
+### 5.1 Customer – Gửi yêu cầu đổi trả
+**Route đề xuất:** `/customer/orders` (từ danh sách đơn, mở modal theo item)  
+**UI cần:**
+- Nút **"Yêu cầu trả hàng"** ở từng item trong đơn (chỉ khi đơn `COMPLETED`/`SHIPPING` tuỳ rule BE)
+- Form: chọn item, số lượng, lý do, ghi chú, nhập link ảnh minh chứng
+- Hiển thị trạng thái request sau khi gửi
+
+**API sử dụng:**
+- `POST /api/customer/return-requests`
+- `GET /api/customer/return-requests`
+- `GET /api/customer/return-requests/{id}`
+
+### 5.2 Support Staff – Duyệt yêu cầu trả hàng
+**Route:** `/staff/support` (tab “Yêu cầu trả hàng”)  
+**UI cần:**
+- Danh sách request `SUBMITTED`
+- Chi tiết: orderId, orderItemId, quantity, reason, note, evidenceUrls
+- Nút **Duyệt** / **Từ chối** (kèm note)
+
+**API sử dụng:**
+- `GET /api/support_staff/return-requests/submitted`
+- `POST /api/support_staff/return-requests/{id}/approve`
+- `POST /api/support_staff/return-requests/{id}/reject`
+
+### 5.3 Operations Staff – Nhận hàng hoàn trả
+**Route:** `/staff/operations` (tab “Hoàn trả chờ nhận”)  
+**UI cần:**
+- Danh sách request `WAITING_RETURN`
+- Form xác nhận nhận hàng: acceptedQuantity, conditionNote
+
+**API sử dụng:**
+- `GET /api/operation_staff/return-requests/waiting-return`
+- `POST /api/operation_staff/return-requests/{id}/received`
 
 ## 4. Cấu trúc file đề xuất
 

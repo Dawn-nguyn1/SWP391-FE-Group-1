@@ -10,9 +10,9 @@
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr;
     gap: 48px;
-    max-width: 1200px;
+    max-width: 1560px;
     margin: 0 auto;
-    padding: 0 24px 64px;
+    padding: 0 20px 64px;
 }
 
 .footer-logo {
@@ -87,7 +87,7 @@
 
 .footer-bottom {
     text-align: center;
-    padding: 24px 24px;
+    padding: 24px 20px;
     border-top: 1px solid #1e293b;
     font-size: 13px;
     color: #64748b;
