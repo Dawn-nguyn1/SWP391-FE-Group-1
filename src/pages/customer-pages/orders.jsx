@@ -45,7 +45,7 @@ const OrdersPage = () => {
     return (
         <div className="orders-page">
             <div className="orders-inner">
-                <h1 className="orders-title">📦 Đơn hàng của tôi</h1>
+                <h1 className="orders-title">Đơn hàng của tôi</h1>
                 {orders.length === 0 ? (
                     <div className="orders-empty">
                         <Empty description={<span>Bạn chưa có đơn hàng nào. <Link to="/customer/products">Mua sắm ngay!</Link></span>} />

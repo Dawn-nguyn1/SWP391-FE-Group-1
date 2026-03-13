@@ -1,0 +1,96 @@
+.ops-shell {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f7ff 0%, #eef2ff 45%, #f8fafc 100%);
+    padding: 32px 40px 48px;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+.ops-topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.ops-branding {
+    max-width: 520px;
+}
+
+.ops-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #6b7280;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.ops-branding h1 {
+    margin: 0 0 6px;
+    font-size: 30px;
+    font-weight: 800;
+    color: #111827;
+}
+
+.ops-branding span {
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.ops-metrics {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.ops-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 24px;
+}
+
+.ops-panel {
+    background: #ffffff;
+    border-radius: 22px;
+    border: 1px solid #e5e7eb;
+    padding: 24px;
+    box-shadow: 0 12px 26px rgba(15, 23, 42, 0.08);
+    display: flex;
+    flex-direction: column;
+    min-height: 420px;
+}
+
+.ops-order {
+    border: 1px solid #eef2f7;
+}
+
+.receive-form {
+    display: grid;
+    gap: 16px;
+}
+
+.receive-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    color: #475569;
+}
+
+@media (max-width: 1200px) {
+    .ops-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 900px) {
+    .ops-shell {
+        padding: 24px 20px 40px;
+    }
+    .ops-topbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
