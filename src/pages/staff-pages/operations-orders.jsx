@@ -114,6 +114,7 @@ const OperationsOrdersPage = () => {
     const [receiveTarget, setReceiveTarget] = useState(null);
     const [acceptedQuantity, setAcceptedQuantity] = useState(null);
     const [conditionNote, setConditionNote] = useState('');
+    const [previewImage, setPreviewImage] = useState(null);
 
     const loadApprovedOrders = async (page = ordersPage) => {
         setOrdersLoading(true);
@@ -182,6 +183,14 @@ const OperationsOrdersPage = () => {
 
     const submitReceive = async () => {
         if (!receiveTarget) return;
+        if (!acceptedQuantity || acceptedQuantity <= 0) {
+            message.error('Số lượng nhận phải lớn hơn 0');
+            return;
+        }
+        if (acceptedQuantity > (receiveTarget.requestedQuantity ?? acceptedQuantity)) {
+            message.error('Số lượng nhận không được vượt quá số lượng yêu cầu');
+            return;
+        }
         setActioning(receiveTarget.id);
         try {
             await operationReceiveReturnRequestAPI(receiveTarget.id, {
@@ -191,8 +200,8 @@ const OperationsOrdersPage = () => {
             message.success(`Đã nhận hoàn trả #${receiveTarget.id}`);
             setReceiveModalOpen(false);
             loadReturnRequests();
-        } catch {
-            message.error('Xác nhận nhận hàng thất bại');
+        } catch (e) {
+            message.error(e?.message || e?.response?.data?.message || 'Xác nhận nhận hàng thất bại');
         } finally {
             setActioning(null);
         }
@@ -460,12 +469,23 @@ const OperationsOrdersPage = () => {
 
                                             {evidences.length > 0 && (
                                                 <div className="return-evidence">
-                                                    <span>Minh chứng:</span>
-                                                    <ul>
-                                                        {evidences.slice(0, 3).map((url, idx) => (
-                                                            <li key={`${req.id}-ev-${idx}`}>{url}</li>
+                                                    <div className="evidence-title">Minh chứng</div>
+                                                    <div className="evidence-grid">
+                                                        {evidences.slice(0, 4).map((url, idx) => (
+                                                            <div
+                                                                key={`${req.id}-ev-${idx}`}
+                                                                className="evidence-thumb"
+                                                                onClick={() => setPreviewImage(url)}
+                                                                role="button"
+                                                                tabIndex={0}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') setPreviewImage(url);
+                                                                }}
+                                                            >
+                                                                <img src={url} alt={`evidence-${idx + 1}`} />
+                                                            </div>
                                                         ))}
-                                                    </ul>
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -531,6 +551,19 @@ const OperationsOrdersPage = () => {
                         />
                     </div>
                 </div>
+            </Modal>
+
+            <Modal
+                open={!!previewImage}
+                footer={null}
+                onCancel={() => setPreviewImage(null)}
+                width="90vw"
+                centered
+                className="evidence-preview-modal"
+            >
+                {previewImage && (
+                    <img src={previewImage} alt="Evidence preview" className="evidence-preview-image" />
+                )}
             </Modal>
         </div>
     );

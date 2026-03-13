@@ -289,6 +289,10 @@ const getWardsAPI = (districtId) => axios.get(`/api/public/location/wards?distri
 const cancelOrderByCustomerAPI = (orderId) => axios.put(`/api/customer/orders/${orderId}/cancel`);
 const getCustomerOrdersAPI = () => axios.get('/api/customer/my/orders');
 const getCustomerPaymentsAPI = () => axios.get('/api/customer/payments');
+// ===== CUSTOMER RETURN REQUEST APIs =====
+const submitCustomerReturnRequestAPI = (dto) => axios.post('/api/customer/return-requests', dto);
+const getCustomerReturnRequestsAPI = () => axios.get('/api/customer/return-requests');
+const getCustomerReturnRequestDetailAPI = (id) => axios.get(`/api/customer/return-requests/${id}`);
 
 // ===== SUPPORT STAFF APIs =====
 const getSupportOrdersAPI = () => axios.get('/api/support_staff/orders');
@@ -337,6 +341,7 @@ export {
     getProfileAPI, updateProfileAPI, changePasswordAPI,
     getAddressesAPI, createAddressAPI, updateAddressAPI, setDefaultAddressAPI, deleteAddressAPI,
     cancelOrderByCustomerAPI, getCustomerOrdersAPI, getCustomerPaymentsAPI,
+    submitCustomerReturnRequestAPI, getCustomerReturnRequestsAPI, getCustomerReturnRequestDetailAPI,
     getProvincesAPI, getDistrictsAPI, getWardsAPI,
     // Support Staff APIs
     getSupportOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
