@@ -243,15 +243,15 @@ const fetchComboByIdAPI = (id) => {
     return axios.get(URL_BACKEND);
 }
 
-const createComboAPI = (name, description, items) => {
+const createComboAPI = (name, description, imageUrl, items) => {
     const URL_BACKEND = "/api/manager/combos";
-    const data = { name, description, items };
+    const data = { name, description, imageUrl, items };
     return axios.post(URL_BACKEND, data);
 }
 
-const updateComboAPI = (id, name, description, items) => {
+const updateComboAPI = (id, name, description, imageUrl, items) => {
     const URL_BACKEND = `/api/manager/combos/${id}`;
-    const data = { name, description, items };
+    const data = { name, description, imageUrl, items };
     return axios.put(URL_BACKEND, data);
 }
 
