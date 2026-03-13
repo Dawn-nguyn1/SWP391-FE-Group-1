@@ -14,6 +14,210 @@ import dayjs from 'dayjs';
 const formatVND = n =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
+const coerceArray = (value) => {
+    if (Array.isArray(value)) return value;
+    if (value && typeof value === 'object') {
+        const vals = Object.values(value);
+        if (vals.length && vals.every(v => v && typeof v === 'object')) {
+            return vals;
+        }
+    }
+    return null;
+};
+
+const parseMaybeString = (value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    try { return JSON.parse(trimmed); } catch { /* ignore */ }
+    try {
+        const normalized = trimmed
+            .replace(/\\'/g, '__SQUOTE__')
+            .replace(/'/g, '"')
+            .replace(/__SQUOTE__/g, "'");
+        return JSON.parse(normalized);
+    } catch {
+        try {
+            // Fallback for backend strings that look like JS object literals
+            // eslint-disable-next-line no-new-func
+            return new Function(`return (${trimmed})`)();
+        } catch {
+            return value;
+        }
+    }
+};
+
+const extractJsonFromString = (value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    const firstBrace = trimmed.indexOf('{');
+    const lastBrace = trimmed.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace > firstBrace) {
+        const sliced = trimmed.slice(firstBrace, lastBrace + 1);
+        const parsed = parseMaybeString(sliced);
+        if (parsed && typeof parsed === 'object') return parsed;
+    }
+    const firstBracket = trimmed.indexOf('[');
+    const lastBracket = trimmed.lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket > firstBracket) {
+        const sliced = trimmed.slice(firstBracket, lastBracket + 1);
+        const parsed = parseMaybeString(sliced);
+        if (parsed) return parsed;
+    }
+    return value;
+};
+
+const extractArrayAfterKey = (text, key) => {
+    if (typeof text !== 'string') return null;
+    const keyVariants = [`"${key}"`, key];
+    let startIdx = -1;
+    for (const k of keyVariants) {
+        const idx = text.indexOf(k);
+        if (idx !== -1) {
+            startIdx = idx + k.length;
+            break;
+        }
+    }
+    if (startIdx === -1) return null;
+    const bracketStart = text.indexOf('[', startIdx);
+    if (bracketStart === -1) return null;
+    let depth = 0;
+    let inString = false;
+    let escape = false;
+    for (let i = bracketStart; i < text.length; i += 1) {
+        const ch = text[i];
+        if (escape) {
+            escape = false;
+            continue;
+        }
+        if (ch === '\\') {
+            escape = true;
+            continue;
+        }
+        if (ch === '"') {
+            inString = !inString;
+        }
+        if (inString) continue;
+        if (ch === '[') depth += 1;
+        if (ch === ']') depth -= 1;
+        if (depth === 0) {
+            const slice = text.slice(bracketStart, i + 1);
+            const parsed = parseMaybeString(slice);
+            return Array.isArray(parsed) ? parsed : null;
+        }
+    }
+    return null;
+};
+
+const findArrayCandidate = (obj) => {
+    if (!obj || typeof obj !== 'object') return null;
+    const values = Object.values(obj);
+    for (const val of values) {
+        const maybeArray = coerceArray(val);
+        if (maybeArray) {
+            const first = maybeArray[0];
+            if (first && typeof first === 'object' && ('id' in first || 'orderCode' in first || 'order_code' in first)) {
+                return maybeArray;
+            }
+        }
+    }
+    for (const val of values) {
+        if (val && typeof val === 'object') {
+            const nested = Object.values(val);
+            for (const nestedVal of nested) {
+                const maybeArray = coerceArray(nestedVal);
+                if (maybeArray) {
+                    const first = maybeArray[0];
+                    if (first && typeof first === 'object' && ('id' in first || 'orderCode' in first || 'order_code' in first)) {
+                        return maybeArray;
+                    }
+                }
+            }
+        }
+    }
+    return null;
+};
+
+const normalizeOrdersResponse = (res) => {
+    let data = parseMaybeString(res);
+    if (typeof data === 'string') {
+        const extracted =
+            extractArrayAfterKey(data, 'content') ||
+            extractArrayAfterKey(data, 'result') ||
+            extractArrayAfterKey(data, 'items');
+        if (Array.isArray(extracted)) {
+            return { items: extracted, total: extracted.length };
+        }
+        data = extractJsonFromString(data);
+    }
+
+    if (data && typeof data === 'object' && 'data' in data) {
+        data = parseMaybeString(data.data ?? data);
+        if (typeof data === 'string') {
+            const extracted =
+                extractArrayAfterKey(data, 'content') ||
+                extractArrayAfterKey(data, 'result') ||
+                extractArrayAfterKey(data, 'items');
+            if (Array.isArray(extracted)) {
+                return { items: extracted, total: extracted.length };
+            }
+            data = extractJsonFromString(data);
+        }
+    }
+
+    const nestedContent = data?.content?.content;
+    if (typeof nestedContent === 'string') {
+        const parsed = parseMaybeString(nestedContent);
+        const maybeArray = coerceArray(parsed);
+        if (maybeArray) {
+            return { items: maybeArray, total: maybeArray.length };
+        }
+    }
+    const nestedArray = coerceArray(nestedContent);
+    if (nestedArray) {
+        return {
+            items: nestedArray,
+            total: data.content?.totalElements ?? nestedArray.length
+        };
+    }
+
+    if (typeof data?.content === 'string') {
+        const parsed = parseMaybeString(data.content);
+        const maybeArray = coerceArray(parsed);
+        if (maybeArray) {
+            return { items: maybeArray, total: maybeArray.length };
+        }
+    }
+    const contentArray = coerceArray(data?.content);
+    if (contentArray) {
+        return { items: contentArray, total: data.totalElements ?? data.total ?? contentArray.length };
+    }
+
+    const resultArray = coerceArray(data?.result);
+    if (resultArray) {
+        return { items: resultArray, total: data.total ?? resultArray.length };
+    }
+
+    const itemsArray = coerceArray(data?.items);
+    if (itemsArray) {
+        return { items: itemsArray, total: data.total ?? itemsArray.length };
+    }
+
+    if (Array.isArray(data)) {
+        return { items: data, total: data.length };
+    }
+
+    if (data && typeof data === 'object' && data.id != null) {
+        return { items: [data], total: 1 };
+    }
+
+    const candidate = findArrayCandidate(data);
+    if (Array.isArray(candidate)) {
+        return { items: candidate, total: candidate.length };
+    }
+
+    return { items: [], total: 0 };
+};
+
 const SupportOrdersPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -29,23 +233,10 @@ const SupportOrdersPage = () => {
         try {
             let res = await getSupportWaitingOrdersAPI(page - 1, size);
             console.log('[Genetix] raw API response:', res, 'type:', typeof res);
-
-            // Normalize: if string, parse it
             if (typeof res === 'string') {
-                try { res = JSON.parse(res); } catch (e) { console.error('[Genetix] parse error', e); res = {}; }
+                res = extractJsonFromString(res);
             }
-
-            // Normalize: if axios returns { data: ... } wrapper
-            if (res?.data && (res.data.content || typeof res.data === 'string')) {
-                res = res.data;
-                if (typeof res === 'string') {
-                    try { res = JSON.parse(res); } catch (e) { res = {}; }
-                }
-            }
-
-            console.log('[Genetix] parsed result:', res);
-            const items = res?.content || (Array.isArray(res) ? res : []);
-            const total = res?.totalElements || items.length;
+            const { items, total } = normalizeOrdersResponse(res);
 
             setOrders(items);
             setPagination(prev => ({
@@ -93,7 +284,7 @@ const SupportOrdersPage = () => {
             dataIndex: 'id',
             key: 'id',
             width: 80,
-            render: id => <strong style={{ color: '#a78bfa' }}>#{id}</strong>
+            render: id => <strong style={{ color: '#2563eb' }}>#{id}</strong>
         },
         {
             title: 'Mã đơn hàng',
@@ -101,7 +292,7 @@ const SupportOrdersPage = () => {
             key: 'orderCode',
             width: 140,
             ellipsis: true,
-            render: code => <span style={{ color: '#c4b5fd', fontFamily: 'monospace', fontSize: 12 }}>{code || '—'}</span>
+            render: code => <span style={{ color: '#6b7280', fontFamily: 'monospace', fontSize: 12 }}>{code || '—'}</span>
         },
         {
             title: 'Ngày đặt',
@@ -109,7 +300,7 @@ const SupportOrdersPage = () => {
             key: 'createdAt',
             width: 140,
             render: date => (
-                <span style={{ color: '#cbd5e1', fontSize: 13 }}>
+                <span style={{ color: '#6b7280', fontSize: 13 }}>
                     {dayjs(date).format('DD/MM/YYYY HH:mm')}
                 </span>
             )
@@ -120,7 +311,7 @@ const SupportOrdersPage = () => {
             key: 'total',
             width: 140,
             render: v => (
-                <strong style={{ color: '#fbbf24', fontSize: 14 }}>
+                <strong style={{ color: '#d97706', fontSize: 14 }}>
                     {formatVND(v)}
                 </strong>
             )
@@ -184,7 +375,7 @@ const SupportOrdersPage = () => {
                                 size="small"
                                 icon={<EyeOutlined />}
                                 onClick={() => viewOrderDetails(record)}
-                                style={{ color: 'rgba(255,255,255,0.45)' }}
+                                style={{ color: '#6b7280' }}
                             />
                         </Tooltip>
                     </Space>
@@ -204,7 +395,7 @@ const SupportOrdersPage = () => {
                     </div>
                     <div className="support-stats">
                         <div className="stat-pill">
-                            <ClockCircleOutlined style={{ color: '#fbbf24' }} />
+                            <ClockCircleOutlined style={{ color: '#d97706' }} />
                             <span>Đang chờ:</span>
                             <span className="stat-count">{pagination.total}</span>
                         </div>
@@ -213,7 +404,7 @@ const SupportOrdersPage = () => {
                                 type="text"
                                 icon={<ReloadOutlined />}
                                 onClick={() => loadOrders(1)}
-                                style={{ color: 'rgba(255,255,255,0.6)' }}
+                                style={{ color: '#6b7280' }}
                                 loading={loading}
                             />
                         </Tooltip>
@@ -233,7 +424,7 @@ const SupportOrdersPage = () => {
                             total: pagination.total,
                             showSizeChanger: false,
                             showTotal: (total) => (
-                                <span style={{ color: 'rgba(255,255,255,0.4)' }}>
+                                <span style={{ color: '#6b7280' }}>
                                     Tổng: {total} đơn
                                 </span>
                             )
@@ -275,7 +466,7 @@ const SupportOrdersPage = () => {
                                 <Tag color="purple">{selectedOrder.orderType || '—'}</Tag>
                             </Descriptions.Item>
                             <Descriptions.Item label="Tổng tiền">
-                                <strong style={{ color: '#fbbf24', fontSize: 16 }}>
+                                <strong style={{ color: '#d97706', fontSize: 16 }}>
                                     {formatVND(selectedOrder.totalAmount)}
                                 </strong>
                             </Descriptions.Item>

@@ -12,11 +12,18 @@ const PaymentResultPage = () => {
     const [message, setMessage] = React.useState('');
 
     useEffect(() => {
-        const params = Object.fromEntries(searchParams.entries());
+        let rawSearch = window.location.search || '';
+        const firstQ = rawSearch.indexOf('?');
+        const secondQ = rawSearch.indexOf('?', firstQ + 1);
+        if (secondQ !== -1) {
+            rawSearch = rawSearch.slice(0, secondQ) + '&' + rawSearch.slice(secondQ + 1);
+        }
+        const normalizedSearchParams = new URLSearchParams(rawSearch);
+        const params = Object.fromEntries(normalizedSearchParams.entries());
         const hasVnpayParams = Object.keys(params).some((key) => key.startsWith('vnp_'));
 
         if (!hasVnpayParams && params.status) {
-            const isSuccess = params.status === 'success';
+            const isSuccess = String(params.status).toLowerCase() === 'success';
             setSuccess(isSuccess);
             setMessage(
                 params.message ||

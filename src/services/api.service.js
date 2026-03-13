@@ -287,7 +287,7 @@ const getProvincesAPI = () => axios.get('/api/public/location/provinces');
 const getDistrictsAPI = (provinceId) => axios.get(`/api/public/location/districts?provinceId=${provinceId}`);
 const getWardsAPI = (districtId) => axios.get(`/api/public/location/wards?districtId=${districtId}`);
 const cancelOrderByCustomerAPI = (orderId) => axios.put(`/api/customer/orders/${orderId}/cancel`);
-const getCustomerOrdersAPI = () => axios.get('/api/customer/orders');
+const getCustomerOrdersAPI = () => axios.get('/api/customer/my/orders');
 const getCustomerPaymentsAPI = () => axios.get('/api/customer/payments');
 
 // ===== SUPPORT STAFF APIs =====
