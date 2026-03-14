@@ -56,12 +56,15 @@ const ProductForm = (props) => {
 
             if (values.variants && values.variants.length > 0) {
                 for (const variant of values.variants) {
+                    // Ensure saleType is provided, fallback to IN_STOCK only if undefined/null
+                    const saleType = variant.saleType || 'IN_STOCK';
+                    
                     const resVariant = await createVariantAPI(
                         productId,
                         variant.sku,
                         variant.price,
                         variant.stockQuantity,
-                        variant.saleType || 'IN_STOCK'
+                        saleType
                     );
 
                     if (resVariant && resVariant.id) {
@@ -154,7 +157,10 @@ const ProductForm = (props) => {
                         <Form.Item
                             name="name"
                             label="Product Name"
-                            rules={[{ required: true, message: 'Please input product name!' }]}
+                            rules={[
+                                { required: true, message: 'Please input product name!' },
+                                { max: 255, message: 'Product name cannot exceed 255 characters!' }
+                            ]}
                         >
                             <Input placeholder="e.g. Rayban Aviator" />
                         </Form.Item>
@@ -163,7 +169,10 @@ const ProductForm = (props) => {
                         <Form.Item
                             name="brandName"
                             label="Brand"
-                            rules={[{ required: true, message: 'Please input brand!' }]}
+                            rules={[
+                                { required: true, message: 'Please input brand!' },
+                                { max: 255, message: 'Brand name cannot exceed 255 characters!' }
+                            ]}
                         >
                             <Input placeholder="e.g. Rayban" />
                         </Form.Item>
@@ -173,7 +182,10 @@ const ProductForm = (props) => {
                 <Form.Item
                     name="productImage"
                     label="Image URL"
-                    rules={[{ required: true, message: 'Please input image URL!' }]}
+                    rules={[
+                        { required: true, message: 'Please input image URL!' },
+                        { max: 255, message: 'Image URL cannot exceed 255 characters!' }
+                    ]}
                 >
                     <Input placeholder="https://..." />
                 </Form.Item>
@@ -231,7 +243,10 @@ const ProductForm = (props) => {
                                                 {...restField}
                                                 name={[name, 'sku']}
                                                 label="SKU"
-                                                rules={[{ required: true, message: 'Missing SKU' }]}
+                                                rules={[
+                                                    { required: true, message: 'Missing SKU' },
+                                                    { max: 255, message: 'SKU cannot exceed 255 characters!' }
+                                                ]}
                                             >
                                                 <Input placeholder="SKU-001" />
                                             </Form.Item>
@@ -262,7 +277,6 @@ const ProductForm = (props) => {
                                                 name={[name, 'saleType']}
                                                 label="Sale Type"
                                                 rules={[{ required: true, message: 'Missing sale type' }]}
-                                                initialValue="IN_STOCK"
                                             >
                                                 <Select style={{ width: '100%' }}>
                                                     <Select.Option value="IN_STOCK">In Stock</Select.Option>
@@ -293,7 +307,10 @@ const ProductForm = (props) => {
                                                         <Form.Item
                                                             {...attrRestField}
                                                             name={[attrName, 'attributeValue']}
-                                                            rules={[{ required: true, message: 'Missing value!' }]}
+                                                            rules={[
+                                                                { required: true, message: 'Missing value!' },
+                                                                { max: 255, message: 'Attribute value cannot exceed 255 characters!' }
+                                                            ]}
                                                         >
                                                             <Input placeholder="Enter value (e.g XL or 40 or Red)" />
                                                         </Form.Item>
@@ -307,7 +324,10 @@ const ProductForm = (props) => {
                                                                             <Form.Item
                                                                                 {...imgRestField}
                                                                                 name={[imgName, 'imageUrl']}
-                                                                                rules={[{ required: true, message: 'Missing image URL' }]}
+                                                                                rules={[
+                                                                                    { required: true, message: 'Missing image URL' },
+                                                                                    { max: 255, message: 'Image URL cannot exceed 255 characters!' }
+                                                                                ]}
                                                                                 style={{ flex: 1 }}
                                                                             >
                                                                                 <Input placeholder="Image URL" />
@@ -374,7 +394,7 @@ const ProductForm = (props) => {
                                 </Card>
                             ))}
                             <Form.Item>
-                                <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                                <Button type="dashed" onClick={() => add({ saleType: 'IN_STOCK' })} block icon={<PlusOutlined />}>
                                     Add New Variant
                                 </Button>
                             </Form.Item>

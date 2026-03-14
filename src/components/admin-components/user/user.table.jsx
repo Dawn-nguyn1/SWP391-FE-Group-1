@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { Table, Popconfirm, notification, Switch, Input, Select, Space } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import ViewUserDetail from './user.detail';
 import { deleteUserAPI, updateUserStatusAPI } from '../../../services/api.service';
 import './user.css';
 import UpdateUserModal from './update.user.modal';
+import { AuthContext } from '../../../context/auth.context';
 
 const { Option } = Select;
 
@@ -26,6 +27,7 @@ const UserTable = (props) => {
         setStatus
     } = props;
 
+    const { user: currentUser } = useContext(AuthContext);
     const [dataDetail, setDataDetail] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isUpdateOpen, setIsUpdateOpen] = useState(false);
@@ -129,55 +131,79 @@ const UserTable = (props) => {
             title: 'Action',
             key: 'action',
             width: 180,
-            render: (_, record) => (
-                <div className="action-buttons">
-                    <button
-                        className="action-btn-icon view-btn"
-                        onClick={() => {
-                            setDataDetail(record);
-                            setIsDetailOpen(true);
-                        }}
-                        title="View"
-                    >
-                        <EyeOutlined />
-                    </button>
-                    <button
-                        className="action-btn-icon edit-btn"
-                        onClick={() => {
-                           setIsUpdateOpen(true);
-                           setDataUpdate(record);
-                        }}
-                        title="Edit"
-                    >
-                        <EditOutlined />
-                    </button>
-                    {confirmDelete ? (
+            align: 'center',
+            render: (_, record) => {
+                // Check if this is the current user
+                if (currentUser && record.id === currentUser.id) {
+                    return (
+                        <span 
+                            style={{
+                                color: '#f59e0b',
+                                fontWeight: '600',
+                                padding: '6px 12px',
+                                borderRadius: '20px',
+                                backgroundColor: '#fef3c7',
+                                border: '1px solid #fbbf24',
+                                fontSize: '12px',
+                                display: 'inline-block'
+                            }}
+                        >
+                            đây là bạn
+                        </span>
+                    );
+                }
+
+                // Show action buttons for other users
+                return (
+                    <div className="action-buttons">
                         <button
-                            className="action-btn-icon delete-btn"
-                            onClick={() => handleDeleteClick(record)}
-                            title="Delete (No confirmation)"
+                            className="action-btn-icon view-btn"
+                            onClick={() => {
+                                setDataDetail(record);
+                                setIsDetailOpen(true);
+                            }}
+                            title="View"
                         >
-                            <DeleteOutlined />
+                            <EyeOutlined />
                         </button>
-                    ) : (
-                        <Popconfirm
-                            title="Xóa người dùng"
-                            description="Bạn chắc chắn xóa user này ?"
-                            onConfirm={() => handleDeleteUser(record.id)}
-                            okText="Yes"
-                            cancelText="No"
-                            placement="left"
+                        <button
+                            className="action-btn-icon edit-btn"
+                            onClick={() => {
+                               setIsUpdateOpen(true);
+                               setDataUpdate(record);
+                            }}
+                            title="Edit"
                         >
+                            <EditOutlined />
+                        </button>
+                        {confirmDelete ? (
                             <button
                                 className="action-btn-icon delete-btn"
-                                title="Delete"
+                                onClick={() => handleDeleteClick(record)}
+                                title="Delete (No confirmation)"
                             >
                                 <DeleteOutlined />
                             </button>
-                        </Popconfirm>
-                    )}
-                </div>
-            ),
+                        ) : (
+                            <Popconfirm
+                                title="Xóa người dùng"
+                                description="Bạn chắc chắn xóa user này ?"
+                                onConfirm={() => handleDeleteUser(record.id)}
+                                okText="Yes"
+                                cancelText="No"
+                                placement="left"
+                            >
+                                <button
+                                    className="action-btn-icon delete-btn"
+                                    title="Delete"
+                                >
+                                    <DeleteOutlined />
+                                </button>
+                            </Popconfirm>
+                        )}
+                    </div>
+                );
+            },
         },
     ];
 
