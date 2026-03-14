@@ -265,10 +265,15 @@ const getPublicProductsAPI = (params) => axios.get('/api/public/products', { par
 const searchProductsAPI = (params) => axios.get('/api/public/products/search', { params });
 const getPublicProductDetailAPI = (id) => axios.get(`/api/public/products/${id}`);
 const getBrandsAPI = () => axios.get('/api/public/products/brands');
+const getPublicCombosAPI = (page = 0, size = 12) =>
+    axios.get('/api/public/products/combos', { params: { page, size } });
+const getPublicComboDetailAPI = (id) => axios.get(`/api/public/products/combos/${id}`);
 
 // ===== CART APIs =====
 const getCartAPI = () => axios.get('/api/customer/cart');
 const addToCartAPI = (productVariantId, quantity) => axios.post('/api/customer/cart/add', { productVariantId, quantity });
+const addComboToCartAPI = (productComboId, quantity) =>
+    axios.post('/api/customer/cart/add', { productComboId, quantity });
 const updateCartItemAPI = (itemId, quantity) => axios.put(`/api/customer/cart/items/${itemId}`, { quantity });
 const removeCartItemAPI = (itemId) => axios.delete(`/api/customer/cart/items/${itemId}`);
 const clearCartAPI = () => axios.delete('/api/customer/cart/clear');
@@ -335,8 +340,9 @@ export {
     createComboAPI, updateComboAPI, deleteComboAPI,
     // Public product APIs
     getPublicProductsAPI, searchProductsAPI, getPublicProductDetailAPI, getBrandsAPI,
+    getPublicCombosAPI, getPublicComboDetailAPI,
     // Cart APIs
-    getCartAPI, addToCartAPI, updateCartItemAPI, removeCartItemAPI, clearCartAPI, checkoutAPI,
+    getCartAPI, addToCartAPI, addComboToCartAPI, updateCartItemAPI, removeCartItemAPI, clearCartAPI, checkoutAPI,
     // Customer profile/address/order APIs
     getProfileAPI, updateProfileAPI, changePasswordAPI,
     getAddressesAPI, createAddressAPI, updateAddressAPI, setDefaultAddressAPI, deleteAddressAPI,

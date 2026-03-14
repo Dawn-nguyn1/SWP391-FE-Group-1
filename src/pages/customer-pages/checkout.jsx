@@ -6,6 +6,7 @@ import {
     getCartAPI, getAddressesAPI, createAddressAPI, checkoutAPI
 } from '../../services/api.service';
 import { CartContext } from '../../context/cart.context';
+import { attachCartItemKinds, transformCartForCheckout } from '../../utils/cart-normalize';
 import './checkout.css';
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
@@ -24,16 +25,41 @@ const CheckoutPage = () => {
     const [addrForm] = Form.useForm();
 
     useEffect(() => {
-        Promise.all([getCartAPI(), getAddressesAPI()])
-            .then(([c, addrs]) => {
-                setCart(c);
-                const addrList = Array.isArray(addrs) ? addrs : [];
+        let cancelled = false;
+
+        const loadCheckout = async () => {
+            try {
+                const [cartRes, addressRes] = await Promise.all([getCartAPI(), getAddressesAPI()]);
+                const cartItems = await attachCartItemKinds(cartRes?.items || []);
+                let nextCart = { ...cartRes, items: cartItems };
+
+                if (cartItems.length > 0) {
+                    const normalized = await transformCartForCheckout(cartItems);
+                    if (normalized) {
+                        const reloadedCart = await getCartAPI();
+                        nextCart = {
+                            ...reloadedCart,
+                            items: await attachCartItemKinds(reloadedCart?.items || []),
+                        };
+                    }
+                }
+
+                if (cancelled) return;
+
+                setCart(nextCart);
+                const addrList = Array.isArray(addressRes) ? addressRes : [];
                 setAddresses(addrList);
                 const def = addrList.find(a => a.isDefault) || addrList[0];
                 if (def) setSelectedAddressId(def.id);
-            })
-            .catch(() => message.error('Không thể tải thông tin'))
-            .finally(() => setLoading(false));
+            } catch {
+                if (!cancelled) message.error('Không thể tải thông tin');
+            } finally {
+                if (!cancelled) setLoading(false);
+            }
+        };
+
+        loadCheckout();
+        return () => { cancelled = true; };
     }, []);
 
     const handleAddAddress = async (vals) => {
@@ -78,6 +104,8 @@ const CheckoutPage = () => {
     };
 
     if (loading) return <div className="checkout-loading"><Spin size="large" /></div>;
+    const isComboItem = (item) => item?.itemKind === 'combo';
+
     const total = cart?.finalTotal || 0;
     // items mapping: use productName and unitPrice
 
@@ -165,12 +193,18 @@ const CheckoutPage = () => {
                                 </div>
                                 <div className="confirm-section">
                                     <h4>Sản phẩm:</h4>
-                                    {cart?.items?.map(i => (
-                                        <div key={i.id} className="confirm-item">
-                                            <span>{i.productName} x{i.quantity}</span>
-                                            <span>{formatVND((i.unitPrice || 0) * (i.quantity || 1))}</span>
-                                        </div>
-                                    ))}
+                                    {cart?.items?.map(i => {
+                                        const combo = isComboItem(i);
+                                        return (
+                                            <div key={i.id} className={`confirm-item ${combo ? 'confirm-item-combo' : ''}`}>
+                                                <span>
+                                                    {combo && <span className="combo-pill">Combo</span>}
+                                                    {i.productName} x{i.quantity}
+                                                </span>
+                                                <span>{formatVND((i.unitPrice || 0) * (i.quantity || 1))}</span>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                                 <div className="step-btns">
                                     <Button onClick={() => setStep(1)}>Quay lại</Button>
@@ -185,12 +219,18 @@ const CheckoutPage = () => {
                     {/* Summary */}
                     <div className="checkout-summary">
                         <h3>Đơn hàng ({cart?.items?.length || 0} sản phẩm)</h3>
-                        {cart?.items?.map(i => (
-                            <div key={i.id} className="summary-item">
-                                <span className="summary-item-name">{i.productName} x{i.quantity}</span>
-                                <span>{formatVND((i.unitPrice || 0) * (i.quantity || 1))}</span>
-                            </div>
-                        ))}
+                        {cart?.items?.map(i => {
+                            const combo = isComboItem(i);
+                            return (
+                                <div key={i.id} className={`summary-item ${combo ? 'summary-item-combo' : ''}`}>
+                                    <span className="summary-item-name">
+                                        {combo && <span className="combo-pill">Combo</span>}
+                                        {i.productName} x{i.quantity}
+                                    </span>
+                                    <span>{formatVND((i.unitPrice || 0) * (i.quantity || 1))}</span>
+                                </div>
+                            );
+                        })}
                         <div className="summary-divider" />
                         <div className="summary-total"><strong>Tổng cộng</strong><strong className="total-num">{formatVND(total)}</strong></div>
                     </div>
