@@ -154,12 +154,16 @@ const ProductTable = ({
     ];
 
     const onChange = (pagination, _filters, _sorter, _extra) => {
-        if (pagination && pagination.current !== current) {
-            setCurrent(pagination.current);
+        if (pagination && pagination.current !== undefined) {
+            // Convert 1-based pagination to 0-based API
+            const newPage = pagination.current - 1;
+            if (newPage !== current) {
+                setCurrent(newPage);
+            }
         }
         if (pagination && pagination.pageSize !== pageSize) {
             setPageSize(pagination.pageSize);
-            setCurrent(1);
+            setCurrent(0); // Reset to first page when changing page size
         }
     };
 
@@ -171,7 +175,7 @@ const ProductTable = ({
                 rowKey={"id"}
                 loading={loading}
                 pagination={{
-                    current: current,
+                    current: current + 1, // Convert 0-based to 1-based for display
                     pageSize: pageSize,
                     total: total,
                     showSizeChanger: true,
