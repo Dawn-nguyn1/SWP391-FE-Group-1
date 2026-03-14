@@ -20,6 +20,61 @@
     margin: 8px 0 0 0;
 }
 
+/* ==================== FILTER SECTION ==================== */
+.product-filter-section {
+    display: flex;
+    gap: 20px;
+    padding: 24px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e8eff7;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.filter-item {
+    flex: 1;
+    min-width: 250px;
+    max-width: 350px;
+}
+
+.filter-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+
+.product-filter-section .ant-input-affix-wrapper,
+.product-filter-section .ant-select-selector {
+    border-radius: 12px !important;
+    border: 1px solid #e2e8f0 !important;
+    height: 44px !important;
+    display: flex !important;
+    align-items: center !important;
+    transition: all 0.3s ease !important;
+}
+
+.product-filter-section .ant-input-affix-wrapper:hover,
+.product-filter-section .ant-select:hover .ant-select-selector {
+    border-color: #3182ce !important;
+    box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1) !important;
+}
+
+.product-filter-section .ant-input-affix-wrapper-focused {
+    border-color: #0891b2 !important;
+    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1) !important;
+}
+
+.product-filter-section .ant-select-focused .ant-select-selector {
+    border-color: #0891b2 !important;
+    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.1) !important;
+}
+
 /* ==================== ACTION BUTTONS ==================== */
 .action-buttons {
     display: flex;

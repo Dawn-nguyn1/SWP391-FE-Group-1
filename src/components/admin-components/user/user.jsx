@@ -1,52 +1,56 @@
-import React from 'react';
-import { useEffect, useState } from 'react';
-import { mockUsers } from './user.data';
+import React, { useEffect, useState } from 'react';
 import UserTable from './user.table';
 import UserForm from './user.form';
+import { searchAdminUsersAPI } from '../../../services/api.service';
+import { Button } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import './user.css';
-import { fetchAllUserAPI } from '../../../services/api.service';
 
 const UserPage = () => {
     const [dataUsers, setDataUsers] = useState([]);
-    const [current, setCurrent] = useState(0);
-    const [pageSize, setPageSize] = useState(10);
-    const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [keyword, setKeyword] = useState("");
-    const [role, setRole] = useState("");
-    const [status, setStatus] = useState("ACTIVED"); // Default to show only active users
+    const [total, setTotal] = useState(0);
+    const [current, setCurrent] = useState(0); // 0-based for API
+    const [pageSize, setPageSize] = useState(10);
+    
+    // Filter states
+    const [keyword, setKeyword] = useState('');
+    const [role, setRole] = useState('');
+    const [status, setStatus] = useState('');
 
-    useEffect(() => {
-        console.log("Loading user page with new API");
-        loadUser();
-    }, [current, pageSize, keyword, role, status]);
+    // Modal state for Create
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const loadUser = async () => {
         setLoading(true);
         try {
-            const res = await fetchAllUserAPI(current, pageSize, keyword, role, status);
+            const res = await searchAdminUsersAPI(
+                current,
+                pageSize,
+                keyword,
+                role,
+                status
+            );
             console.log("User API response:", res);
             
             if (res && res.content) {
                 setDataUsers(res.content);
-                setTotal(res.totalElements);
+                setTotal(res.totalElements || 0);
             } else {
-                // Fallback to mock data if API fails
-                console.log("API failed, using mock data");
-                // Filter mock data to show only active users
-                const activeMockUsers = mockUsers.filter(user => user.status === 'ACTIVED');
-                setDataUsers(activeMockUsers);
-                setTotal(activeMockUsers.length);
+                setDataUsers([]);
+                setTotal(0);
             }
         } catch (error) {
             console.error("Error loading users:", error);
-            // Fallback to mock data
-            const activeMockUsers = mockUsers.filter(user => user.status === 'ACTIVED');
-            setDataUsers(activeMockUsers);
-            setTotal(activeMockUsers.length);
+            setDataUsers([]);
+            setTotal(0);
         }
         setLoading(false);
     };
+
+    useEffect(() => {
+        loadUser();
+    }, [current, pageSize, keyword, role, status]);
 
     return (
         <div className="user-page-container">
