@@ -6,7 +6,13 @@ import {
     getCartAPI, getAddressesAPI, createAddressAPI, checkoutAPI
 } from '../../services/api.service';
 import { CartContext } from '../../context/cart.context';
-import { attachCartItemKinds, transformCartForCheckout } from '../../utils/cart-normalize';
+import {
+    getCartItemLineTotal,
+    getCartItemMeta,
+    getCartItemName,
+    getCartItemTypeLabel,
+    isComboCartItem,
+} from '../../utils/cart-normalize';
 import './checkout.css';
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
@@ -30,23 +36,10 @@ const CheckoutPage = () => {
         const loadCheckout = async () => {
             try {
                 const [cartRes, addressRes] = await Promise.all([getCartAPI(), getAddressesAPI()]);
-                const cartItems = await attachCartItemKinds(cartRes?.items || []);
-                let nextCart = { ...cartRes, items: cartItems };
-
-                if (cartItems.length > 0) {
-                    const normalized = await transformCartForCheckout(cartItems);
-                    if (normalized) {
-                        const reloadedCart = await getCartAPI();
-                        nextCart = {
-                            ...reloadedCart,
-                            items: await attachCartItemKinds(reloadedCart?.items || []),
-                        };
-                    }
-                }
 
                 if (cancelled) return;
 
-                setCart(nextCart);
+                setCart(cartRes);
                 const addrList = Array.isArray(addressRes) ? addressRes : [];
                 setAddresses(addrList);
                 const def = addrList.find(a => a.isDefault) || addrList[0];
@@ -104,10 +97,12 @@ const CheckoutPage = () => {
     };
 
     if (loading) return <div className="checkout-loading"><Spin size="large" /></div>;
-    const isComboItem = (item) => item?.itemKind === 'combo';
+    const isComboItem = (item) => isComboCartItem(item);
 
-    const total = cart?.finalTotal || 0;
-    // items mapping: use productName and unitPrice
+    const subTotal = Number(cart?.subTotal ?? 0);
+    const discountAmount = Number(cart?.discountAmount ?? 0);
+    const total = Number(cart?.finalTotal ?? 0);
+    const totalItems = Number(cart?.totalItems ?? cart?.items?.length ?? 0);
 
     const steps = [
         { title: 'Địa chỉ', icon: <EnvironmentOutlined /> },
@@ -120,6 +115,12 @@ const CheckoutPage = () => {
             <div className="checkout-inner">
                 <h1 className="checkout-title">Đặt hàng</h1>
                 <Steps current={step} items={steps} style={{ marginBottom: 36 }} />
+
+                {cart?.empty && (
+                    <div className="checkout-empty-note">
+                        Gio hang dang trong. Vui long them san pham hoac combo truoc khi thanh toan.
+                    </div>
+                )}
 
                 <div className="checkout-layout">
                     <div className="checkout-form-area">
@@ -196,12 +197,14 @@ const CheckoutPage = () => {
                                     {cart?.items?.map(i => {
                                         const combo = isComboItem(i);
                                         return (
-                                            <div key={i.id} className={`confirm-item ${combo ? 'confirm-item-combo' : ''}`}>
-                                                <span>
+                                            <div key={i.cartItemId || i.id} className={`confirm-item ${combo ? 'confirm-item-combo' : ''}`}>
+                                                <span className="confirm-item-info">
                                                     {combo && <span className="combo-pill">Combo</span>}
-                                                    {i.productName} x{i.quantity}
+                                                    {getCartItemName(i)} x{i.quantity}
+                                                    {!combo && <small>{getCartItemTypeLabel(i)}</small>}
+                                                    <small>{getCartItemMeta(i)}</small>
                                                 </span>
-                                                <span>{formatVND((i.unitPrice || 0) * (i.quantity || 1))}</span>
+                                                <span>{formatVND(getCartItemLineTotal(i))}</span>
                                             </div>
                                         );
                                     })}
@@ -218,21 +221,27 @@ const CheckoutPage = () => {
 
                     {/* Summary */}
                     <div className="checkout-summary">
-                        <h3>Đơn hàng ({cart?.items?.length || 0} sản phẩm)</h3>
+                        <h3>Đơn hàng ({totalItems} sản phẩm)</h3>
                         {cart?.items?.map(i => {
                             const combo = isComboItem(i);
                             return (
-                                <div key={i.id} className={`summary-item ${combo ? 'summary-item-combo' : ''}`}>
+                                <div key={i.cartItemId || i.id} className={`summary-item ${combo ? 'summary-item-combo' : ''}`}>
                                     <span className="summary-item-name">
                                         {combo && <span className="combo-pill">Combo</span>}
-                                        {i.productName} x{i.quantity}
+                                        {getCartItemName(i)} x{i.quantity}
+                                        {!combo && <small>{getCartItemTypeLabel(i)}</small>}
+                                        <small>{getCartItemMeta(i)}</small>
                                     </span>
-                                    <span>{formatVND((i.unitPrice || 0) * (i.quantity || 1))}</span>
+                                    <span>{formatVND(getCartItemLineTotal(i))}</span>
                                 </div>
                             );
                         })}
                         <div className="summary-divider" />
+                        <div className="summary-total summary-sub"><span>Tạm tính</span><strong>{formatVND(subTotal)}</strong></div>
+                        <div className="summary-total summary-sub"><span>Giảm giá</span><strong>{discountAmount > 0 ? `- ${formatVND(discountAmount)}` : '0 ₫'}</strong></div>
                         <div className="summary-total"><strong>Tổng cộng</strong><strong className="total-num">{formatVND(total)}</strong></div>
+                        {!!cart?.couponCode && <div className="checkout-summary-note">Ma giam gia: {cart.couponCode}</div>}
+                        {!!cart?.orderNote && <div className="checkout-summary-note">Ghi chu: {cart.orderNote}</div>}
                     </div>
                 </div>
             </div>

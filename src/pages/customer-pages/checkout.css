@@ -24,6 +24,17 @@
     margin-bottom: 28px;
 }
 
+.checkout-empty-note {
+    margin-bottom: 20px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: #fff7ed;
+    border: 1px solid #fdba74;
+    color: #9a3412;
+    font-size: 13px;
+    font-weight: 600;
+}
+
 .checkout-layout {
     display: grid;
     grid-template-columns: 1fr 300px;
@@ -168,6 +179,20 @@
     align-items: center;
 }
 
+.confirm-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.confirm-item-info small,
+.summary-item-name small {
+    display: block;
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
 .combo-pill {
     display: inline-flex;
     align-items: center;
@@ -221,7 +246,23 @@
     justify-content: space-between;
 }
 
+.summary-sub {
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #475569;
+}
+
 .total-num {
     color: #764ba2;
     font-size: 18px;
+}
+
+.checkout-summary-note {
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 12px;
+    line-height: 1.5;
 }

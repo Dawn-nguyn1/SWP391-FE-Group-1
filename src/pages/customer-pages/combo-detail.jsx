@@ -1,16 +1,37 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, InputNumber, Spin, Empty, message } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
-import { getPublicComboDetailAPI } from '../../services/api.service';
+import { addComboToCartAPI, getPublicComboDetailAPI } from '../../services/api.service';
+import { CartContext } from '../../context/cart.context';
+import { AuthContext } from '../../context/auth.context';
 import './combo-detail.css';
+
+const getComboItemPrimaryAttribute = (item) => item?.attributes?.[0] || null;
+const getComboItemImage = (item) =>
+    item?.attributes?.flatMap((attribute) => attribute?.images || [])
+        ?.find((image) => image?.imageUrl)?.imageUrl || null;
+const getComboDisplayImage = (combo) =>
+    combo?.imageUrl || combo?.items?.map(getComboItemImage).find(Boolean) || null;
+const getComboItemLabel = (item) => {
+    const primaryAttribute = getComboItemPrimaryAttribute(item);
+    return primaryAttribute?.attributeValue || `Variant #${item?.productVariantId}`;
+};
+const getComboItemMeta = (item) => {
+    const attributes = Array.isArray(item?.attributes) ? item.attributes : [];
+    if (attributes.length === 0) return 'Bien the mac dinh';
+    return attributes.map((attribute) => `${attribute.attributeName}: ${attribute.attributeValue}`).join(' • ');
+};
 
 const ComboDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
+    const { user } = useContext(AuthContext);
+    const { fetchCart } = useContext(CartContext);
     const [combo, setCombo] = useState(null);
     const [loading, setLoading] = useState(true);
     const [quantity, setQuantity] = useState(1);
+    const [adding, setAdding] = useState(false);
 
     useEffect(() => {
         let cancelled = false;
@@ -39,6 +60,29 @@ const ComboDetailPage = () => {
         return combo.items.reduce((sum, item) => sum + (item.quantity || 0), 0);
     }, [combo]);
 
+    const comboImage = useMemo(() => getComboDisplayImage(combo), [combo]);
+
+    const handleAddComboToCart = async () => {
+        if (!user?.id) {
+            message.warning('Vui lòng đăng nhập để thêm combo vào giỏ hàng');
+            navigate('/login');
+            return;
+        }
+
+        if (!combo?.id) return;
+
+        setAdding(true);
+        try {
+            await addComboToCartAPI(combo.id, quantity);
+            await fetchCart();
+            message.success('Đã thêm combo vào giỏ hàng');
+        } catch (e) {
+            message.error(e?.message || 'Không thể thêm combo vào giỏ hàng');
+        } finally {
+            setAdding(false);
+        }
+    };
+
     if (loading) {
         return <div className="combo-detail-loading"><Spin size="large" /></div>;
     }
@@ -64,8 +108,8 @@ const ComboDetailPage = () => {
 
             <div className="combo-detail-hero">
                 <div className="combo-detail-image">
-                    {combo.imageUrl ? (
-                        <img src={combo.imageUrl} alt={combo.name} />
+                    {comboImage ? (
+                        <img src={comboImage} alt={combo.name} />
                     ) : (
                         <div className="combo-image-placeholder">COMBO</div>
                     )}
@@ -81,24 +125,33 @@ const ComboDetailPage = () => {
                     <div className="combo-detail-meta">
                         <span>{totalItems} sản phẩm</span>
                         <span>{combo.items?.length || 0} loại item</span>
+                        <span>{combo.active ? 'Dang hoat dong' : 'Tam khoa'}</span>
                     </div>
                     <div className="combo-detail-actions">
                         <div className="combo-qty">
                             <span>Số lượng</span>
-                            <InputNumber min={1} value={quantity} onChange={(v) => setQuantity(v || 1)} disabled />
+                            <InputNumber min={1} value={quantity} onChange={(v) => setQuantity(v || 1)} />
                         </div>
                         <Button
                             type="primary"
                             size="large"
-                            disabled
-                            onClick={() => message.info('Combo hiện chỉ hỗ trợ xem thông tin. Tính năng mua combo sẽ mở lại khi backend hỗ trợ đúng nghiệp vụ.')}
+                            loading={adding}
+                            onClick={handleAddComboToCart}
+                            disabled={!combo.active}
                         >
-                            Tạm dừng mua combo
+                            {combo.active ? 'Them combo vao gio' : 'Combo tam khoa'}
                         </Button>
                     </div>
-                    <p className="combo-detail-note">
-                        Giá combo đang được hiển thị để tham khảo. Hiện chưa cho phép mua trực tiếp để tránh sai lệch giá khi thanh toán.
-                    </p>
+                    <div className="combo-detail-includes">
+                        <span>Combo bao gom</span>
+                        <div className="combo-detail-chips">
+                            {combo.items?.map((item) => (
+                                <span key={item.id} className="combo-detail-chip">
+                                    {getComboItemLabel(item)} x{item.quantity}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -106,21 +159,19 @@ const ComboDetailPage = () => {
                 <h2>Danh sách sản phẩm trong combo</h2>
                 <div className="combo-item-grid">
                     {combo.items?.map((item) => {
-                        const attr = item.attributes?.[0];
-                        const image = attr?.images?.[0]?.imageUrl;
+                        const image = getComboItemImage(item);
                         return (
                             <div key={item.id} className="combo-item-card">
                                 <div className="combo-item-image">
-                                    {image ? <img src={image} alt={attr?.attributeValue || 'Item'} /> : <span>ITEM</span>}
+                                    {image ? <img src={image} alt={getComboItemLabel(item)} /> : <span>ITEM</span>}
                                 </div>
                                 <div className="combo-item-info">
                                     <div className="combo-item-name">
-                                        {attr?.attributeValue || `Variant #${item.productVariantId}`}
+                                        {getComboItemLabel(item)}
                                     </div>
-                                    <div className="combo-item-attr">
-                                        {attr?.attributeName || 'Biến thể'}
-                                    </div>
+                                    <div className="combo-item-attr">{getComboItemMeta(item)}</div>
                                     <div className="combo-item-qty">Số lượng: {item.quantity}</div>
+                                    <div className="combo-item-code">Variant ID: {item.productVariantId}</div>
                                 </div>
                             </div>
                         );

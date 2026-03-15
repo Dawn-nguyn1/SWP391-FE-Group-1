@@ -5,13 +5,17 @@ import { getCustomerOrdersAPI, cancelOrderByCustomerAPI, submitCustomerReturnReq
 import './orders.css';
 
 const STATUS_CONFIG = {
+    PENDING:           { label: 'Đang xử lý',     color: 'default' },
+    PAID:              { label: 'Đã thanh toán',  color: 'green' },
     PENDING_PAYMENT:   { label: 'Chờ thanh toán', color: 'gold' },
     WAITING_CONFIRM:   { label: 'Chờ xác nhận',   color: 'orange' },
+    CONFIRMED:         { label: 'Đã xác nhận',    color: 'blue' },
     SUPPORT_CONFIRMED: { label: 'Đã xác nhận',    color: 'blue' },
+    OPERATION_CONFIRMED: { label: 'Kho xác nhận', color: 'geekblue' },
     SHIPPING:          { label: 'Đang giao hàng', color: 'cyan' },
     COMPLETED:         { label: 'Hoàn thành',     color: 'green' },
     CANCELLED:         { label: 'Đã hủy',         color: 'red' },
-    RETURNED:          { label: 'Hoàn trả',       color: 'volcano' },
+    FAILED:            { label: 'Thất bại',       color: 'red' },
 };
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
@@ -21,6 +25,22 @@ const formatAddress = (address) => {
     const parts = [address.addressLine, address.ward, address.district, address.province].filter(Boolean);
     return parts.join(', ');
 };
+const getPaymentLabel = (order) => {
+    if (order?.remainingPaymentMethod) return order.remainingPaymentMethod;
+    if (order?.paymentMethod) return order.paymentMethod;
+    if (order?.orderType === 'PRE_ORDER') return 'PRE_ORDER';
+    return 'COD / VNPAY';
+};
+const getOrderItemName = (item) => item?.isCombo ? (item.comboName || 'Combo') : (item.productName || 'Sản phẩm');
+const getOrderItemMeta = (item) => {
+    if (item?.isCombo) {
+        return (item.comboItems || [])
+            .map((comboItem) => `${comboItem.productName} x${comboItem.quantity}`)
+            .join(', ');
+    }
+
+    return (item?.attributes || []).join(' • ') || item?.saleType || 'Sản phẩm đơn lẻ';
+};
 
 const OrdersPage = () => {
     const [orders, setOrders] = useState([]);
@@ -28,6 +48,7 @@ const OrdersPage = () => {
     const [returnRequests, setReturnRequests] = useState([]);
     const [returnLoading, setReturnLoading] = useState(true);
     const [returnModalOpen, setReturnModalOpen] = useState(false);
+    const [returnOrderItems, setReturnOrderItems] = useState([]);
     const [returnForm, setReturnForm] = useState({
         orderId: null,
         orderItemId: null,
@@ -74,9 +95,13 @@ const OrdersPage = () => {
     };
 
     const openReturnModal = (order) => {
+        const orderItems = Array.isArray(order.items) ? order.items : [];
+        const firstItem = orderItems[0] || null;
+
+        setReturnOrderItems(orderItems);
         setReturnForm({
             orderId: order.id,
-            orderItemId: null,
+            orderItemId: firstItem?.id || null,
             quantity: 1,
             reason: 'DEFECTIVE',
             note: '',
@@ -87,7 +112,7 @@ const OrdersPage = () => {
 
     const submitReturnRequest = async () => {
         if (!returnForm.orderItemId) {
-            message.error('Vui lòng nhập mã Order Item');
+            message.error('Vui lòng chọn Order Item');
             return;
         }
         const activeStatuses = new Set(['SUBMITTED', 'WAITING_RETURN', 'RECEIVED', 'REFUND_REQUESTED']);
@@ -127,7 +152,7 @@ const OrdersPage = () => {
                         {orders.map(order => {
                             const statusCfg = STATUS_CONFIG[order.orderStatus] || { label: order.orderStatus, color: 'default' };
                             const canCancel = order.orderStatus === 'WAITING_CONFIRM';
-                            const canReturn = order.orderStatus === 'COMPLETED';
+                            const canReturn = order.orderStatus === 'COMPLETED' && (order.items?.length || 0) > 0;
                             const returnForOrder = returnRequests.find(r => r.orderId === order.id);
                             return (
                                 <div key={order.id} className="order-card">
@@ -141,7 +166,7 @@ const OrdersPage = () => {
                                         </div>
                                         <div className="order-header-right">
                                             <Tag color={statusCfg.color}>{statusCfg.label}</Tag>
-                                            <span className="order-pay-method">{order.remainingPaymentMethod || order.paymentMethod || '—'}</span>
+                                            <span className="order-pay-method">{getPaymentLabel(order)}</span>
                                         </div>
                                     </div>
 
@@ -199,6 +224,26 @@ const OrdersPage = () => {
                                             </Tooltip>
                                         )}
                                     </div>
+
+                                    {order.items?.length > 0 && (
+                                        <div className="order-items">
+                                            {order.items.map((item) => (
+                                                <div key={item.id} className="order-item-row">
+                                                    <div className="order-item-main">
+                                                        <span className={`order-item-badge ${item.isCombo ? 'order-item-badge-combo' : ''}`}>
+                                                            {item.isCombo ? 'Combo' : 'Sản phẩm'}
+                                                        </span>
+                                                        <div className="order-item-text">
+                                                            <strong>{getOrderItemName(item)} x{item.quantity}</strong>
+                                                            <span>{getOrderItemMeta(item)}</span>
+                                                        </div>
+                                                    </div>
+                                                    <strong className="order-item-price">{formatVND(item.totalPrice)}</strong>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
                                 </div>
                             );
                         })}
@@ -260,7 +305,10 @@ const OrdersPage = () => {
             <Modal
                 title={`Yêu cầu đổi trả #${returnForm.orderId ?? ''}`}
                 open={returnModalOpen}
-                onCancel={() => setReturnModalOpen(false)}
+                onCancel={() => {
+                    setReturnModalOpen(false);
+                    setReturnOrderItems([]);
+                }}
                 onOk={submitReturnRequest}
                 okText="Gửi yêu cầu"
                 cancelText="Hủy"
@@ -280,10 +328,13 @@ const OrdersPage = () => {
                     </div>
                     <div className="return-field">
                         <span>Mã Order Item</span>
-                        <InputNumber
-                            min={1}
+                        <Select
                             value={returnForm.orderItemId}
-                            onChange={(val) => setReturnForm(prev => ({ ...prev, orderItemId: val }))}
+                            onChange={(val) => setReturnForm(prev => ({ ...prev, orderItemId: val, quantity: 1 }))}
+                            options={returnOrderItems.map((item) => ({
+                                label: `${getOrderItemName(item)} x${item.quantity}`,
+                                value: item.id
+                            }))}
                             style={{ width: '100%' }}
                         />
                     </div>
@@ -291,6 +342,7 @@ const OrdersPage = () => {
                         <span>Số lượng</span>
                         <InputNumber
                             min={1}
+                            max={returnOrderItems.find(item => item.id === returnForm.orderItemId)?.quantity || 1}
                             value={returnForm.quantity}
                             onChange={(val) => setReturnForm(prev => ({ ...prev, quantity: val }))}
                             style={{ width: '100%' }}

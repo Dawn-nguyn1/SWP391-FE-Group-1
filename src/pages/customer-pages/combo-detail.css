@@ -83,6 +83,39 @@
     gap: 16px;
 }
 
+.combo-detail-includes {
+    margin-top: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.combo-detail-includes > span {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.08em;
+}
+
+.combo-detail-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.combo-detail-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #334155;
+    border: 1px solid #dbeafe;
+    font-size: 12px;
+    font-weight: 600;
+}
+
 .combo-detail-note {
     margin: 14px 0 0;
     font-size: 13px;
@@ -160,6 +193,12 @@
 .combo-item-qty {
     font-size: 12px;
     color: #0f172a;
+    font-weight: 600;
+}
+
+.combo-item-code {
+    font-size: 11px;
+    color: #94a3b8;
     font-weight: 600;
 }
 

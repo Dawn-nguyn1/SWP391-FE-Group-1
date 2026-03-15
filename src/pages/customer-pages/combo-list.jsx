@@ -4,6 +4,18 @@ import { Pagination, Spin, Empty } from 'antd';
 import { getPublicCombosAPI } from '../../services/api.service';
 import './combo-list.css';
 
+const getComboDisplayImage = (combo) =>
+    combo?.imageUrl
+    || combo?.items?.flatMap((item) => item?.attributes || [])
+        ?.flatMap((attribute) => attribute?.images || [])
+        ?.find((image) => image?.imageUrl)?.imageUrl
+    || null;
+
+const getComboUnitCount = (combo) =>
+    Array.isArray(combo?.items)
+        ? combo.items.reduce((sum, item) => sum + (item?.quantity || 0), 0)
+        : 0;
+
 const ComboListPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
     const [combos, setCombos] = useState([]);
@@ -68,21 +80,28 @@ const ComboListPage = () => {
                             {combos.map((combo) => (
                                 <Link key={combo.id} to={`/customer/combos/${combo.id}`} className="combo-card">
                                     <div className="combo-image-wrap">
-                                        {combo.imageUrl ? (
-                                            <img src={combo.imageUrl} alt={combo.name} />
+                                        {getComboDisplayImage(combo) ? (
+                                            <img src={getComboDisplayImage(combo)} alt={combo.name} />
                                         ) : (
                                             <div className="combo-image-placeholder">COMBO</div>
                                         )}
                                         <span className="combo-badge">Combo</span>
                                     </div>
                                     <div className="combo-info">
+                                        <div className="combo-card-head">
+                                            <span className={`combo-status ${combo.active ? 'combo-status-active' : 'combo-status-inactive'}`}>
+                                                {combo.active ? 'Dang mo ban' : 'Tam an'}
+                                            </span>
+                                            <span className="combo-card-id">#{combo.id}</span>
+                                        </div>
                                         <h3>{combo.name}</h3>
                                         <p className="combo-desc">{combo.description || 'Bộ sưu tập combo ưu đãi'}</p>
                                         <div className="combo-meta">
-                                            <span>{combo.items?.length || 0} items</span>
+                                            <span>{combo.items?.length || 0} loai item</span>
+                                            <span>{getComboUnitCount(combo)} san pham</span>
                                             <strong>{formatVND(combo.comboPrice)}</strong>
                                         </div>
-                                        <p className="combo-status-note">Tạm thời chỉ hỗ trợ xem chi tiết combo</p>
+                                        <div className="combo-card-cta">Xem chi tiet combo</div>
                                     </div>
                                 </Link>
                             ))}
