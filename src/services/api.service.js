@@ -21,6 +21,21 @@ const fetchAllUserAPI = (current = 0, size = 10, keyword = "", role = "", status
     return axios.get(URL_BACKEND);
 }
 
+const searchAdminUsersAPI = (page = 0, size = 10, keyword = "", role = "", status = "", sort = []) => {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('size', size);
+    if (keyword) params.append('keyword', keyword);
+    if (role) params.append('role', role);
+    if (status) params.append('status', status);
+    if (sort && sort.length > 0) {
+        sort.forEach(s => params.append('sort', s));
+    }
+    
+    const URL_BACKEND = `/api/admin/users?${params.toString()}`;
+    return axios.get(URL_BACKEND);
+}
+
 const deleteUserAPI = (id) => {
     const URL_BACKEND = `/api/admin/users/${id}`;
     return axios.delete(URL_BACKEND);
@@ -121,6 +136,23 @@ const logoutAPI = () => {
 
 const fetchProductsAPI = () => {
     const URL_BACKEND = `/api/manager/products`;
+    return axios.get(URL_BACKEND);
+}
+
+const searchManagerProductsAPI = (page = 0, size = 10, keyword = "", brand = "", minPrice = null, maxPrice = null, inStock = null, sort = []) => {
+    const params = new URLSearchParams();
+    params.append('page', page);
+    params.append('size', size);
+    if (keyword) params.append('keyword', keyword);
+    if (brand) params.append('brand', brand);
+    if (minPrice !== null) params.append('minPrice', minPrice);
+    if (maxPrice !== null) params.append('maxPrice', maxPrice);
+    if (inStock !== null) params.append('inStock', inStock);
+    if (sort && sort.length > 0) {
+        sort.forEach(s => params.append('sort', s));
+    }
+    
+    const URL_BACKEND = `/api/manager/products/search?${params.toString()}`;
     return axios.get(URL_BACKEND);
 }
 
@@ -322,7 +354,7 @@ const vnpayReturnAPI = (params) => axios.get('/api/payment/vnpay-return', { para
 
 export {
     // Updated User APIs
-    createUserAPI, updateUserAPI, fetchAllUserAPI,
+    createUserAPI, updateUserAPI, fetchAllUserAPI, searchAdminUsersAPI,
     deleteUserAPI, getUserByIdAPI, updateUserStatusAPI,
     // File & Auth APIs
     handleUploadFile, updateUserAvatarAPI, getUserDetailAPI,
@@ -335,6 +367,7 @@ export {
     deleteProductAPI, deleteVariantAPI, deleteAttributeAPI,
     fetchManagerProductByIdAPI,
     addImagesToAttributeAPI, updateAttributeImageAPI, deleteAttributeImageAPI,
+    searchManagerProductsAPI,
     // Combo Management APIs
     fetchCombosAPI, fetchComboByIdAPI,
     createComboAPI, updateComboAPI, deleteComboAPI,
