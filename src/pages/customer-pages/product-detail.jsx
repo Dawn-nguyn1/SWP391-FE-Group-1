@@ -9,7 +9,27 @@ import './product-detail.css';
 
 const formatVND = (n) => n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : 'Liên hệ';
 const getMinDeposit = (amount) => Math.ceil((Number(amount) || 0) * 0.3);
-const getApiErrorMessage = (error, fallback) => error?.message || error?.response?.data?.message || fallback;
+const getApiErrorMessage = (error, fallback) => error?.response?.data?.message || error?.message || fallback;
+const parsePreOrderConstraint = (error) => {
+    const apiMessage = String(error?.response?.data?.message ?? error?.message ?? '').trim();
+
+    if (!apiMessage) return null;
+
+    if (apiMessage.includes('Pre-order slot is full')) {
+        return { remainingSlots: 0, message: 'Phiên bản này đã hết suất đặt trước.' };
+    }
+
+    const remainingMatch = apiMessage.match(/RemainingSlots=(\d+)/i);
+    if (remainingMatch) {
+        const remainingSlots = Number(remainingMatch[1]);
+        return {
+            remainingSlots,
+            message: `Phiên bản này chỉ còn ${remainingSlots} suất đặt trước.`,
+        };
+    }
+
+    return null;
+};
 
 const ProductDetailPage = () => {
     const { id } = useParams();
@@ -24,6 +44,7 @@ const ProductDetailPage = () => {
     const [quantity, setQuantity] = useState(1);
     const [adding, setAdding] = useState(false);
     const [activeImg, setActiveImg] = useState(0);
+    const [preOrderConstraints, setPreOrderConstraints] = useState({});
 
     useEffect(() => {
         getPublicProductDetailAPI(id)
@@ -41,12 +62,25 @@ const ProductDetailPage = () => {
     const saleType = String(selectedVariant?.saleType ?? '').toUpperCase();
     const stockQuantity = selectedAttribute?.stockQuantity ?? selectedVariant?.stockQuantity ?? 0;
     const isPreOrder = saleType === 'PRE_ORDER';
+    const preOrderConstraint = selectedVariant?.id ? preOrderConstraints[selectedVariant.id] : null;
+    const remainingPreOrderSlots = Number.isFinite(preOrderConstraint?.remainingSlots)
+        ? preOrderConstraint.remainingSlots
+        : (isPreOrder ? Number(stockQuantity) || 0 : null);
+    const preOrderUnavailable = isPreOrder && remainingPreOrderSlots <= 0;
     const inStock = stockQuantity > 0;
-    const canPurchase = isPreOrder || inStock;
+    const canPurchase = isPreOrder ? remainingPreOrderSlots > 0 : inStock;
     const currentPrice = selectedAttribute?.price || selectedVariant?.price || product?.price;
     const estimatedDeposit = getMinDeposit(currentPrice);
     const remainingAmount = Math.max((Number(currentPrice) || 0) - estimatedDeposit, 0);
-    const maxQuantity = isPreOrder ? 10 : Math.max(stockQuantity || 1, 1);
+    const maxQuantity = isPreOrder
+        ? Math.max(Math.min(10, remainingPreOrderSlots || 0), 1)
+        : Math.max(stockQuantity || 1, 1);
+
+    useEffect(() => {
+        if (quantity > maxQuantity) {
+            setQuantity(maxQuantity);
+        }
+    }, [quantity, maxQuantity]);
 
     const handleAddToCart = async () => {
         if (!user?.id) {
@@ -62,12 +96,29 @@ const ProductDetailPage = () => {
         setAdding(true);
         try {
             await addToCartAPI(selectedVariant.id, quantity);
+            if (isPreOrder && selectedVariant?.id) {
+                setPreOrderConstraints((prev) => {
+                    if (!prev[selectedVariant.id]) return prev;
+                    const next = { ...prev };
+                    delete next[selectedVariant.id];
+                    return next;
+                });
+            }
             await fetchCart();
             message.success(isPreOrder ? 'Đã thêm sản phẩm đặt trước vào giỏ hàng' : 'Đã thêm vào giỏ hàng!');
             if (isPreOrder) {
                 navigate('/customer/cart');
             }
         } catch (e) {
+            if (isPreOrder && selectedVariant?.id) {
+                const constraint = parsePreOrderConstraint(e);
+                if (constraint) {
+                    setPreOrderConstraints((prev) => ({
+                        ...prev,
+                        [selectedVariant.id]: constraint,
+                    }));
+                }
+            }
             message.error(getApiErrorMessage(e, 'Không thể thêm vào giỏ hàng'));
         } finally {
             setAdding(false);
@@ -124,7 +175,11 @@ const ProductDetailPage = () => {
                                 {isPreOrder ? 'PRE-ORDER' : 'IN-STOCK'}
                             </span>
                             <span className="detail-status-copy">
-                                {isPreOrder ? 'Sản phẩm đang nhận đặt cọc và sẽ giao sau khi hàng về.' : `Còn ${stockQuantity} sản phẩm có thể giao ngay.`}
+                                {isPreOrder
+                                    ? (preOrderUnavailable
+                                        ? 'Phiên bản đang hiển thị đã hết suất đặt trước theo phản hồi từ hệ thống.'
+                                        : 'Sản phẩm đang nhận đặt cọc và sẽ giao sau khi hàng về.')
+                                    : `Còn ${stockQuantity} sản phẩm có thể giao ngay.`}
                             </span>
                         </div>
 
@@ -141,6 +196,18 @@ const ProductDetailPage = () => {
                                 <p className="preorder-card-note">
                                     Bạn cần cọc trước 30% giá trị đơn.
                                 </p>
+                                <p className={`preorder-card-note ${preOrderUnavailable ? 'preorder-card-note-warning' : ''}`}>
+                                    {preOrderUnavailable
+                                        ? (preOrderConstraint?.message || 'Phiên bản này đã hết suất đặt trước.')
+                                        : `Còn ${remainingPreOrderSlots} suất đặt trước cho phiên bản này.`}
+                                </p>
+                            </div>
+                        )}
+
+                        {isPreOrder && preOrderUnavailable && (
+                            <div className="preorder-alert" role="alert">
+                                <strong>Không thể thêm vào giỏ hàng.</strong>
+                                <span>Backend trả về `Pre-order slot is full` cho phiên bản đang chọn. Hãy đổi sang phiên bản khác hoặc cập nhật quota pre-order ở hệ thống quản trị.</span>
                             </div>
                         )}
 
@@ -186,7 +253,22 @@ const ProductDetailPage = () => {
 
                         <div className="select-group">
                             <label>Số lượng</label>
-                            <InputNumber min={1} max={maxQuantity} value={quantity} onChange={setQuantity} size="large" style={{ width: 100 }} />
+                            <InputNumber
+                                min={1}
+                                max={maxQuantity}
+                                value={quantity}
+                                onChange={setQuantity}
+                                size="large"
+                                style={{ width: 100 }}
+                                disabled={!canPurchase}
+                            />
+                            {isPreOrder && (
+                                <div className="quantity-helper">
+                                    {preOrderUnavailable
+                                        ? 'Số lượng bị khóa vì backend xác nhận phiên bản này đã hết suất.'
+                                        : `Mỗi lần đặt tối đa ${maxQuantity} sản phẩm cho phiên bản này.`}
+                                </div>
+                            )}
                         </div>
 
                         <Button
@@ -198,7 +280,9 @@ const ProductDetailPage = () => {
                             onClick={handleAddToCart}
                             className={`add-cart-btn ${isPreOrder ? 'add-cart-btn-preorder' : ''}`}
                         >
-                            {isPreOrder ? 'Đặt cọc ngay' : (inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng')}
+                            {isPreOrder
+                                ? (preOrderUnavailable ? 'Hết suất đặt trước' : 'Đặt cọc ngay')
+                                : (inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng')}
                         </Button>
 
                         {isPreOrder && (

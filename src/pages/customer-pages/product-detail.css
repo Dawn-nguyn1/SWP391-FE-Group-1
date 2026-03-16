@@ -293,6 +293,36 @@
     line-height: 1.6;
 }
 
+.preorder-card-note-warning {
+    color: #b91c1c;
+    font-weight: 700;
+}
+
+.preorder-alert {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: -4px 0 20px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #991b1b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.preorder-alert strong {
+    font-size: 13px;
+}
+
+.quantity-helper {
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #64748b;
+}
+
 .add-cart-btn-preorder {
     background: linear-gradient(135deg, #0f766e, #2563eb) !important;
 }

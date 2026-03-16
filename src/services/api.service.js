@@ -303,7 +303,11 @@ const getPublicComboDetailAPI = (id) => axios.get(`/api/public/products/combos/$
 
 // ===== CART APIs =====
 const getCartAPI = () => axios.get('/api/customer/cart');
-const addToCartAPI = (productVariantId, quantity) => axios.post('/api/customer/cart/add', { productVariantId, quantity });
+const addToCartAPI = (productVariantId, quantity) => axios.post('/api/customer/cart/add', {
+    productVariantId,
+    variantId: productVariantId,
+    quantity,
+});
 const addComboToCartAPI = (productComboId, quantity) =>
     axios.post('/api/customer/cart/add', { productComboId, quantity });
 const updateCartItemAPI = (itemId, quantity) => axios.put(`/api/customer/cart/items/${itemId}`, { quantity });
