@@ -353,6 +353,10 @@ const operationReceiveReturnRequestAPI = (id, dto) =>
 // ===== PAYMENT APIS =====
 const vnpayReturnAPI = (params) => axios.get('/api/payment/vnpay-return', { params });
 
+// ===== DASHBOARD APIS =====
+const getManagerDashboardAPI = () => axios.get('/api/manager/dashboard');
+const getAdminDashboardAPI = () => axios.get('/api/admin/dashboard');
+
 export {
     // Updated User APIs
     createUserAPI, updateUserAPI, fetchAllUserAPI, searchAdminUsersAPI,
@@ -391,4 +395,6 @@ export {
     getOperationOrdersAPI, getOperationReturnRequestsAPI, operationReceiveReturnRequestAPI,
     // Payment APIs
     vnpayReturnAPI,
+    // Dashboard APIs
+    getManagerDashboardAPI, getAdminDashboardAPI,
 }
