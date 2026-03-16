@@ -178,7 +178,11 @@ const ComboForm = (props) => {
                     <Form.Item
                         label="Image URL"
                         name="imageUrl"
-                        rules={[{ required: false, message: 'Please input image URL!' }]}
+                        rules={[
+                            { required: true, message: 'Image URL không được để trống!' },
+                            { max: 255, message: 'Image URL không được vượt quá 255 ký tự!' },
+                            { type: 'url', message: 'Định dạng URL không hợp lệ!' }
+                        ]}
                     >
                         <Input 
                             placeholder="Enter image URL (e.g., https://example.com/image.jpg)" 
