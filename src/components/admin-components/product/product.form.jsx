@@ -245,7 +245,29 @@ const ProductForm = (props) => {
                                                 label="SKU"
                                                 rules={[
                                                     { required: true, message: 'Missing SKU' },
-                                                    { max: 255, message: 'SKU cannot exceed 255 characters!' }
+                                                    { max: 255, message: 'SKU cannot exceed 255 characters!' },
+                                                    { 
+                                                        pattern: /^SKU-\d+$/, 
+                                                        message: 'SKU phải có định dạng SKU-number (ví dụ: SKU-001, SKU-123)' 
+                                                    },
+                                                    {
+                                                        validator: async (_, value) => {
+                                                            if (!value) return Promise.resolve();
+                                                            
+                                                            // Check for duplicate SKUs within the form
+                                                            const allVariants = form.getFieldValue('variants') || [];
+                                                            const currentVariantIndex = name;
+                                                            const duplicateCount = allVariants.filter((variant, index) => 
+                                                                index !== currentVariantIndex && variant.sku === value
+                                                            ).length;
+                                                            
+                                                            if (duplicateCount > 0) {
+                                                                return Promise.reject('SKU này đã tồn tại trong danh sách!');
+                                                            }
+                                                            
+                                                            return Promise.resolve();
+                                                        }
+                                                    }
                                                 ]}
                                             >
                                                 <Input placeholder="SKU-001" />

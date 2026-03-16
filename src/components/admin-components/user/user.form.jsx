@@ -192,7 +192,25 @@ const UserForm = (props) => {
             name="dob"
             rules={[
               { required: true, message: 'Không được để trống!' },
-              { pattern: /^\d{4}-\d{2}-\d{2}$/, message: 'Định dạng YYYY-MM-DD' }
+              { pattern: /^\d{4}-\d{2}-\d{2}$/, message: 'Định dạng YYYY-MM-DD' },
+              {
+                validator: (_, value) => {
+                  if (!value) return Promise.resolve();
+                  
+                  const birthDate = new Date(value);
+                  const today = new Date();
+                  const age = today.getFullYear() - birthDate.getFullYear();
+                  const monthDiff = today.getMonth() - birthDate.getMonth();
+                  const dayDiff = today.getDate() - birthDate.getDate();
+                  
+                  const actualAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+                  
+                  if (actualAge < 16) {
+                    return Promise.reject('Người dùng phải trên 16 tuổi!');
+                  }
+                  return Promise.resolve();
+                }
+              }
             ]}
           >
             <Input placeholder="2004-03-03" size="large" />
@@ -200,9 +218,9 @@ const UserForm = (props) => {
 
           <Form.Item label="Gender" name="gender">
             <Radio.Group size="large">
-              <Radio value={1}>Male</Radio>
-              <Radio value={2}>Female</Radio>
-              <Radio value={3}>Other</Radio>
+              <Radio value={0}>Male</Radio>
+              <Radio value={1}>Female</Radio>
+              <Radio value={2}>Other</Radio>
             </Radio.Group>
           </Form.Item>
 

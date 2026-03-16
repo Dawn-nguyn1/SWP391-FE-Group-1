@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Table, Popconfirm, notification, Switch, Input, Select } from 'antd';
+import { Table, Popconfirm, notification, Switch, Input, Select, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import ViewUserDetail from './user.detail';
 import { deleteUserAPI, updateUserStatusAPI } from '../../../services/api.service';
@@ -377,13 +377,32 @@ const UserTable = (props) => {
                     alignItems: 'center', 
                     gap: '12px',
                     padding: '10px 16px',
-                    cursor: 'default'
+                    cursor: 'default',
+                    transition: 'all 0.3s ease'
                 }}>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#fff' }}>Xóa liên tục:</span>
-                    <Switch
-                        checked={confirmDelete}
-                        onChange={setConfirmDelete}
-                    />
+                    <Tooltip 
+                        title={confirmDelete ? "Tắt: Xóa người dùng sẽ cần xác nhận" : "Bật: Xóa người dùng ngay lập tức"}
+                        placement="top"
+                    >
+                        <span style={{ 
+                            fontSize: '13px', 
+                            fontWeight: 600, 
+                            color: '#fff',
+                            transition: 'all 0.3s ease'
+                        }}>
+                            Xóa liên tục:
+                        </span>
+                    </Tooltip>
+                    <Tooltip 
+                        title={confirmDelete ? "Tắt: Xóa người dùng sẽ cần xác nhận" : "Bật: Xóa người dùng ngay lập tức"}
+                        placement="top"
+                    >
+                        <Switch
+                            checked={confirmDelete}
+                            onChange={setConfirmDelete}
+                            className="continuous-delete-switch"
+                        />
+                    </Tooltip>
                 </div>
             </div>
 
