@@ -19,6 +19,8 @@ import ProductPage from './components/admin-components/product/product.jsx';
 import CustomerHomePage from './pages/customer-pages/home.jsx';
 import ProductListPage from './pages/customer-pages/product-list.jsx';
 import ProductDetailPage from './pages/customer-pages/product-detail.jsx';
+import ComboListPage from './pages/customer-pages/combo-list.jsx';
+import ComboDetailPage from './pages/customer-pages/combo-detail.jsx';
 import CartPage from './pages/customer-pages/cart.jsx';
 import CheckoutPage from './pages/customer-pages/checkout.jsx';
 import PaymentResultPage from './pages/customer-pages/payment-result.jsx';
@@ -55,6 +57,8 @@ const router = createBrowserRouter([
           { index: true, element: <CustomerHomePage /> },
           { path: "products", element: <ProductListPage /> },
           { path: "products/:id", element: <ProductDetailPage /> },
+          { path: "combos", element: <ComboListPage /> },
+          { path: "combos/:id", element: <ComboDetailPage /> },
           { path: "cart", element: <CartPage /> },
           { path: "checkout", element: <CheckoutPage /> },
           { path: "payment-result", element: <PaymentResultPage /> },

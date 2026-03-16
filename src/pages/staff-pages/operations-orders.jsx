@@ -33,6 +33,7 @@ import { AuthContext } from '../../context/auth.context.jsx';
 
 const formatVND = n =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
+const getApiErrorMessage = (error, fallback) => error?.message || error?.response?.data?.message || fallback;
 
 const parseMaybeString = (value) => {
     if (typeof value !== 'string') return value;
@@ -114,6 +115,7 @@ const OperationsOrdersPage = () => {
     const [receiveTarget, setReceiveTarget] = useState(null);
     const [acceptedQuantity, setAcceptedQuantity] = useState(null);
     const [conditionNote, setConditionNote] = useState('');
+    const [previewImage, setPreviewImage] = useState(null);
 
     const loadApprovedOrders = async (page = ordersPage) => {
         setOrdersLoading(true);
@@ -166,8 +168,8 @@ const OperationsOrdersPage = () => {
             await operationsConfirmOrderAPI(orderId);
             message.success(`Đã gửi đơn #${orderId} đến GHN`);
             loadApprovedOrders(ordersPage);
-        } catch {
-            message.error('Không thể gửi đơn hàng');
+        } catch (e) {
+            message.error(getApiErrorMessage(e, 'Không thể gửi đơn hàng'));
         } finally {
             setActioning(null);
         }
@@ -182,6 +184,14 @@ const OperationsOrdersPage = () => {
 
     const submitReceive = async () => {
         if (!receiveTarget) return;
+        if (!acceptedQuantity || acceptedQuantity <= 0) {
+            message.error('Số lượng nhận phải lớn hơn 0');
+            return;
+        }
+        if (acceptedQuantity > (receiveTarget.requestedQuantity ?? acceptedQuantity)) {
+            message.error('Số lượng nhận không được vượt quá số lượng yêu cầu');
+            return;
+        }
         setActioning(receiveTarget.id);
         try {
             await operationReceiveReturnRequestAPI(receiveTarget.id, {
@@ -191,8 +201,8 @@ const OperationsOrdersPage = () => {
             message.success(`Đã nhận hoàn trả #${receiveTarget.id}`);
             setReceiveModalOpen(false);
             loadReturnRequests();
-        } catch {
-            message.error('Xác nhận nhận hàng thất bại');
+        } catch (e) {
+            message.error(e?.message || e?.response?.data?.message || 'Xác nhận nhận hàng thất bại');
         } finally {
             setActioning(null);
         }
@@ -302,7 +312,7 @@ const OperationsOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Đơn hàng cần giao GHN</h2>
-                            <p>Danh sách đơn đã được Support duyệt.</p>
+                            <p>Danh sách đơn đã được Support duyệt. Pre-order chỉ giao khi backend xác nhận đã sẵn sàng gửi.</p>
                         </div>
                         <div className="panel-icon">
                             <SendOutlined />
@@ -318,8 +328,10 @@ const OperationsOrdersPage = () => {
                             </div>
                         ) : (
                             <div className="orders-list">
-                                {orders.map(order => (
-                                    <div key={order.id || order.orderCode} className="order-card ops-order">
+                                {orders.map(order => {
+                                    const isPreOrder = order?.orderType === 'PRE_ORDER';
+                                    return (
+                                    <div key={order.id || order.orderCode} className={`order-card ops-order ${isPreOrder ? 'ops-order-preorder' : ''}`}>
                                         <div className="order-header">
                                             <div>
                                                 <span className="order-id">{order.orderCode || `Đơn #${order.id}`}</span>
@@ -368,26 +380,41 @@ const OperationsOrdersPage = () => {
                                                     Còn lại: {formatVND(order.remainingAmount)}
                                                 </span>
                                             </div>
-                                            <Popconfirm
-                                                title="Xác nhận giao qua GHN?"
-                                                description="Đơn hàng sẽ được tạo trên hệ thống GHN."
-                                                onConfirm={() => handleShip(order.id)}
-                                                okText="Giao GHN"
-                                                cancelText="Huỷ"
-                                            >
-                                                <Button
-                                                    type="primary"
-                                                    size="small"
-                                                    icon={<SendOutlined />}
-                                                    loading={actioning === order.id}
-                                                    className="btn-confirm"
+                                            {isPreOrder ? (
+                                                <div className="ops-preorder-note">
+                                                    <span>Pre-order chưa sẵn sàng tạo GHN.</span>
+                                                    <small>BE chỉ cho giao khi preorder đã qua bước ready to ship.</small>
+                                                    <Button
+                                                        size="small"
+                                                        icon={<SendOutlined />}
+                                                        className="btn-confirm btn-confirm-disabled"
+                                                        disabled
+                                                    >
+                                                        Chờ đủ điều kiện
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Popconfirm
+                                                    title="Xác nhận giao qua GHN?"
+                                                    description="Đơn hàng sẽ được tạo trên hệ thống GHN."
+                                                    onConfirm={() => handleShip(order.id)}
+                                                    okText="Giao GHN"
+                                                    cancelText="Huỷ"
                                                 >
-                                                    Giao GHN
-                                                </Button>
-                                            </Popconfirm>
+                                                    <Button
+                                                        type="primary"
+                                                        size="small"
+                                                        icon={<SendOutlined />}
+                                                        loading={actioning === order.id}
+                                                        className="btn-confirm"
+                                                    >
+                                                        Giao GHN
+                                                    </Button>
+                                                </Popconfirm>
+                                            )}
                                         </div>
                                     </div>
-                                ))}
+                                )})}
                             </div>
                         )}
                     </div>
@@ -460,12 +487,23 @@ const OperationsOrdersPage = () => {
 
                                             {evidences.length > 0 && (
                                                 <div className="return-evidence">
-                                                    <span>Minh chứng:</span>
-                                                    <ul>
-                                                        {evidences.slice(0, 3).map((url, idx) => (
-                                                            <li key={`${req.id}-ev-${idx}`}>{url}</li>
+                                                    <div className="evidence-title">Minh chứng</div>
+                                                    <div className="evidence-grid">
+                                                        {evidences.slice(0, 4).map((url, idx) => (
+                                                            <div
+                                                                key={`${req.id}-ev-${idx}`}
+                                                                className="evidence-thumb"
+                                                                onClick={() => setPreviewImage(url)}
+                                                                role="button"
+                                                                tabIndex={0}
+                                                                onKeyDown={(e) => {
+                                                                    if (e.key === 'Enter') setPreviewImage(url);
+                                                                }}
+                                                            >
+                                                                <img src={url} alt={`evidence-${idx + 1}`} />
+                                                            </div>
                                                         ))}
-                                                    </ul>
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -531,6 +569,19 @@ const OperationsOrdersPage = () => {
                         />
                     </div>
                 </div>
+            </Modal>
+
+            <Modal
+                open={!!previewImage}
+                footer={null}
+                onCancel={() => setPreviewImage(null)}
+                width="90vw"
+                centered
+                className="evidence-preview-modal"
+            >
+                {previewImage && (
+                    <img src={previewImage} alt="Evidence preview" className="evidence-preview-image" />
+                )}
             </Modal>
         </div>
     );
