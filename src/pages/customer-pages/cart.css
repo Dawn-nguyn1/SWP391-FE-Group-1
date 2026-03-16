@@ -249,3 +249,35 @@
 .continue-shopping:hover {
     color: #764ba2;
 }
+
+.item-badge-preorder {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.summary-row.preorder {
+    color: #312e81;
+    font-weight: 700;
+}
+
+.cart-warning-preorder {
+    background: #f5f3ff;
+    border-color: #c4b5fd;
+    color: #5b21b6;
+}
+
+@media (max-width: 900px) {
+    .cart-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .cart-item {
+        grid-template-columns: 72px 1fr;
+    }
+
+    .item-qty,
+    .item-price,
+    .item-delete {
+        justify-self: start;
+    }
+}

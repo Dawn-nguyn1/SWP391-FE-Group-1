@@ -33,6 +33,7 @@ import { AuthContext } from '../../context/auth.context.jsx';
 
 const formatVND = n =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
+const getApiErrorMessage = (error, fallback) => error?.message || error?.response?.data?.message || fallback;
 
 const parseMaybeString = (value) => {
     if (typeof value !== 'string') return value;
@@ -167,8 +168,8 @@ const OperationsOrdersPage = () => {
             await operationsConfirmOrderAPI(orderId);
             message.success(`Đã gửi đơn #${orderId} đến GHN`);
             loadApprovedOrders(ordersPage);
-        } catch {
-            message.error('Không thể gửi đơn hàng');
+        } catch (e) {
+            message.error(getApiErrorMessage(e, 'Không thể gửi đơn hàng'));
         } finally {
             setActioning(null);
         }
@@ -311,7 +312,7 @@ const OperationsOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Đơn hàng cần giao GHN</h2>
-                            <p>Danh sách đơn đã được Support duyệt.</p>
+                            <p>Danh sách đơn đã được Support duyệt. Pre-order chỉ giao khi backend xác nhận đã sẵn sàng gửi.</p>
                         </div>
                         <div className="panel-icon">
                             <SendOutlined />
@@ -327,8 +328,10 @@ const OperationsOrdersPage = () => {
                             </div>
                         ) : (
                             <div className="orders-list">
-                                {orders.map(order => (
-                                    <div key={order.id || order.orderCode} className="order-card ops-order">
+                                {orders.map(order => {
+                                    const isPreOrder = order?.orderType === 'PRE_ORDER';
+                                    return (
+                                    <div key={order.id || order.orderCode} className={`order-card ops-order ${isPreOrder ? 'ops-order-preorder' : ''}`}>
                                         <div className="order-header">
                                             <div>
                                                 <span className="order-id">{order.orderCode || `Đơn #${order.id}`}</span>
@@ -377,26 +380,41 @@ const OperationsOrdersPage = () => {
                                                     Còn lại: {formatVND(order.remainingAmount)}
                                                 </span>
                                             </div>
-                                            <Popconfirm
-                                                title="Xác nhận giao qua GHN?"
-                                                description="Đơn hàng sẽ được tạo trên hệ thống GHN."
-                                                onConfirm={() => handleShip(order.id)}
-                                                okText="Giao GHN"
-                                                cancelText="Huỷ"
-                                            >
-                                                <Button
-                                                    type="primary"
-                                                    size="small"
-                                                    icon={<SendOutlined />}
-                                                    loading={actioning === order.id}
-                                                    className="btn-confirm"
+                                            {isPreOrder ? (
+                                                <div className="ops-preorder-note">
+                                                    <span>Pre-order chưa sẵn sàng tạo GHN.</span>
+                                                    <small>BE chỉ cho giao khi preorder đã qua bước ready to ship.</small>
+                                                    <Button
+                                                        size="small"
+                                                        icon={<SendOutlined />}
+                                                        className="btn-confirm btn-confirm-disabled"
+                                                        disabled
+                                                    >
+                                                        Chờ đủ điều kiện
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Popconfirm
+                                                    title="Xác nhận giao qua GHN?"
+                                                    description="Đơn hàng sẽ được tạo trên hệ thống GHN."
+                                                    onConfirm={() => handleShip(order.id)}
+                                                    okText="Giao GHN"
+                                                    cancelText="Huỷ"
                                                 >
-                                                    Giao GHN
-                                                </Button>
-                                            </Popconfirm>
+                                                    <Button
+                                                        type="primary"
+                                                        size="small"
+                                                        icon={<SendOutlined />}
+                                                        loading={actioning === order.id}
+                                                        className="btn-confirm"
+                                                    >
+                                                        Giao GHN
+                                                    </Button>
+                                                </Popconfirm>
+                                            )}
                                         </div>
                                     </div>
-                                ))}
+                                )})}
                             </div>
                         )}
                     </div>

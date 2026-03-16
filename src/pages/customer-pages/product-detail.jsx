@@ -1,11 +1,15 @@
 import React, { useEffect, useState, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Spin, message, InputNumber, Button, Tag } from 'antd';
+import { Spin, message, InputNumber, Button } from 'antd';
 import { ShoppingCartOutlined, ArrowLeftOutlined, CheckCircleOutlined } from '@ant-design/icons';
 import { getPublicProductDetailAPI, addToCartAPI } from '../../services/api.service';
 import { CartContext } from '../../context/cart.context';
 import { AuthContext } from '../../context/auth.context';
 import './product-detail.css';
+
+const formatVND = (n) => n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : 'Liên hệ';
+const getMinDeposit = (amount) => Math.ceil((Number(amount) || 0) * 0.3);
+const getApiErrorMessage = (error, fallback) => error?.message || error?.response?.data?.message || fallback;
 
 const ProductDetailPage = () => {
     const { id } = useParams();
@@ -23,22 +27,51 @@ const ProductDetailPage = () => {
 
     useEffect(() => {
         getPublicProductDetailAPI(id)
-            .then(r => { setProduct(r); if (r?.variants?.[0]) { setSelectedVariant(r.variants[0]); setSelectedAttribute(r.variants[0]?.attributes?.[0] || null); } })
+            .then((r) => {
+                setProduct(r);
+                if (r?.variants?.[0]) {
+                    setSelectedVariant(r.variants[0]);
+                    setSelectedAttribute(r.variants[0]?.attributes?.[0] || null);
+                }
+            })
             .catch(() => message.error('Không tìm thấy sản phẩm'))
             .finally(() => setLoading(false));
     }, [id]);
 
+    const saleType = String(selectedVariant?.saleType ?? '').toUpperCase();
+    const stockQuantity = selectedAttribute?.stockQuantity ?? selectedVariant?.stockQuantity ?? 0;
+    const isPreOrder = saleType === 'PRE_ORDER';
+    const inStock = stockQuantity > 0;
+    const canPurchase = isPreOrder || inStock;
+    const currentPrice = selectedAttribute?.price || selectedVariant?.price || product?.price;
+    const estimatedDeposit = getMinDeposit(currentPrice);
+    const remainingAmount = Math.max((Number(currentPrice) || 0) - estimatedDeposit, 0);
+    const maxQuantity = isPreOrder ? 10 : Math.max(stockQuantity || 1, 1);
+
     const handleAddToCart = async () => {
-        if (!user?.id) { message.warning('Vui lòng đăng nhập để thêm vào giỏ hàng'); navigate('/login'); return; }
-        if (!selectedVariant?.id) { message.warning('Vui lòng chọn phiên bản sản phẩm'); return; }
+        if (!user?.id) {
+            message.warning('Vui lòng đăng nhập để thêm vào giỏ hàng');
+            navigate('/login');
+            return;
+        }
+        if (!selectedVariant?.id) {
+            message.warning('Vui lòng chọn phiên bản sản phẩm');
+            return;
+        }
+
         setAdding(true);
         try {
             await addToCartAPI(selectedVariant.id, quantity);
             await fetchCart();
-            message.success('Đã thêm vào giỏ hàng!');
+            message.success(isPreOrder ? 'Đã thêm sản phẩm đặt trước vào giỏ hàng' : 'Đã thêm vào giỏ hàng!');
+            if (isPreOrder) {
+                navigate('/customer/cart');
+            }
         } catch (e) {
-            message.error(e?.response?.data?.message || 'Không thể thêm vào giỏ hàng');
-        } finally { setAdding(false); }
+            message.error(getApiErrorMessage(e, 'Không thể thêm vào giỏ hàng'));
+        } finally {
+            setAdding(false);
+        }
     };
 
     if (loading) return <div className="detail-loading"><Spin size="large" /></div>;
@@ -52,9 +85,9 @@ const ProductDetailPage = () => {
                 ? [product.productImage]
                 : [];
 
-    const currentPrice = selectedAttribute?.price || selectedVariant?.price || product.price;
-    const inStock = (selectedAttribute?.stockQuantity ?? selectedVariant?.stockQuantity ?? 0) > 0;
-    const formatVND = n => n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : 'Liên hệ';
+    const stockBadge = isPreOrder
+        ? { label: 'Đặt trước', className: 'preorder' }
+        : (inStock ? { label: 'Còn hàng', className: 'in' } : { label: 'Hết hàng', className: 'out' });
 
     return (
         <div className="product-detail-page">
@@ -62,7 +95,6 @@ const ProductDetailPage = () => {
                 <button className="back-btn" onClick={() => navigate(-1)}><ArrowLeftOutlined /> Quay lại</button>
 
                 <div className="detail-grid">
-                    {/* Images */}
                     <div className="detail-images">
                         <div className="main-img-wrap">
                             {images[activeImg] ? (
@@ -70,10 +102,7 @@ const ProductDetailPage = () => {
                             ) : (
                                 <div className="main-img-placeholder">👓</div>
                             )}
-                            {inStock
-                                ? <span className="stock-badge in">✓ Còn hàng</span>
-                                : <span className="stock-badge out">Hết hàng</span>
-                            }
+                            <span className={`stock-badge ${stockBadge.className}`}>{stockBadge.label}</span>
                         </div>
                         {images.length > 1 && (
                             <div className="thumb-list">
@@ -86,25 +115,51 @@ const ProductDetailPage = () => {
                         )}
                     </div>
 
-                    {/* Info */}
                     <div className="detail-info">
                         <p className="detail-brand">{product.brandName}</p>
                         <h1 className="detail-title">{product.name}</h1>
                         <div className="detail-price">{formatVND(currentPrice)}</div>
+                        <div className="detail-status-row">
+                            <span className={`detail-sale-pill ${isPreOrder ? 'detail-sale-pill-preorder' : 'detail-sale-pill-stock'}`}>
+                                {isPreOrder ? 'PRE-ORDER' : 'IN-STOCK'}
+                            </span>
+                            <span className="detail-status-copy">
+                                {isPreOrder ? 'Sản phẩm đang nhận đặt cọc và sẽ giao sau khi hàng về.' : `Còn ${stockQuantity} sản phẩm có thể giao ngay.`}
+                            </span>
+                        </div>
 
-                        {/* Variant Select */}
+                        {isPreOrder && (
+                            <div className="preorder-card">
+                                <div className="preorder-card-row">
+                                    <span>Thanh toán hôm nay</span>
+                                    <strong>{formatVND(estimatedDeposit)}</strong>
+                                </div>
+                                <div className="preorder-card-row">
+                                    <span>Thanh toán khi hàng về</span>
+                                    <strong>{formatVND(remainingAmount)}</strong>
+                                </div>
+                                <p className="preorder-card-note">
+                                    Bạn cần cọc trước 30% giá trị đơn.
+                                </p>
+                            </div>
+                        )}
+
                         {product.variants?.length > 0 && (
                             <div className="select-group">
                                 <label>Màu sắc / Kiểu dáng</label>
                                 <div className="variant-chips">
-                                    {product.variants.map(v => (
+                                    {product.variants.map((v) => (
                                         <button
                                             key={v.id}
                                             className={`chip ${selectedVariant?.id === v.id ? 'active' : ''}`}
-                                            onClick={() => { setSelectedVariant(v); setSelectedAttribute(v.attributes?.[0] || null); setActiveImg(0); }}
+                                            onClick={() => {
+                                                setSelectedVariant(v);
+                                                setSelectedAttribute(v.attributes?.[0] || null);
+                                                setActiveImg(0);
+                                            }}
                                         >
-                                            {v.attributes?.length > 0 
-                                                ? v.attributes.map(a => a.attributeValue).join(' / ')
+                                            {v.attributes?.length > 0
+                                                ? v.attributes.map((a) => a.attributeValue).join(' / ')
                                                 : `Variant ${v.id}`}
                                         </button>
                                     ))}
@@ -112,12 +167,11 @@ const ProductDetailPage = () => {
                             </div>
                         )}
 
-                        {/* Attribute Select (size/combo) */}
                         {selectedVariant?.attributes?.length > 0 && (
                             <div className="select-group">
                                 <label>Kích cỡ / Phiên bản</label>
                                 <div className="variant-chips">
-                                    {selectedVariant.attributes.map(a => (
+                                    {selectedVariant.attributes.map((a) => (
                                         <button
                                             key={a.id}
                                             className={`chip ${selectedAttribute?.id === a.id ? 'active' : ''}`}
@@ -130,26 +184,34 @@ const ProductDetailPage = () => {
                             </div>
                         )}
 
-                        {/* Quantity */}
                         <div className="select-group">
                             <label>Số lượng</label>
-                            <InputNumber min={1} max={selectedAttribute?.stockQuantity || selectedVariant?.stockQuantity || 10} value={quantity} onChange={setQuantity} size="large" style={{ width: 100 }} />
+                            <InputNumber min={1} max={maxQuantity} value={quantity} onChange={setQuantity} size="large" style={{ width: 100 }} />
                         </div>
 
-                        {/* Add to Cart */}
                         <Button
                             type="primary"
                             size="large"
-                            icon={inStock ? <ShoppingCartOutlined /> : null}
-                            disabled={!inStock}
+                            icon={canPurchase ? <ShoppingCartOutlined /> : null}
+                            disabled={!canPurchase}
                             loading={adding}
                             onClick={handleAddToCart}
-                            className="add-cart-btn"
+                            className={`add-cart-btn ${isPreOrder ? 'add-cart-btn-preorder' : ''}`}
                         >
-                            {inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng'}
+                            {isPreOrder ? 'Đặt cọc ngay' : (inStock ? 'Thêm vào giỏ hàng' : 'Hết hàng')}
                         </Button>
 
-                        {/* Description */}
+                        {isPreOrder && (
+                            <div className="detail-policy">
+                                <h4>Chính sách pre-order</h4>
+                                <ul>
+                                    <li>Tiền cọc sẽ được thanh toán online qua VNPay tại bước checkout.</li>
+                                    <li>Phần còn lại sẽ mở thanh toán khi hệ thống xác nhận hàng đã về.</li>
+                                    <li>Không nên trộn sản phẩm pre-order với hàng có sẵn trong cùng một đơn.</li>
+                                </ul>
+                            </div>
+                        )}
+
                         {product.description && (
                             <div className="detail-desc">
                                 <h4>Mô tả sản phẩm</h4>
@@ -157,11 +219,10 @@ const ProductDetailPage = () => {
                             </div>
                         )}
 
-                        {/* Meta */}
                         <div className="detail-meta">
-                            <div className="meta-item"><CheckCircleOutlined style={{ color: '#22c55e' }} /> Giao hàng toàn quốc qua GHN</div>
+                            <div className="meta-item"><CheckCircleOutlined style={{ color: '#22c55e' }} /> {isPreOrder ? 'Thông báo ngay khi hàng về để thanh toán phần còn lại' : 'Giao hàng toàn quốc qua GHN'}</div>
                             <div className="meta-item"><CheckCircleOutlined style={{ color: '#22c55e' }} /> Đổi trả trong 30 ngày</div>
-                            <div className="meta-item"><CheckCircleOutlined style={{ color: '#22c55e' }} /> Thanh toán an toàn qua VNPay / COD</div>
+                            <div className="meta-item"><CheckCircleOutlined style={{ color: '#22c55e' }} /> {isPreOrder ? 'Thanh toán cọc an toàn qua VNPay' : 'Thanh toán an toàn qua VNPay / COD'}</div>
                         </div>
                     </div>
                 </div>

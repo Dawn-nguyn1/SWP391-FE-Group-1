@@ -1,6 +1,7 @@
 const toArray = (value) => (Array.isArray(value) ? value : []);
 
 export const isComboCartItem = (item) => item?.isCombo === true;
+export const isPreOrderCartItem = (item) => !isComboCartItem(item) && String(item?.saleType ?? '').toUpperCase() === 'PRE_ORDER';
 
 export const getCartItemId = (item) => item?.cartItemId ?? item?.id ?? null;
 

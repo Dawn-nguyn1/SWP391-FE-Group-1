@@ -266,3 +266,54 @@
     font-size: 12px;
     line-height: 1.5;
 }
+
+.checkout-preorder-banner {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 20px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+    border: 1px solid #c7d2fe;
+    color: #312e81;
+}
+
+.checkout-preorder-banner strong {
+    font-size: 15px;
+}
+
+.payment-radio-featured {
+    border-color: #818cf8;
+    background: #f8faff;
+}
+
+.checkout-policy-card {
+    margin-top: 18px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+}
+
+.checkout-policy-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 14px;
+    color: #1e293b;
+    margin-bottom: 10px;
+}
+
+.checkout-policy-copy {
+    margin: 4px 0 0;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+    .checkout-layout {
+        grid-template-columns: 1fr;
+    }
+}

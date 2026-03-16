@@ -12,11 +12,13 @@ import {
     getCartItemName,
     getCartItemTypeLabel,
     isComboCartItem,
+    isPreOrderCartItem,
 } from '../../utils/cart-normalize';
 import './cart.css';
 
 const formatVND = (value) =>
     value ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value) : '0 ₫';
+const getMinDeposit = (value) => Math.ceil((Number(value) || 0) * 0.3);
 
 const CartPage = () => {
     const [loading, setLoading] = useState(true);
@@ -78,11 +80,16 @@ const CartPage = () => {
 
     const isComboItem = (item) => isComboCartItem(item);
     const comboItems = items.filter(isComboItem);
-    const normalItems = items.filter((item) => !isComboItem(item));
+    const preOrderItems = items.filter((item) => isPreOrderCartItem(item));
+    const inStockItems = items.filter((item) => !isComboItem(item) && !isPreOrderCartItem(item));
     const subTotal = Number(cartSummary?.subTotal ?? 0);
     const discountAmount = Number(cartSummary?.discountAmount ?? 0);
     const finalTotal = Number(cartSummary?.finalTotal ?? 0);
     const totalItems = Number(cartSummary?.totalItems ?? items.length);
+    const hasPreOrderItems = preOrderItems.length > 0;
+    const hasMixedCheckout = hasPreOrderItems && (comboItems.length > 0 || inStockItems.length > 0);
+    const minDeposit = getMinDeposit(finalTotal);
+    const remainingAmount = Math.max(finalTotal - minDeposit, 0);
 
     const renderItem = (item, combo = false) => (
         <div key={getCartItemId(item) || `${getCartItemName(item)}-${combo ? 'combo' : 'item'}`} className="cart-item">
@@ -94,6 +101,7 @@ const CartPage = () => {
                 <h3 className="item-name">
                     {getCartItemName(item)}
                     {combo && <span className="item-badge">Combo</span>}
+                    {isPreOrderCartItem(item) && <span className="item-badge item-badge-preorder">Pre-order</span>}
                 </h3>
                 <p className="item-variant">{getCartItemMeta(item)}</p>
             </div>
@@ -136,25 +144,47 @@ const CartPage = () => {
                 ) : (
                     <div className="cart-layout">
                         <div className="cart-items">
+                            {hasMixedCheckout && (
+                                <div className="cart-warning">
+                                    <span>Giỏ hàng đang trộn sản phẩm pre-order với hàng có sẵn hoặc combo. Backend sẽ từ chối checkout kiểu này.</span>
+                                </div>
+                            )}
+                            {hasPreOrderItems && !hasMixedCheckout && (
+                                <div className="cart-warning cart-warning-preorder">
+                                    <span>Đây là giỏ hàng đặt trước. Bạn sẽ thanh toán cọc 30% ở bước checkout và phần còn lại khi hàng về.</span>
+                                </div>
+                            )}
                             {comboItems.length > 0 && (
                                 <div className="cart-section">
                                     <div className="cart-section-title">Combo ưu đãi ({comboItems.length})</div>
                                     {comboItems.map((item) => renderItem(item, true))}
                                 </div>
                             )}
-                            {normalItems.length > 0 && (
+                            {preOrderItems.length > 0 && (
                                 <div className="cart-section">
-                                    <div className="cart-section-title">Sản phẩm đơn lẻ ({normalItems.length})</div>
-                                    {normalItems.map((item) => renderItem(item, false))}
+                                    <div className="cart-section-title">Sản phẩm đặt trước ({preOrderItems.length})</div>
+                                    {preOrderItems.map((item) => renderItem(item, false))}
+                                </div>
+                            )}
+                            {inStockItems.length > 0 && (
+                                <div className="cart-section">
+                                    <div className="cart-section-title">Sản phẩm có sẵn ({inStockItems.length})</div>
+                                    {inStockItems.map((item) => renderItem(item, false))}
                                 </div>
                             )}
                         </div>
 
                         <div className="cart-summary">
-                            <h3>Tóm tắt đơn hàng</h3>
+                            <h3>{hasPreOrderItems && !hasMixedCheckout ? 'Tóm tắt đặt cọc' : 'Tóm tắt đơn hàng'}</h3>
                             <div className="summary-row"><span>Tạm tính ({totalItems} sản phẩm)</span><span>{formatVND(subTotal)}</span></div>
                             <div className="summary-row"><span>Giảm giá</span><span>{discountAmount > 0 ? `- ${formatVND(discountAmount)}` : '0 ₫'}</span></div>
                             <div className="summary-row"><span>Phí vận chuyển</span><span>Tính khi checkout</span></div>
+                            {hasPreOrderItems && !hasMixedCheckout && (
+                                <>
+                                    <div className="summary-row preorder"><span>Thanh toán hôm nay</span><span>{formatVND(minDeposit)}</span></div>
+                                    <div className="summary-row preorder"><span>Còn lại khi hàng về</span><span>{formatVND(remainingAmount)}</span></div>
+                                </>
+                            )}
                             <div className="summary-row total"><span>Tổng cộng</span><span className="total-price">{formatVND(finalTotal)}</span></div>
                             {!!cartSummary?.couponCode && (
                                 <div className="cart-summary-note">Ma giam gia dang ap dung: {cartSummary.couponCode}</div>
@@ -167,10 +197,11 @@ const CartPage = () => {
                                 size="large"
                                 icon={<ArrowRightOutlined />}
                                 className="checkout-btn"
+                                disabled={hasMixedCheckout}
                                 onClick={() => navigate('/customer/checkout')}
                                 block
                             >
-                                Tiến hành đặt hàng
+                                {hasPreOrderItems && !hasMixedCheckout ? 'Tiến hành đặt cọc' : 'Tiến hành đặt hàng'}
                             </Button>
                             <Button danger type="text" onClick={handleClearCart} style={{ marginTop: 12 }} block>
                                 Xoá toàn bộ giỏ hàng

@@ -66,6 +66,32 @@
     border: 1px solid #eef2f7;
 }
 
+.ops-order-preorder {
+    border-color: #ddd6fe;
+    background: linear-gradient(180deg, #ffffff 0%, #faf8ff 100%);
+}
+
+.ops-preorder-note {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    text-align: right;
+}
+
+.ops-preorder-note span {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6d28d9;
+}
+
+.ops-preorder-note small {
+    font-size: 11px;
+    color: #7c3aed;
+    max-width: 220px;
+    line-height: 1.5;
+}
+
 .receive-form {
     display: grid;
     gap: 16px;

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Spin, Tag, Popconfirm, message, Empty, Tooltip, Modal, InputNumber, Select, Input } from 'antd';
-import { getCustomerOrdersAPI, cancelOrderByCustomerAPI, submitCustomerReturnRequestAPI, getCustomerReturnRequestsAPI } from '../../services/api.service';
+import { getCustomerOrdersAPI, cancelOrderByCustomerAPI, submitCustomerReturnRequestAPI, getCustomerReturnRequestsAPI, payRemainingOrderAPI } from '../../services/api.service';
 import './orders.css';
 
 const STATUS_CONFIG = {
@@ -20,15 +20,24 @@ const STATUS_CONFIG = {
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : '';
+const PREORDER_TIMELINE = [
+    { key: 'deposit', label: 'Đã đặt cọc' },
+    { key: 'stock', label: 'Chờ hàng về' },
+    { key: 'remaining', label: 'Thanh toán còn lại' },
+    { key: 'processing', label: 'Sẵn sàng xử lý' },
+];
+const getApiErrorMessage = (error, fallback) => error?.message || error?.response?.data?.message || fallback;
 const formatAddress = (address) => {
     if (!address) return '—';
     const parts = [address.addressLine, address.ward, address.district, address.province].filter(Boolean);
     return parts.join(', ');
 };
 const getPaymentLabel = (order) => {
+    if (order?.orderType === 'PRE_ORDER') {
+        return Number(order?.remainingAmount || 0) > 0 ? 'Cọc VNPAY / Còn lại chờ mở' : 'Đã thanh toán đủ';
+    }
     if (order?.remainingPaymentMethod) return order.remainingPaymentMethod;
     if (order?.paymentMethod) return order.paymentMethod;
-    if (order?.orderType === 'PRE_ORDER') return 'PRE_ORDER';
     return 'COD / VNPAY';
 };
 const getOrderItemName = (item) => item?.isCombo ? (item.comboName || 'Combo') : (item.productName || 'Sản phẩm');
@@ -40,6 +49,28 @@ const getOrderItemMeta = (item) => {
     }
 
     return (item?.attributes || []).join(' • ') || item?.saleType || 'Sản phẩm đơn lẻ';
+};
+const canPayRemaining = (order) => {
+    if (order?.orderType !== 'PRE_ORDER') return false;
+    if ((Number(order?.remainingAmount) || 0) <= 0) return false;
+    return !['CANCELLED', 'FAILED', 'COMPLETED', 'SHIPPING'].includes(order?.orderStatus);
+};
+const getPreorderTimelineState = (order) => {
+    const remaining = Number(order?.remainingAmount) || 0;
+    const status = String(order?.orderStatus ?? '').toUpperCase();
+
+    return PREORDER_TIMELINE.map((step) => {
+        if (step.key === 'deposit') {
+            return { ...step, active: !['PENDING_PAYMENT', 'FAILED', 'CANCELLED'].includes(status) };
+        }
+        if (step.key === 'stock') {
+            return { ...step, active: ['WAITING_CONFIRM', 'CONFIRMED', 'OPERATION_CONFIRMED', 'PAID', 'PENDING'].includes(status) || remaining > 0 };
+        }
+        if (step.key === 'remaining') {
+            return { ...step, active: remaining <= 0 || ['CONFIRMED', 'OPERATION_CONFIRMED', 'SHIPPING', 'COMPLETED'].includes(status) };
+        }
+        return { ...step, active: remaining <= 0 && ['CONFIRMED', 'OPERATION_CONFIRMED', 'SHIPPING', 'COMPLETED'].includes(status) };
+    });
 };
 
 const OrdersPage = () => {
@@ -91,7 +122,19 @@ const OrdersPage = () => {
             await cancelOrderByCustomerAPI(orderId);
             message.success('Đã hủy đơn hàng');
             load();
-        } catch (e) { message.error(e?.response?.data?.message || 'Không thể hủy đơn'); }
+        } catch (e) { message.error(getApiErrorMessage(e, 'Không thể hủy đơn')); }
+    };
+    const handlePayRemaining = async (orderId) => {
+        try {
+            const res = await payRemainingOrderAPI(orderId);
+            if (res?.paymentUrl) {
+                window.location.href = res.paymentUrl;
+                return;
+            }
+            message.success('Đã tạo phiên thanh toán phần còn lại');
+        } catch (e) {
+            message.error(getApiErrorMessage(e, 'Chưa thể thanh toán phần còn lại'));
+        }
     };
 
     const openReturnModal = (order) => {
@@ -133,7 +176,7 @@ const OrdersPage = () => {
             setReturnModalOpen(false);
             loadReturnRequests();
         } catch (e) {
-            message.error(e?.response?.data?.message || 'Không thể gửi yêu cầu đổi trả');
+            message.error(getApiErrorMessage(e, 'Không thể gửi yêu cầu đổi trả'));
         }
     };
 
@@ -153,9 +196,11 @@ const OrdersPage = () => {
                             const statusCfg = STATUS_CONFIG[order.orderStatus] || { label: order.orderStatus, color: 'default' };
                             const canCancel = order.orderStatus === 'WAITING_CONFIRM';
                             const canReturn = order.orderStatus === 'COMPLETED' && (order.items?.length || 0) > 0;
+                            const isPreOrder = order.orderType === 'PRE_ORDER';
+                            const preorderTimeline = isPreOrder ? getPreorderTimelineState(order) : [];
                             const returnForOrder = returnRequests.find(r => r.orderId === order.id);
                             return (
-                                <div key={order.id} className="order-card">
+                                <div key={order.id} className={`order-card ${isPreOrder ? 'order-card-preorder' : ''}`}>
                                     <div className="order-header">
                                         <div className="order-main">
                                             <div className="order-title">
@@ -169,6 +214,17 @@ const OrdersPage = () => {
                                             <span className="order-pay-method">{getPaymentLabel(order)}</span>
                                         </div>
                                     </div>
+
+                                    {isPreOrder && (
+                                        <div className="preorder-timeline">
+                                            {preorderTimeline.map((step) => (
+                                                <div key={step.key} className={`preorder-step ${step.active ? 'active' : ''}`}>
+                                                    <span className="preorder-step-dot" />
+                                                    <span className="preorder-step-label">{step.label}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
 
                                     <div className="order-info-grid">
                                         <div className="info-block">
@@ -217,6 +273,11 @@ const OrdersPage = () => {
                                         )}
                                         {returnForOrder && (
                                             <span className="return-status">Đã gửi yêu cầu ({returnForOrder.status})</span>
+                                        )}
+                                        {canPayRemaining(order) && (
+                                            <button className="remaining-btn" onClick={() => handlePayRemaining(order.id)}>
+                                                Thanh toán phần còn lại
+                                            </button>
                                         )}
                                         {!canCancel && (
                                             <Tooltip title="Chỉ hủy được khi đơn ở trạng thái Chờ xác nhận">
