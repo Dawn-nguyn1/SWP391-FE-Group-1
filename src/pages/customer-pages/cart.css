@@ -44,21 +44,6 @@
     gap: 16px;
 }
 
-.cart-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.cart-section-title {
-    font-size: 13px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin: 6px 2px 2px;
-}
-
 .cart-item {
     background: #fff;
     border-radius: 14px;
@@ -81,31 +66,6 @@
     justify-content: center;
 }
 
-.cart-warning {
-    background: #fff7ed;
-    border: 1px solid #fed7aa;
-    color: #9a3412;
-    padding: 12px 14px;
-    border-radius: 12px;
-    font-size: 13px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
-.cart-warning-action {
-    padding: 0;
-    font-weight: 700;
-    color: #c2410c;
-}
-
-.item-img-combo {
-    background: linear-gradient(135deg, #0ea5e9, #6366f1);
-    color: #fff;
-}
-
 .item-img img {
     width: 100%;
     height: 100%;
@@ -120,27 +80,11 @@
     margin: 0;
 }
 
-.item-brand-combo {
-    color: #0ea5e9;
-}
-
 .item-name {
     font-size: 15px;
     font-weight: 700;
     color: #1a1a2e;
     margin: 4px 0;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.item-badge {
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: #e0f2fe;
-    color: #0369a1;
-    font-weight: 700;
 }
 
 .item-variant {
@@ -172,14 +116,6 @@
     background: #fee2e2;
 }
 
-.item-delete-disabled {
-    color: #cbd5f5;
-    cursor: not-allowed;
-}
-
-.item-delete-disabled:hover {
-    background: transparent;
-}
 .cart-summary {
     background: #fff;
     border-radius: 16px;
@@ -211,16 +147,6 @@
     font-weight: 700;
 }
 
-.cart-summary-note {
-    margin-top: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: #f8fafc;
-    color: #475569;
-    font-size: 12px;
-    line-height: 1.5;
-}
-
 .total-price {
     color: #764ba2;
     font-size: 18px;
@@ -248,36 +174,4 @@
 
 .continue-shopping:hover {
     color: #764ba2;
-}
-
-.item-badge-preorder {
-    background: #ede9fe;
-    color: #6d28d9;
-}
-
-.summary-row.preorder {
-    color: #312e81;
-    font-weight: 700;
-}
-
-.cart-warning-preorder {
-    background: #f5f3ff;
-    border-color: #c4b5fd;
-    color: #5b21b6;
-}
-
-@media (max-width: 900px) {
-    .cart-layout {
-        grid-template-columns: 1fr;
-    }
-
-    .cart-item {
-        grid-template-columns: 72px 1fr;
-    }
-
-    .item-qty,
-    .item-price,
-    .item-delete {
-        justify-self: start;
-    }
 }

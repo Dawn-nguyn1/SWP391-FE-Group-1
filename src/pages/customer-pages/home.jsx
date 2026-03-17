@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Spin, message } from 'antd';
 import { RightOutlined, FireOutlined, TagOutlined } from '@ant-design/icons';
 import { getBrandsAPI, searchProductsAPI } from '../../services/api.service';
-import { getProductAvailability, isPreOrderProduct } from '../../utils/product-sale';
 import './home.css';
 
 const HomePage = () => {
@@ -12,13 +11,9 @@ const HomePage = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([searchProductsAPI({ page: 0, size: 24 }), getBrandsAPI()])
+        Promise.all([searchProductsAPI({ page: 0, size: 8 }), getBrandsAPI()])
             .then(([prodRes, brandRes]) => {
-                const prioritizedProducts = [...(prodRes?.content || [])]
-                    .sort((left, right) => Number(isPreOrderProduct(right)) - Number(isPreOrderProduct(left)))
-                    .slice(0, 8);
-
-                setFeatured(prioritizedProducts);
+                setFeatured(prodRes?.content || []);
                 setBrands(Array.isArray(brandRes) ? brandRes.slice(0, 8) : []);
             })
             .catch(() => message.error('Không thể tải dữ liệu'))
@@ -131,31 +126,28 @@ const HomePage = () => {
                             <p>Chưa có sản phẩm nào. Hãy thêm sản phẩm từ phần quản lý.</p>
                         </div>
                     ) : (
-                        featured.map(p => {
-                            const availability = getProductAvailability(p);
-
-                            return (
-                                <Link key={p.id} to={`/customer/products/${p.id}`} className="product-card">
-                                    <div className="product-img-wrap">
-                                        {p.productImage ? (
-                                            <img src={p.productImage} alt={p.name} className="product-img" />
-                                        ) : (
-                                            <div className="product-img-placeholder">👓</div>
-                                        )}
-                                        <span className={`badge-${availability.toneClassName}`}>{availability.label}</span>
-                                    </div>
-                                    <div className="product-info">
-                                        <p className="product-brand">{p.brandName || 'Unknown'}</p>
-                                        <h3 className="product-name">{p.name}</h3>
-                                        <p className="product-price">
-                                            {p.minPrice
-                                                ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.minPrice)
-                                                : 'Liên hệ'}
-                                        </p>
-                                    </div>
-                                </Link>
-                            );
-                        })
+                        featured.map(p => (
+                            <Link key={p.id} to={`/customer/products/${p.id}`} className="product-card">
+                                <div className="product-img-wrap">
+                                    {p.productImage ? (
+                                        <img src={p.productImage} alt={p.name} className="product-img" />
+                                    ) : (
+                                        <div className="product-img-placeholder">👓</div>
+                                    )}
+                                    {p.hasStock === false && <span className="badge-sold-out">Hết hàng</span>}
+                                    {p.hasStock !== false && <span className="badge-in-stock">Còn hàng</span>}
+                                </div>
+                                <div className="product-info">
+                                    <p className="product-brand">{p.brandName || 'Unknown'}</p>
+                                    <h3 className="product-name">{p.name}</h3>
+                                    <p className="product-price">
+                                        {p.minPrice
+                                            ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(p.minPrice)
+                                            : 'Liên hệ'}
+                                    </p>
+                                </div>
+                            </Link>
+                        ))
                     )}
                 </div>
             </section>

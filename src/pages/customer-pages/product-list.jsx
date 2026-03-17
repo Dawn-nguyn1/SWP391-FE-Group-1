@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Slider, Checkbox, Pagination, Spin, Empty } from 'antd';
-import { FilterOutlined } from '@ant-design/icons';
+import { Slider, Checkbox, Input, Pagination, Spin, Empty, Select } from 'antd';
+import { SearchOutlined, FilterOutlined } from '@ant-design/icons';
 import { searchProductsAPI, getBrandsAPI } from '../../services/api.service';
-import { getProductAvailability } from '../../utils/product-sale';
 import './product-list.css';
+
+const { Option } = Select;
 
 const ProductListPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -20,6 +21,8 @@ const ProductListPage = () => {
     const size = 12;
 
     const [priceRange, setPriceRange] = useState([0, 10000000]);
+    const [searchInput, setSearchInput] = useState(keyword);
+
     useEffect(() => { getBrandsAPI().then(r => setBrands(Array.isArray(r) ? r : [])); }, []);
 
     useEffect(() => {
@@ -111,29 +114,28 @@ const ProductListPage = () => {
                     ) : (
                         <>
                             <div className="products-grid">
-                                {products.map(p => {
-                                    const availability = getProductAvailability(p);
-
-                                    return (
-                                        <Link key={p.id} to={`/customer/products/${p.id}`} className="product-card">
-                                            <div className="product-img-wrap">
-                                                {p.productImage ? (
-                                                    <img src={p.productImage} alt={p.name} className="product-img" />
-                                                ) : (
-                                                    <div className="product-img-placeholder">👓</div>
-                                                )}
-                                                <span className={`badge-${availability.className}`}>{availability.label}</span>
-                                            </div>
-                                            <div className="product-info">
-                                                <p className="product-brand">{p.brandName || '—'}</p>
-                                                <h3 className="product-name">{p.name}</h3>
-                                                <p className="product-price">
-                                                    {p.minPrice ? formatVND(p.minPrice) : 'Liên hệ'}
-                                                </p>
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
+                                {products.map(p => (
+                                    <Link key={p.id} to={`/customer/products/${p.id}`} className="product-card">
+                                        <div className="product-img-wrap">
+                                            {p.productImage ? (
+                                                <img src={p.productImage} alt={p.name} className="product-img" />
+                                            ) : (
+                                                <div className="product-img-placeholder">👓</div>
+                                            )}
+                                            {p.hasStock === false
+                                                ? <span className="badge-out">Hết hàng</span>
+                                                : <span className="badge-in">Còn hàng</span>
+                                            }
+                                        </div>
+                                        <div className="product-info">
+                                            <p className="product-brand">{p.brandName || '—'}</p>
+                                            <h3 className="product-name">{p.name}</h3>
+                                            <p className="product-price">
+                                                {p.minPrice ? formatVND(p.minPrice) : 'Liên hệ'}
+                                            </p>
+                                        </div>
+                                    </Link>
+                                ))}
                             </div>
                             {total > size && (
                                 <div className="pagination-wrap">

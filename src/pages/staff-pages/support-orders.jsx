@@ -289,7 +289,6 @@ const SupportOrdersPage = () => {
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [rejectNote, setRejectNote] = useState('');
     const [rejectTarget, setRejectTarget] = useState(null);
-    const [previewImage, setPreviewImage] = useState(null);
 
     const applyOrders = (items) => {
         setOrders(items);
@@ -741,23 +740,12 @@ const SupportOrdersPage = () => {
 
                                             {evidences.length > 0 && (
                                                 <div className="return-evidence">
-                                                    <div className="evidence-title">Minh chứng</div>
-                                                    <div className="evidence-grid">
-                                                        {evidences.slice(0, 4).map((url, idx) => (
-                                                            <div
-                                                                key={`${req.id}-ev-${idx}`}
-                                                                className="evidence-thumb"
-                                                                onClick={() => setPreviewImage(url)}
-                                                                role="button"
-                                                                tabIndex={0}
-                                                                onKeyDown={(e) => {
-                                                                    if (e.key === 'Enter') setPreviewImage(url);
-                                                                }}
-                                                            >
-                                                                <img src={url} alt={`evidence-${idx + 1}`} />
-                                                            </div>
+                                                    <span>Minh chứng:</span>
+                                                    <ul>
+                                                        {evidences.slice(0, 3).map((url, idx) => (
+                                                            <li key={`${req.id}-ev-${idx}`}>{url}</li>
                                                         ))}
-                                                    </div>
+                                                    </ul>
                                                 </div>
                                             )}
 
@@ -884,19 +872,6 @@ const SupportOrdersPage = () => {
                     onChange={(e) => setRejectNote(e.target.value)}
                     placeholder="Ví dụ: Sản phẩm không đủ điều kiện đổi trả."
                 />
-            </Modal>
-
-            <Modal
-                open={!!previewImage}
-                footer={null}
-                onCancel={() => setPreviewImage(null)}
-                width="90vw"
-                centered
-                className="evidence-preview-modal"
-            >
-                {previewImage && (
-                    <img src={previewImage} alt="Evidence preview" className="evidence-preview-image" />
-                )}
             </Modal>
         </div>
     );

@@ -297,19 +297,10 @@ const getPublicProductsAPI = (params) => axios.get('/api/public/products', { par
 const searchProductsAPI = (params) => axios.get('/api/public/products/search', { params });
 const getPublicProductDetailAPI = (id) => axios.get(`/api/public/products/${id}`);
 const getBrandsAPI = () => axios.get('/api/public/products/brands');
-const getPublicCombosAPI = (page = 0, size = 12) =>
-    axios.get('/api/public/products/combos', { params: { page, size } });
-const getPublicComboDetailAPI = (id) => axios.get(`/api/public/products/combos/${id}`);
 
 // ===== CART APIs =====
 const getCartAPI = () => axios.get('/api/customer/cart');
-const addToCartAPI = (productVariantId, quantity) => axios.post('/api/customer/cart/add', {
-    productVariantId,
-    variantId: productVariantId,
-    quantity,
-});
-const addComboToCartAPI = (productComboId, quantity) =>
-    axios.post('/api/customer/cart/add', { productComboId, quantity });
+const addToCartAPI = (productVariantId, quantity) => axios.post('/api/customer/cart/add', { productVariantId, quantity });
 const updateCartItemAPI = (itemId, quantity) => axios.put(`/api/customer/cart/items/${itemId}`, { quantity });
 const removeCartItemAPI = (itemId) => axios.delete(`/api/customer/cart/items/${itemId}`);
 const clearCartAPI = () => axios.delete('/api/customer/cart/clear');
@@ -329,12 +320,7 @@ const getDistrictsAPI = (provinceId) => axios.get(`/api/public/location/district
 const getWardsAPI = (districtId) => axios.get(`/api/public/location/wards?districtId=${districtId}`);
 const cancelOrderByCustomerAPI = (orderId) => axios.put(`/api/customer/orders/${orderId}/cancel`);
 const getCustomerOrdersAPI = () => axios.get('/api/customer/my/orders');
-const payRemainingOrderAPI = (orderId) => axios.post(`/api/customer/orders/${orderId}/pay-remaining`);
 const getCustomerPaymentsAPI = () => axios.get('/api/customer/payments');
-// ===== CUSTOMER RETURN REQUEST APIs =====
-const submitCustomerReturnRequestAPI = (dto) => axios.post('/api/customer/return-requests', dto);
-const getCustomerReturnRequestsAPI = () => axios.get('/api/customer/return-requests');
-const getCustomerReturnRequestDetailAPI = (id) => axios.get(`/api/customer/return-requests/${id}`);
 
 // ===== SUPPORT STAFF APIs =====
 const getSupportOrdersAPI = () => axios.get('/api/support_staff/orders');
@@ -382,14 +368,12 @@ export {
     createComboAPI, updateComboAPI, deleteComboAPI,
     // Public product APIs
     getPublicProductsAPI, searchProductsAPI, getPublicProductDetailAPI, getBrandsAPI,
-    getPublicCombosAPI, getPublicComboDetailAPI,
     // Cart APIs
-    getCartAPI, addToCartAPI, addComboToCartAPI, updateCartItemAPI, removeCartItemAPI, clearCartAPI, checkoutAPI,
+    getCartAPI, addToCartAPI, updateCartItemAPI, removeCartItemAPI, clearCartAPI, checkoutAPI,
     // Customer profile/address/order APIs
     getProfileAPI, updateProfileAPI, changePasswordAPI,
     getAddressesAPI, createAddressAPI, updateAddressAPI, setDefaultAddressAPI, deleteAddressAPI,
-    cancelOrderByCustomerAPI, getCustomerOrdersAPI, payRemainingOrderAPI, getCustomerPaymentsAPI,
-    submitCustomerReturnRequestAPI, getCustomerReturnRequestsAPI, getCustomerReturnRequestDetailAPI,
+    cancelOrderByCustomerAPI, getCustomerOrdersAPI, getCustomerPaymentsAPI,
     getProvincesAPI, getDistrictsAPI, getWardsAPI,
     // Support Staff APIs
     getSupportOrdersAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
