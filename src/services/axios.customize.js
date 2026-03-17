@@ -1,9 +1,25 @@
 // noi cau hinh interceptor
 import axios from "axios";
-// Set config defaults when creating the instance
-// No baseURL — all /api/* requests go through Vite proxy (vite.config.js → localhost:8081)
-const instance = axios.create({});
 
+// Determine base URL based on environment
+const getBaseURL = () => {
+  if (import.meta.env.PROD) {
+    // Production: Use your deployed backend URL
+    return "https://your-backend-url.com"; // <-- Thay bằng URL backend của bạn
+  } else {
+    // Development: Use Vite proxy
+    return "";
+  }
+};
+
+// Set config defaults when creating the instance
+const instance = axios.create({
+  baseURL: getBaseURL(),
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  }
+});
 
 // Alter defaults after instance has been created
 // instance.defaults.headers.common['Authorization'] = AUTH_TOKEN;
