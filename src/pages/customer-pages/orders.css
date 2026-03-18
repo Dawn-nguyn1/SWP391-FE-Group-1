@@ -24,6 +24,34 @@
     margin-bottom: 24px;
 }
 
+.orders-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.orders-toolbar .orders-title {
+    margin-bottom: 0;
+}
+
+.orders-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.orders-toolbar-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.orders-sort-select {
+    min-width: 150px;
+}
+
 .orders-empty {
     background: #fff;
     border-radius: 16px;
@@ -376,6 +404,18 @@
 @media (max-width: 768px) {
     .orders-inner {
         padding: 0 16px;
+    }
+    .orders-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .orders-toolbar-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .orders-sort-select {
+        width: 100%;
     }
     .order-header {
         flex-direction: column;
