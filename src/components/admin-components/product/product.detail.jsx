@@ -84,6 +84,26 @@ const ProductDetail = (props) => {
                                                 {variant.saleType}
                                             </Tag>
                                         </Descriptions.Item>
+                                        <Descriptions.Item label="Availability Status">
+                                            <Tag color={variant.availabilityStatus === 'IN_STOCK' ? 'green' : 'orange'}>
+                                                {variant.availabilityStatus}
+                                            </Tag>
+                                        </Descriptions.Item>
+                                        {variant.allowPreorder && (
+                                            <>
+                                                <Descriptions.Item label="Allow Preorder">
+                                                    <Tag color="blue">Yes</Tag>
+                                                </Descriptions.Item>
+                                                <Descriptions.Item label="Preorder Limit">{variant.preorderLimit}</Descriptions.Item>
+                                                <Descriptions.Item label="Current Preorders">{variant.currentPreorders}</Descriptions.Item>
+                                                <Descriptions.Item label="Preorder Period">
+                                                    {variant.preorderStartDate} to {variant.preorderEndDate}
+                                                </Descriptions.Item>
+                                                <Descriptions.Item label="Fulfillment Date">
+                                                    {variant.preorderFulfillmentDate}
+                                                </Descriptions.Item>
+                                            </>
+                                        )}
                                     </Descriptions>
 
                                     {/* Attributes */}
