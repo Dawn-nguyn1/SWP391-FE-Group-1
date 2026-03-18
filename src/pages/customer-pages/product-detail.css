@@ -86,6 +86,11 @@
     color: #991b1b;
 }
 
+.stock-badge.preorder {
+    background: #fef3c7;
+    color: #92400e;
+}
+
 .thumb-list {
     display: flex;
     gap: 8px;
@@ -206,22 +211,78 @@
 }
 
 .detail-desc p {
-    color: #64748b;
-    line-height: 1.7;
-    font-size: 14px;
+color: #64748b;
+line-height: 1.7;
+font-size: 14px;
 }
 
 .detail-meta {
-    margin-top: 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+margin-top: 24px;
+display: flex;
+flex-direction: column;
+gap: 8px;
 }
 
 .meta-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: #555;
+display: flex;
+align-items: center;
+gap: 8px;
+font-size: 13px;
+color: #555;
+}
+
+.detail-preorder {
+margin-top: 24px;
+padding-top: 24px;
+border-top: 1px solid #f0f0f0;
+}
+
+.detail-preorder h4 {
+font-size: 15px;
+font-weight: 700;
+margin-bottom: 12px;
+color: #92400e;
+}
+
+.preorder-info {
+background: #fef3c7;
+border-radius: 12px;
+padding: 16px;
+margin-bottom: 12px;
+}
+
+.preorder-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+margin-bottom: 8px;
+}
+
+.preorder-item:last-child {
+margin-bottom: 0;
+}
+
+.preorder-label {
+font-size: 13px;
+font-weight: 600;
+color: #92400e;
+}
+
+.preorder-value {
+font-size: 13px;
+font-weight: 500;
+color: #78350f;
+}
+
+.preorder-note {
+background: #fef3c7;
+border-radius: 8px;
+padding: 12px;
+border-left: 4px solid #f59e0b;
+}
+
+.preorder-note small {
+color: #92400e;
+font-size: 12px;
+line-height: 1.5;
 }

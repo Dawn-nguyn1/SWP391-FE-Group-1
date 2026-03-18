@@ -46,14 +46,22 @@ const ProductDetailPage = () => {
 
     const images = selectedAttribute?.images?.length
         ? selectedAttribute.images
-        : selectedVariant?.images?.length
-            ? selectedVariant.images
+        : selectedVariant?.attributes?.[0]?.images?.length
+            ? selectedVariant.attributes[0].images
             : product.productImage
                 ? [product.productImage]
                 : [];
 
     const currentPrice = selectedAttribute?.price || selectedVariant?.price || product.price;
     const inStock = (selectedAttribute?.stockQuantity ?? selectedVariant?.stockQuantity ?? 0) > 0;
+    const saleType = selectedAttribute?.saleType || selectedVariant?.saleType || 'IN_STOCK';
+    const availabilityStatus = selectedAttribute?.availabilityStatus || selectedVariant?.availabilityStatus || 'IN_STOCK';
+    const allowPreorder = selectedAttribute?.allowPreorder || selectedVariant?.allowPreorder || false;
+    const preorderLimit = selectedAttribute?.preorderLimit || selectedVariant?.preorderLimit || 0;
+    const currentPreorders = selectedAttribute?.currentPreorders || selectedVariant?.currentPreorders || 0;
+    const preorderStartDate = selectedAttribute?.preorderStartDate || selectedVariant?.preorderStartDate;
+    const preorderEndDate = selectedAttribute?.preorderEndDate || selectedVariant?.preorderEndDate;
+    const preorderFulfillmentDate = selectedAttribute?.preorderFulfillmentDate || selectedVariant?.preorderFulfillmentDate;
     const formatVND = n => n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : 'Liên hệ';
 
     return (
@@ -66,20 +74,22 @@ const ProductDetailPage = () => {
                     <div className="detail-images">
                         <div className="main-img-wrap">
                             {images[activeImg] ? (
-                                <img src={images[activeImg].url || images[activeImg]} alt={product.name} className="main-img" />
+                                <img src={images[activeImg].imageUrl || images[activeImg]} alt={product.name} className="main-img" />
                             ) : (
                                 <div className="main-img-placeholder">👓</div>
                             )}
                             {inStock
                                 ? <span className="stock-badge in">✓ Còn hàng</span>
-                                : <span className="stock-badge out">Hết hàng</span>
+                                : allowPreorder && saleType === 'PRE_ORDER'
+                                    ? <span className="stock-badge preorder">📦 Đặt trước</span>
+                                    : <span className="stock-badge out">Hết hàng</span>
                             }
                         </div>
                         {images.length > 1 && (
                             <div className="thumb-list">
                                 {images.map((img, i) => (
                                     <button key={i} className={`thumb ${activeImg === i ? 'active' : ''}`} onClick={() => setActiveImg(i)}>
-                                        <img src={img.url || img} alt="" />
+                                        <img src={img.imageUrl || img} alt="" />
                                     </button>
                                 ))}
                             </div>
@@ -154,6 +164,38 @@ const ProductDetailPage = () => {
                             <div className="detail-desc">
                                 <h4>Mô tả sản phẩm</h4>
                                 <p>{product.description}</p>
+                            </div>
+                        )}
+
+                        {/* Preorder Information */}
+                        {allowPreorder && saleType === 'PRE_ORDER' && (
+                            <div className="detail-preorder">
+                                <h4>📦 Thông tin đặt trước</h4>
+                                <div className="preorder-info">
+                                    <div className="preorder-item">
+                                        <span className="preorder-label">Thời gian đặt trước:</span>
+                                        <span className="preorder-value">
+                                            {preorderStartDate && preorderEndDate 
+                                                ? `${preorderStartDate} - ${preorderEndDate}`
+                                                : 'Liên hệ'}
+                                        </span>
+                                    </div>
+                                    <div className="preorder-item">
+                                        <span className="preorder-label">Ngày giao hàng dự kiến:</span>
+                                        <span className="preorder-value">{preorderFulfillmentDate || 'Liên hệ'}</span>
+                                    </div>
+                                    <div className="preorder-item">
+                                        <span className="preorder-label">giới hạn đặt trước:</span>
+                                        <span className="preorder-value">{currentPreorders}/{'2'}</span>
+                                    </div>
+                                    <div className="preorder-item">
+                                        <span className="preorder-label">Trạng thái:</span>
+                                        <Tag color="orange">{availabilityStatus}</Tag>
+                                    </div>
+                                </div>
+                                <div className="preorder-note">
+                                    <small>⚠️ Sản phẩm này đang trong giai đoạn đặt trước. Sẽ được giao sau ngày {preorderFulfillmentDate || 'liên hệ'}.</small>
+                                </div>
                             </div>
                         )}
 
