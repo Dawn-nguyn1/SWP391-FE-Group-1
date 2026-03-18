@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Spin, Tag, Popconfirm, message, Empty, Tooltip } from 'antd';
 import { getCustomerOrdersAPI, cancelOrderByCustomerAPI } from '../../services/api.service';
+import { formatAddressText, normalizeOrdersResponse } from '../../utils/role-data';
 import './orders.css';
 
 const STATUS_CONFIG = {
@@ -15,13 +16,7 @@ const STATUS_CONFIG = {
 };
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
-const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : '';
-const formatAddress = (address) => {
-    if (!address) return '—';
-    const parts = [address.addressLine, address.ward, address.district, address.province].filter(Boolean);
-    return parts.join(', ');
-};
-
+const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : 'BE chưa trả ngày đặt';
 const OrdersPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -30,7 +25,7 @@ const OrdersPage = () => {
         try {
             setLoading(true);
             const res = await getCustomerOrdersAPI();
-            setOrders(Array.isArray(res) ? res : res?.content || []);
+            setOrders(normalizeOrdersResponse(res).items);
         } catch { message.error('Không thể tải đơn hàng'); }
         finally { setLoading(false); }
     };
@@ -72,22 +67,22 @@ const OrdersPage = () => {
                                         </div>
                                         <div className="order-header-right">
                                             <Tag color={statusCfg.color}>{statusCfg.label}</Tag>
-                                            <span className="order-pay-method">{order.remainingPaymentMethod || order.paymentMethod || '—'}</span>
+                                            <span className="order-pay-method">{order.remainingPaymentMethod || order.paymentMethod || 'Không có thông tin thanh toán'}</span>
                                         </div>
                                     </div>
 
                                     <div className="order-info-grid">
                                         <div className="info-block">
                                             <span>Người nhận</span>
-                                            <strong>{order.address?.receiverName || '—'}</strong>
+                                            <strong>{order.receiverName || '—'}</strong>
                                         </div>
                                         <div className="info-block">
                                             <span>Số điện thoại</span>
-                                            <strong>{order.address?.phone || '—'}</strong>
+                                            <strong>{order.receiverPhone || '—'}</strong>
                                         </div>
                                         <div className="info-block full">
                                             <span>Địa chỉ</span>
-                                            <strong>{formatAddress(order.address)}</strong>
+                                            <strong>{formatAddressText(order.address)}</strong>
                                         </div>
                                     </div>
 

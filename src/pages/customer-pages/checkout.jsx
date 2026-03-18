@@ -6,6 +6,7 @@ import {
     getCartAPI, getAddressesAPI, createAddressAPI, checkoutAPI
 } from '../../services/api.service';
 import { CartContext } from '../../context/cart.context';
+import { normalizeAddress, normalizeAddressListResponse, normalizeCart, formatAddressText } from '../../utils/role-data';
 import './checkout.css';
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
@@ -26,8 +27,8 @@ const CheckoutPage = () => {
     useEffect(() => {
         Promise.all([getCartAPI(), getAddressesAPI()])
             .then(([c, addrs]) => {
-                setCart(c);
-                const addrList = Array.isArray(addrs) ? addrs : [];
+                setCart(normalizeCart(c));
+                const addrList = normalizeAddressListResponse(addrs);
                 setAddresses(addrList);
                 const def = addrList.find(a => a.isDefault) || addrList[0];
                 if (def) setSelectedAddressId(def.id);
@@ -47,7 +48,7 @@ const CheckoutPage = () => {
                 addressLine: vals.addressLine
             };
 
-            const newAddr = await createAddressAPI(dto);
+            const newAddr = normalizeAddress(await createAddressAPI(dto));
             setAddresses(prev => [...prev, newAddr]);
             setSelectedAddressId(newAddr.id);
             setAddrModalOpen(false);
@@ -107,8 +108,8 @@ const CheckoutPage = () => {
                                             {addresses.map(a => (
                                                 <Radio key={a.id} value={a.id} className="address-radio">
                                                     <div className="address-card">
-                                                        <strong>{a.receiverName || a.recipientName}</strong> — {a.phone}
-                                                        <p>{a.addressLine || a.street}, {a.ward}, {a.district}, {a.province || a.city}</p>
+                                                        <strong>{a.receiverName}</strong> — {a.phone}
+                                                        <p>{formatAddressText(a)}</p>
                                                         {a.isDefault && <span className="default-badge">Mặc định</span>}
                                                     </div>
                                                 </Radio>
@@ -156,7 +157,7 @@ const CheckoutPage = () => {
                                     <h4>Giao đến:</h4>
                                     {(() => {
                                         const a = addresses.find(x => x.id === selectedAddressId);
-                                        return a ? <p>{a.receiverName || a.recipientName} — {a.phone}<br />{a.addressLine || a.street}, {a.ward}, {a.district}, {a.province || a.city}</p> : null;
+                                        return a ? <p>{a.receiverName} — {a.phone}<br />{formatAddressText(a)}</p> : null;
                                     })()}
                                 </div>
                                 <div className="confirm-section">
@@ -166,9 +167,9 @@ const CheckoutPage = () => {
                                 <div className="confirm-section">
                                     <h4>Sản phẩm:</h4>
                                     {cart?.items?.map(i => (
-                                        <div key={i.id} className="confirm-item">
+                                        <div key={i.clientKey} className="confirm-item">
                                             <span>{i.productName} x{i.quantity}</span>
-                                            <span>{formatVND((i.unitPrice || 0) * (i.quantity || 1))}</span>
+                                            <span>{formatVND(i.lineTotal || (i.unitPrice || 0) * (i.quantity || 1))}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -186,9 +187,9 @@ const CheckoutPage = () => {
                     <div className="checkout-summary">
                         <h3>Đơn hàng ({cart?.items?.length || 0} sản phẩm)</h3>
                         {cart?.items?.map(i => (
-                            <div key={i.id} className="summary-item">
+                            <div key={i.clientKey} className="summary-item">
                                 <span className="summary-item-name">{i.productName} x{i.quantity}</span>
-                                <span>{formatVND((i.unitPrice || 0) * (i.quantity || 1))}</span>
+                                <span>{formatVND(i.lineTotal || (i.unitPrice || 0) * (i.quantity || 1))}</span>
                             </div>
                         ))}
                         <div className="summary-divider" />

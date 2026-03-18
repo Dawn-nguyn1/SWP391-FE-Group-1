@@ -4,6 +4,7 @@ import { Spin, InputNumber, Button, Empty, message, Popconfirm } from 'antd';
 import { DeleteOutlined, ShoppingOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { getCartAPI, updateCartItemAPI, removeCartItemAPI } from '../../services/api.service';
 import { CartContext } from '../../context/cart.context';
+import { normalizeCart } from '../../utils/role-data';
 import './cart.css';
 
 const formatVND = n => n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : '0 ₫';
@@ -18,7 +19,8 @@ const CartPage = () => {
         try {
             setLoading(true);
             const res = await getCartAPI();
-            setItems(res?.items || []);
+            const normalizedCart = normalizeCart(res);
+            setItems(normalizedCart.items);
         } catch { message.error('Không thể tải giỏ hàng'); }
         finally { setLoading(false); }
     };
@@ -42,7 +44,7 @@ const CartPage = () => {
         } catch { message.error('Không thể xoá sản phẩm'); }
     };
 
-    const total = items.reduce((sum, it) => sum + (it.unitPrice || 0) * (it.quantity || 1), 0);
+    const total = items.reduce((sum, it) => sum + (it.lineTotal || (it.unitPrice || 0) * (it.quantity || 1)), 0);
 
     if (loading) return <div className="cart-loading"><Spin size="large" /></div>;
 
@@ -61,7 +63,7 @@ const CartPage = () => {
                     <div className="cart-layout">
                         <div className="cart-items">
                             {items.map(item => (
-                                <div key={item.id} className="cart-item">
+                                <div key={item.clientKey} className="cart-item">
                                     <div className="item-img">
                                         {item.productImage ? <img src={item.productImage} alt={item.productName} /> : <span style={{ fontSize: 36 }}>👓</span>}
                                     </div>
@@ -76,15 +78,21 @@ const CartPage = () => {
                                             value={item.quantity}
                                             onChange={val => handleQtyChange(item.id, val)}
                                             size="small"
+                                            disabled={!item.id}
                                         />
                                     </div>
                                     <div className="item-price">{formatVND((item.unitPrice || 0) * (item.quantity || 1))}</div>
-                                    <Popconfirm title="Xoá sản phẩm này?" onConfirm={() => handleRemove(item.id)} okText="Xoá" cancelText="Huỷ">
+                                    <Popconfirm title="Xoá sản phẩm này?" onConfirm={() => handleRemove(item.id)} okText="Xoá" cancelText="Huỷ" disabled={!item.id}>
                                         <button className="item-delete"><DeleteOutlined /></button>
                                     </Popconfirm>
                                 </div>
                             ))}
                         </div>
+                        {items.some(item => !item.id) && (
+                            <div style={{ marginTop: 12, color: '#b45309', fontSize: 13 }}>
+                                Backend hiện chưa trả `itemId` trong cart response, nên FE chưa thể cập nhật hoặc xoá item này chính xác.
+                            </div>
+                        )}
 
                         <div className="cart-summary">
                             <h3>Tóm tắt đơn hàng</h3>

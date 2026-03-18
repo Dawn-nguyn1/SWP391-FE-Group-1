@@ -34,245 +34,23 @@ import '../customer-pages/orders.css';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/auth.context.jsx';
+import {
+    formatAddressText,
+    normalizeOrdersResponse,
+    normalizeReturnRequestsResponse,
+    parseEvidenceUrls,
+} from '../../utils/role-data';
 
 const formatVND = n =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
-
-const coerceArray = (value) => {
-    if (Array.isArray(value)) return value;
-    if (value && typeof value === 'object') {
-        const vals = Object.values(value);
-        if (vals.length && vals.every(v => v && typeof v === 'object')) {
-            return vals;
-        }
-    }
-    return null;
-};
-
-const parseMaybeString = (value) => {
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    try { return JSON.parse(trimmed); } catch { /* ignore */ }
-    try {
-        const normalized = trimmed
-            .replace(/\\'/g, '__SQUOTE__')
-            .replace(/'/g, '"')
-            .replace(/__SQUOTE__/g, "'");
-        return JSON.parse(normalized);
-    } catch {
-        try {
-            // eslint-disable-next-line no-new-func
-            return new Function(`return (${trimmed})`)();
-        } catch {
-            return value;
-        }
-    }
-};
-
-const extractJsonFromString = (value) => {
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    const firstBrace = trimmed.indexOf('{');
-    const lastBrace = trimmed.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace > firstBrace) {
-        const sliced = trimmed.slice(firstBrace, lastBrace + 1);
-        const parsed = parseMaybeString(sliced);
-        if (parsed && typeof parsed === 'object') return parsed;
-    }
-    const firstBracket = trimmed.indexOf('[');
-    const lastBracket = trimmed.lastIndexOf(']');
-    if (firstBracket !== -1 && lastBracket > firstBracket) {
-        const sliced = trimmed.slice(firstBracket, lastBracket + 1);
-        const parsed = parseMaybeString(sliced);
-        if (parsed) return parsed;
-    }
-    return value;
-};
-
-const extractArrayAfterKey = (text, key) => {
-    if (typeof text !== 'string') return null;
-    const keyVariants = [`"${key}"`, key];
-    let startIdx = -1;
-    for (const k of keyVariants) {
-        const idx = text.indexOf(k);
-        if (idx !== -1) {
-            startIdx = idx + k.length;
-            break;
-        }
-    }
-    if (startIdx === -1) return null;
-    const bracketStart = text.indexOf('[', startIdx);
-    if (bracketStart === -1) return null;
-    let depth = 0;
-    let inString = false;
-    let escape = false;
-    for (let i = bracketStart; i < text.length; i += 1) {
-        const ch = text[i];
-        if (escape) {
-            escape = false;
-            continue;
-        }
-        if (ch === '\\') {
-            escape = true;
-            continue;
-        }
-        if (ch === '"') {
-            inString = !inString;
-        }
-        if (inString) continue;
-        if (ch === '[') depth += 1;
-        if (ch === ']') depth -= 1;
-        if (depth === 0) {
-            const slice = text.slice(bracketStart, i + 1);
-            const parsed = parseMaybeString(slice);
-            return Array.isArray(parsed) ? parsed : null;
-        }
-    }
-    return null;
-};
-
-const findArrayCandidate = (obj) => {
-    if (!obj || typeof obj !== 'object') return null;
-    const values = Object.values(obj);
-    for (const val of values) {
-        const maybeArray = coerceArray(val);
-        if (maybeArray) {
-            const first = maybeArray[0];
-            if (first && typeof first === 'object' && ('id' in first || 'orderCode' in first || 'order_code' in first)) {
-                return maybeArray;
-            }
-        }
-    }
-    for (const val of values) {
-        if (val && typeof val === 'object') {
-            const nested = Object.values(val);
-            for (const nestedVal of nested) {
-                const maybeArray = coerceArray(nestedVal);
-                if (maybeArray) {
-                    const first = maybeArray[0];
-                    if (first && typeof first === 'object' && ('id' in first || 'orderCode' in first || 'order_code' in first)) {
-                        return maybeArray;
-                    }
-                }
-            }
-        }
-    }
-    return null;
-};
-
-const normalizeOrdersResponse = (res) => {
-    let data = parseMaybeString(res);
-    if (typeof data === 'string') {
-        const extracted =
-            extractArrayAfterKey(data, 'content') ||
-            extractArrayAfterKey(data, 'result') ||
-            extractArrayAfterKey(data, 'items');
-        if (Array.isArray(extracted)) {
-            return { items: extracted, total: extracted.length };
-        }
-        data = extractJsonFromString(data);
-    }
-
-    if (data && typeof data === 'object' && 'data' in data) {
-        data = parseMaybeString(data.data ?? data);
-        if (typeof data === 'string') {
-            const extracted =
-                extractArrayAfterKey(data, 'content') ||
-                extractArrayAfterKey(data, 'result') ||
-                extractArrayAfterKey(data, 'items');
-            if (Array.isArray(extracted)) {
-                return { items: extracted, total: extracted.length };
-            }
-            data = extractJsonFromString(data);
-        }
-    }
-
-    const nestedContent = data?.content?.content;
-    if (typeof nestedContent === 'string') {
-        const parsed = parseMaybeString(nestedContent);
-        const maybeArray = coerceArray(parsed);
-        if (maybeArray) {
-            return { items: maybeArray, total: maybeArray.length };
-        }
-    }
-    const nestedArray = coerceArray(nestedContent);
-    if (nestedArray) {
-        return {
-            items: nestedArray,
-            total: data.content?.totalElements ?? nestedArray.length
-        };
-    }
-
-    if (typeof data?.content === 'string') {
-        const parsed = parseMaybeString(data.content);
-        const maybeArray = coerceArray(parsed);
-        if (maybeArray) {
-            return { items: maybeArray, total: maybeArray.length };
-        }
-    }
-    const contentArray = coerceArray(data?.content);
-    if (contentArray) {
-        return { items: contentArray, total: data.totalElements ?? data.total ?? contentArray.length };
-    }
-
-    const resultArray = coerceArray(data?.result);
-    if (resultArray) {
-        return { items: resultArray, total: data.total ?? resultArray.length };
-    }
-
-    const itemsArray = coerceArray(data?.items);
-    if (itemsArray) {
-        return { items: itemsArray, total: data.total ?? itemsArray.length };
-    }
-
-    if (Array.isArray(data)) {
-        return { items: data, total: data.length };
-    }
-
-    if (data && typeof data === 'object' && data.id != null) {
-        return { items: [data], total: 1 };
-    }
-
-    const candidate = findArrayCandidate(data);
-    if (Array.isArray(candidate)) {
-        return { items: candidate, total: candidate.length };
-    }
-
-    return { items: [], total: 0 };
-};
-
-const normalizeArrayResponse = (res) => {
-    let data = parseMaybeString(res);
-    if (typeof data === 'string') {
-        data = extractJsonFromString(data);
-    }
-    if (data && typeof data === 'object' && 'data' in data) {
-        data = data.data;
-    }
-    const content = coerceArray(data?.content) || coerceArray(data?.items) || coerceArray(data?.result);
-    if (content) return content;
-    if (Array.isArray(data)) return data;
-    return [];
-};
-
-const parseEvidenceUrls = (value) => {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    const parsed = parseMaybeString(value);
-    if (Array.isArray(parsed)) return parsed;
-    if (typeof value === 'string') {
-        return value.split(',').map(v => v.trim()).filter(Boolean);
-    }
-    return [];
-};
 
 const SupportOrdersPage = () => {
     const navigate = useNavigate();
     const { user, setUser } = useContext(AuthContext);
     const [orders, setOrders] = useState([]);
+    const [ordersTotal, setOrdersTotal] = useState(0);
     const [loading, setLoading] = useState(true);
     const [actioning, setActioning] = useState(null);
-    const [activeFilter, setActiveFilter] = useState('WAITING_CONFIRM');
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 6;
 
@@ -289,41 +67,23 @@ const SupportOrdersPage = () => {
     const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
     const [rejectNote, setRejectNote] = useState('');
     const [rejectTarget, setRejectTarget] = useState(null);
-
-    const applyOrders = (items) => {
-        setOrders(items);
-        setCurrentPage(1);
-    };
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [cancelTarget, setCancelTarget] = useState(null);
+    const [cancelReason, setCancelReason] = useState('SHOP_CANNOT_SUPPLY');
+    const [cancelNote, setCancelNote] = useState('');
 
     const applyReturnRequests = (items) => {
         setReturnRequests(items);
         setReturnPage(1);
     };
 
-    const loadOrders = async () => {
+    const loadOrders = async (page = currentPage) => {
         setLoading(true);
         try {
-            let res = await getSupportOrdersAPI();
-            if (typeof res === 'string') {
-                res = extractJsonFromString(res);
-            }
-            if (Array.isArray(res?.content)) {
-                applyOrders(res.content);
-                return;
-            }
-            if (Array.isArray(res?.data?.content)) {
-                applyOrders(res.data.content);
-                return;
-            }
-            if (typeof res?.content === 'string') {
-                const parsed = parseMaybeString(res.content);
-                if (Array.isArray(parsed)) {
-                    applyOrders(parsed);
-                    return;
-                }
-            }
-            const { items } = normalizeOrdersResponse(res);
-            applyOrders(items);
+            const res = await getSupportOrdersAPI(page - 1, pageSize);
+            const { items, total } = normalizeOrdersResponse(res);
+            setOrders(items);
+            setOrdersTotal(total);
         } catch (err) {
             console.error('[Genetix] loadOrders error:', err);
             message.error('Không thể tải đơn hàng');
@@ -336,7 +96,7 @@ const SupportOrdersPage = () => {
         setReturnLoading(true);
         try {
             const res = await getSupportReturnRequestsAPI();
-            const items = normalizeArrayResponse(res);
+            const items = normalizeReturnRequestsResponse(res);
             applyReturnRequests(items);
         } catch (err) {
             console.error('[Genetix] loadReturnRequests error:', err);
@@ -347,7 +107,7 @@ const SupportOrdersPage = () => {
     };
 
     useEffect(() => {
-        loadOrders();
+        loadOrders(1);
         loadReturnRequests();
     }, []);
 
@@ -380,6 +140,31 @@ const SupportOrdersPage = () => {
     const viewOrderDetails = (record) => {
         setSelectedOrder(record);
         setIsModalVisible(true);
+    };
+
+    const openCancelModal = (record) => {
+        setCancelTarget(record);
+        setCancelReason('SHOP_CANNOT_SUPPLY');
+        setCancelNote('');
+        setIsCancelModalOpen(true);
+    };
+
+    const submitCancel = async () => {
+        if (!cancelTarget) return;
+        setActioning(cancelTarget.id);
+        try {
+            await supportCancelOrderAPI(cancelTarget.id, {
+                reason: cancelReason,
+                note: cancelNote.trim() || null,
+            });
+            message.success(`Đã hủy đơn #${cancelTarget.id}`);
+            setIsCancelModalOpen(false);
+            loadOrders(currentPage);
+        } catch {
+            message.error('Hủy đơn thất bại');
+        } finally {
+            setActioning(null);
+        }
     };
 
     const openRejectModal = (record) => {
@@ -445,25 +230,8 @@ const SupportOrdersPage = () => {
         return type || '—';
     };
 
-    const formatAddress = (address) => {
-        if (!address) return '—';
-        const parts = [address.addressLine, address.ward, address.district, address.province]
-            .filter(Boolean);
-        return parts.join(', ');
-    };
-
-    const waitingCount = orders.filter(order => order.orderStatus === 'WAITING_CONFIRM').length;
-    const sortedOrders = [...orders].sort((a, b) => {
-        const aTime = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
-        const bTime = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
-        return bTime - aTime;
-    });
-    const visibleOrders = activeFilter === 'ALL'
-        ? sortedOrders
-        : sortedOrders.filter(order => order.orderStatus === 'WAITING_CONFIRM');
-    const totalVisible = visibleOrders.length;
-    const pageStart = (currentPage - 1) * pageSize;
-    const pageOrders = visibleOrders.slice(pageStart, pageStart + pageSize);
+    const waitingCount = ordersTotal;
+    const pageOrders = orders;
 
     const returnTotal = returnRequests.length;
     const returnStart = (returnPage - 1) * returnPageSize;
@@ -493,23 +261,15 @@ const SupportOrdersPage = () => {
                                 Duyệt
                             </Button>
                         </Popconfirm>
-                        <Popconfirm
-                            title="Hủy đơn hàng này?"
-                            description="Hành động này không thể hoàn tác."
-                            onConfirm={() => handleAction(record.id, supportCancelOrderAPI, `Đã hủy đơn #${record.id}`)}
-                            okText="Hủy đơn"
-                            cancelText="Giữ lại"
-                            okButtonProps={{ danger: true }}
+                        <Button
+                            size="small"
+                            icon={<CloseCircleOutlined />}
+                            loading={isLoading}
+                            className="btn-cancel"
+                            onClick={() => openCancelModal(record)}
                         >
-                            <Button
-                                size="small"
-                                icon={<CloseCircleOutlined />}
-                                loading={isLoading}
-                                className="btn-cancel"
-                            >
-                                Hủy
-                            </Button>
-                        </Popconfirm>
+                            Hủy
+                        </Button>
                     </>
                 ) : (
                     <span className="order-action-muted">Đã xử lý</span>
@@ -542,7 +302,7 @@ const SupportOrdersPage = () => {
                     </div>
                     <div className="metric-card">
                         <span>Tổng đơn</span>
-                        <strong>{orders.length}</strong>
+                        <strong>{ordersTotal}</strong>
                     </div>
                     <div className="metric-card">
                         <span>Yêu cầu trả</span>
@@ -562,7 +322,7 @@ const SupportOrdersPage = () => {
                             type="text"
                             icon={<ReloadOutlined />}
                             onClick={() => {
-                                loadOrders();
+                                loadOrders(currentPage);
                                 loadReturnRequests();
                             }}
                             style={{ color: '#6b7280' }}
@@ -588,25 +348,8 @@ const SupportOrdersPage = () => {
                             <p>Chỉ duyệt các đơn ở trạng thái chờ xác nhận từ Support.</p>
                         </div>
                         <div className="support-filters">
-                            <button
-                                type="button"
-                                className={`filter-btn ${activeFilter === 'WAITING_CONFIRM' ? 'active' : ''}`}
-                                onClick={() => {
-                                    setActiveFilter('WAITING_CONFIRM');
-                                    setCurrentPage(1);
-                                }}
-                            >
-                                Đơn chờ duyệt
-                            </button>
-                            <button
-                                type="button"
-                                className={`filter-btn ${activeFilter === 'ALL' ? 'active' : ''}`}
-                                onClick={() => {
-                                    setActiveFilter('ALL');
-                                    setCurrentPage(1);
-                                }}
-                            >
-                                Tất cả đơn
+                            <button type="button" className="filter-btn active">
+                                Payload BE hiện tại: chỉ trả đơn `WAITING_CONFIRM`
                             </button>
                         </div>
                     </div>
@@ -614,7 +357,7 @@ const SupportOrdersPage = () => {
                     <div className="panel-body">
                         {loading ? (
                             <div className="orders-loading" style={{ minHeight: 240 }} />
-                        ) : totalVisible === 0 ? (
+                        ) : ordersTotal === 0 ? (
                             <div className="orders-empty">
                                 <Empty description={<span>Không có đơn phù hợp.</span>} />
                             </div>
@@ -640,15 +383,15 @@ const SupportOrdersPage = () => {
                                             <div className="order-info">
                                                 <div className="info-row">
                                                     <span className="info-label">Người nhận</span>
-                                                    <span className="info-value">{order.address?.receiverName || '—'}</span>
+                                                    <span className="info-value">{order.receiverName || '—'}</span>
                                                 </div>
                                                 <div className="info-row">
                                                     <span className="info-label">SĐT</span>
-                                                    <span className="info-value">{order.address?.phone || '—'}</span>
+                                                    <span className="info-value">{order.receiverPhone || '—'}</span>
                                                 </div>
                                                 <div className="info-row full">
                                                     <span className="info-label">Địa chỉ</span>
-                                                    <span className="info-value">{formatAddress(order.address)}</span>
+                                                    <span className="info-value">{formatAddressText(order.address)}</span>
                                                 </div>
                                             </div>
 
@@ -673,13 +416,16 @@ const SupportOrdersPage = () => {
                         )}
                     </div>
 
-                    {!loading && totalVisible > pageSize && (
+                    {!loading && ordersTotal > pageSize && (
                         <div className="support-pagination">
                             <Pagination
                                 current={currentPage}
                                 pageSize={pageSize}
-                                total={totalVisible}
-                                onChange={(page) => setCurrentPage(page)}
+                                total={ordersTotal}
+                                onChange={(page) => {
+                                    setCurrentPage(page);
+                                    loadOrders(page);
+                                }}
                                 showSizeChanger={false}
                             />
                         </div>
@@ -842,13 +588,13 @@ const SupportOrdersPage = () => {
                                 </Tag>
                             </Descriptions.Item>
                             <Descriptions.Item label="Người nhận">
-                                {selectedOrder.address?.receiverName || '—'}
+                                {selectedOrder.receiverName || '—'}
                             </Descriptions.Item>
                             <Descriptions.Item label="Số điện thoại">
-                                {selectedOrder.address?.phone || '—'}
+                                {selectedOrder.receiverPhone || '—'}
                             </Descriptions.Item>
                             <Descriptions.Item label="Địa chỉ" span={2}>
-                                {formatAddress(selectedOrder.address)}
+                                {formatAddressText(selectedOrder.address)}
                             </Descriptions.Item>
                         </Descriptions>
                     </div>
@@ -872,6 +618,38 @@ const SupportOrdersPage = () => {
                     onChange={(e) => setRejectNote(e.target.value)}
                     placeholder="Ví dụ: Sản phẩm không đủ điều kiện đổi trả."
                 />
+            </Modal>
+
+            <Modal
+                title={cancelTarget ? `Hủy đơn #${cancelTarget.id}` : 'Hủy đơn'}
+                open={isCancelModalOpen}
+                onCancel={() => setIsCancelModalOpen(false)}
+                onOk={submitCancel}
+                okText="Xác nhận hủy"
+                cancelText="Đóng"
+                okButtonProps={{ danger: true, loading: actioning === cancelTarget?.id }}
+            >
+                <p>Backend yêu cầu truyền `reason` và `note` khi support hủy đơn.</p>
+                <div style={{ display: 'grid', gap: 12 }}>
+                    <label>
+                        <span style={{ display: 'block', marginBottom: 6 }}>Lý do hoàn tiền</span>
+                        <select
+                            value={cancelReason}
+                            onChange={(e) => setCancelReason(e.target.value)}
+                            style={{ width: '100%', minHeight: 38, borderRadius: 8, border: '1px solid #d9d9d9', padding: '0 12px' }}
+                        >
+                            <option value="SHOP_CANNOT_SUPPLY">SHOP_CANNOT_SUPPLY</option>
+                            <option value="SYSTEM_ERROR">SYSTEM_ERROR</option>
+                            <option value="LATE_DELIVERY">LATE_DELIVERY</option>
+                        </select>
+                    </label>
+                    <Input.TextArea
+                        rows={4}
+                        value={cancelNote}
+                        onChange={(e) => setCancelNote(e.target.value)}
+                        placeholder="Ghi chú thêm cho khách hàng"
+                    />
+                </div>
             </Modal>
         </div>
     );

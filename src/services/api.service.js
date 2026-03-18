@@ -323,9 +323,10 @@ const getCustomerOrdersAPI = () => axios.get('/api/customer/my/orders');
 const getCustomerPaymentsAPI = () => axios.get('/api/customer/payments');
 
 // ===== SUPPORT STAFF APIs =====
-const getSupportOrdersAPI = () => axios.get('/api/support_staff/orders');
+const getSupportOrdersAPI = (page = 0, size = 20) =>
+    axios.get('/api/support_staff/orders/waiting', { params: { page, size } });
 const supportConfirmOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/confirm`);
-const supportCancelOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/cancel`);
+const supportCancelOrderAPI = (orderId, body) => axios.post(`/api/support_staff/orders/${orderId}/cancel`, body);
 const getSupportReturnRequestsAPI = () => axios.get('/api/support_staff/return-requests/submitted');
 const supportApproveReturnRequestAPI = (id) => axios.post(`/api/support_staff/return-requests/${id}/approve`);
 const supportRejectReturnRequestAPI = (id, note) =>
@@ -335,7 +336,6 @@ const supportRejectReturnRequestAPI = (id, note) =>
 const getApprovedOrdersAPI = (page = 0, size = 20) =>
     axios.get('/api/operation_staff/orders/approved', { params: { page, size } });
 const operationsConfirmOrderAPI = (orderId) => axios.post(`/api/operation_staff/orders/${orderId}/confirm`);
-const getOperationOrdersAPI = () => axios.get('/api/operation_staff/orders');
 const getOperationReturnRequestsAPI = () => axios.get('/api/operation_staff/return-requests/waiting-return');
 const operationReceiveReturnRequestAPI = (id, dto) =>
     axios.post(`/api/operation_staff/return-requests/${id}/received`, dto);
@@ -380,7 +380,7 @@ export {
     getSupportReturnRequestsAPI, supportApproveReturnRequestAPI, supportRejectReturnRequestAPI,
     // Operations Staff APIs
     getApprovedOrdersAPI, operationsConfirmOrderAPI,
-    getOperationOrdersAPI, getOperationReturnRequestsAPI, operationReceiveReturnRequestAPI,
+    getOperationReturnRequestsAPI, operationReceiveReturnRequestAPI,
     // Payment APIs
     vnpayReturnAPI,
     // Dashboard APIs

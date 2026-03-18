@@ -22,7 +22,6 @@ import {
     operationsConfirmOrderAPI,
     getOperationReturnRequestsAPI,
     operationReceiveReturnRequestAPI,
-    getOperationOrdersAPI
 } from '../../services/api.service';
 import './staff-operations.css';
 import './staff-orders.css';
@@ -30,69 +29,14 @@ import '../customer-pages/orders.css';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/auth.context.jsx';
+import {
+    formatAddressText,
+    normalizeOrdersResponse,
+    normalizeReturnRequestsResponse,
+} from '../../utils/role-data';
 
 const formatVND = n =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
-
-const parseMaybeString = (value) => {
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    try { return JSON.parse(trimmed); } catch { /* ignore */ }
-    try {
-        const normalized = trimmed
-            .replace(/\\'/g, '__SQUOTE__')
-            .replace(/'/g, '"')
-            .replace(/__SQUOTE__/g, "'");
-        return JSON.parse(normalized);
-    } catch {
-        try {
-            // eslint-disable-next-line no-new-func
-            return new Function(`return (${trimmed})`)();
-        } catch {
-            return value;
-        }
-    }
-};
-
-const extractJsonFromString = (value) => {
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    const firstBrace = trimmed.indexOf('{');
-    const lastBrace = trimmed.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace > firstBrace) {
-        const sliced = trimmed.slice(firstBrace, lastBrace + 1);
-        const parsed = parseMaybeString(sliced);
-        if (parsed && typeof parsed === 'object') return parsed;
-    }
-    const firstBracket = trimmed.indexOf('[');
-    const lastBracket = trimmed.lastIndexOf(']');
-    if (firstBracket !== -1 && lastBracket > firstBracket) {
-        const sliced = trimmed.slice(firstBracket, lastBracket + 1);
-        const parsed = parseMaybeString(sliced);
-        if (parsed) return parsed;
-    }
-    return value;
-};
-
-const normalizeApprovedOrders = (res) => {
-    let data = parseMaybeString(res);
-    if (typeof data === 'string') data = extractJsonFromString(data);
-    if (data && typeof data === 'object' && 'data' in data) data = data.data;
-    if (Array.isArray(data?.content)) {
-        return { items: data.content, total: data.totalElements ?? data.content.length };
-    }
-    if (Array.isArray(data)) return { items: data, total: data.length };
-    return { items: [], total: 0 };
-};
-
-const parseEvidenceUrls = (value) => {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    const parsed = parseMaybeString(value);
-    if (Array.isArray(parsed)) return parsed;
-    if (typeof value === 'string') return value.split(',').map(v => v.trim()).filter(Boolean);
-    return [];
-};
 
 const OperationsOrdersPage = () => {
     const navigate = useNavigate();
@@ -119,20 +63,9 @@ const OperationsOrdersPage = () => {
         setOrdersLoading(true);
         try {
             const res = await getApprovedOrdersAPI(page - 1, ordersPageSize);
-            const { items, total } = normalizeApprovedOrders(res);
-            if (items.length > 0) {
-                setOrders(items);
-                setOrdersTotal(total);
-                return;
-            }
-            // Fallback: backend may return a different shape; try full orders endpoint
-            const fallback = await getOperationOrdersAPI();
-            const fallbackItems = Array.isArray(fallback)
-                ? fallback
-                : (Array.isArray(fallback?.content) ? fallback.content : []);
-            const filtered = fallbackItems.filter(order => order?.orderStatus === 'SUPPORT_CONFIRMED');
-            setOrders(filtered);
-            setOrdersTotal(filtered.length);
+            const { items, total } = normalizeOrdersResponse(res);
+            setOrders(items);
+            setOrdersTotal(total);
         } catch {
             message.error('Không thể tải đơn hàng đã duyệt');
         } finally {
@@ -144,8 +77,7 @@ const OperationsOrdersPage = () => {
         setReturnLoading(true);
         try {
             const res = await getOperationReturnRequestsAPI();
-            const data = Array.isArray(res) ? res : parseMaybeString(res);
-            const items = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
+            const items = normalizeReturnRequestsResponse(res);
             setReturnRequests(items);
             setReturnPage(1);
         } catch {
@@ -205,26 +137,6 @@ const OperationsOrdersPage = () => {
         navigate('/login');
     };
 
-    const formatAddress = (address) => {
-        if (!address) return '—';
-        const parts = [address.addressLine, address.ward, address.district, address.province].filter(Boolean);
-        return parts.join(', ');
-    };
-
-    const getCustomerEmail = (order) => {
-        return (
-            order?.email ||
-            order?.userEmail ||
-            order?.customerEmail ||
-            order?.user?.email ||
-            order?.customer?.email ||
-            order?.address?.user?.email ||
-            order?.address?.email ||
-            order?.address?.userEmail ||
-            '—'
-        );
-    };
-
     const normalizePaymentLabel = (method) => {
         if (!method) return null;
         if (method === 'VNPAY') return 'VNPAY';
@@ -234,14 +146,11 @@ const OperationsOrdersPage = () => {
     };
 
     const getPaymentMethod = (order) => {
-        const method = normalizePaymentLabel(order?.remainingPaymentMethod || order?.paymentMethod);
+        const method = normalizePaymentLabel(order?.remainingPaymentMethod);
         if (order?.remainingAmount && Number(order.remainingAmount) > 0) {
-            return method ? `Còn lại: ${method}` : 'Còn lại: COD';
+            return method ? `Còn lại: ${method}` : 'BE không trả phương thức còn lại';
         }
-        if (order?.deposit && Number(order.deposit) > 0) {
-            return method ? `Đặt cọc: ${method}` : 'Đặt cọc';
-        }
-        return method || 'Đã thanh toán';
+        return 'BE không trả phương thức thanh toán ban đầu';
     };
 
     const totalReturns = returnRequests.length;
@@ -336,15 +245,11 @@ const OperationsOrdersPage = () => {
                                         <div className="order-info">
                                             <div className="info-row">
                                                 <span className="info-label">Người nhận</span>
-                                                <span className="info-value">{order.address?.receiverName || order.address?.recipientName || '—'}</span>
+                                                <span className="info-value">{order.receiverName || '—'}</span>
                                             </div>
                                             <div className="info-row">
                                                 <span className="info-label">SĐT</span>
-                                                <span className="info-value">{order.address?.phone || '—'}</span>
-                                            </div>
-                                            <div className="info-row">
-                                                <span className="info-label">Email</span>
-                                                <span className="info-value">{getCustomerEmail(order)}</span>
+                                                <span className="info-value">{order.receiverPhone || '—'}</span>
                                             </div>
                                             <div className="info-row">
                                                 <span className="info-label">Thanh toán</span>
@@ -352,7 +257,7 @@ const OperationsOrdersPage = () => {
                                             </div>
                                             <div className="info-row full">
                                                 <span className="info-label">Địa chỉ</span>
-                                                <span className="info-value">{formatAddress(order.address)}</span>
+                                                <span className="info-value">{formatAddressText(order.address)}</span>
                                             </div>
                                         </div>
 
@@ -429,7 +334,6 @@ const OperationsOrdersPage = () => {
                         ) : (
                             <div className="returns-list">
                                 {returnItems.map(req => {
-                                    const evidences = parseEvidenceUrls(req.evidenceUrls);
                                     return (
                                         <div key={req.id} className="return-card">
                                             <div className="return-header">
@@ -458,11 +362,11 @@ const OperationsOrdersPage = () => {
                                                 </div>
                                             )}
 
-                                            {evidences.length > 0 && (
+                                            {req.evidenceUrls.length > 0 && (
                                                 <div className="return-evidence">
                                                     <span>Minh chứng:</span>
                                                     <ul>
-                                                        {evidences.slice(0, 3).map((url, idx) => (
+                                                        {req.evidenceUrls.slice(0, 3).map((url, idx) => (
                                                             <li key={`${req.id}-ev-${idx}`}>{url}</li>
                                                         ))}
                                                     </ul>
