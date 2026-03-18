@@ -18,7 +18,6 @@ import {
     EyeOutlined,
     ClockCircleOutlined,
     ReloadOutlined,
-    InboxOutlined,
     LogoutOutlined
 } from '@ant-design/icons';
 import {
@@ -44,18 +43,54 @@ import {
 const formatVND = n =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
+const formatDateTime = (value) => {
+    if (!value) return '—';
+    const parsed = dayjs(value);
+    return parsed.isValid() ? parsed.format('DD/MM/YYYY HH:mm') : '—';
+};
+
+const getFriendlyError = (error, fallback) =>
+    error?.response?.data?.message || error?.message || fallback;
+
+const getShipmentLabel = (status) => {
+    if (!status) return 'Chưa tạo vận đơn';
+    const labels = {
+        WAITING_CONFIRM: 'Chờ tạo vận đơn',
+        READY_TO_PICK: 'GHN chờ lấy hàng',
+        PICKING: 'GHN đang lấy hàng',
+        DELIVERING: 'GHN đang giao',
+        DELIVERED: 'Đã giao thành công',
+        FAILED: 'Giao thất bại',
+        CANCELLED: 'Đã hủy vận đơn',
+        RETURNED: 'Đơn hoàn về'
+    };
+    return labels[status] || status;
+};
+
+const sortByNewest = (items = []) =>
+    [...items].sort((a, b) => {
+        const timeA = dayjs(a?.createdAt).isValid() ? dayjs(a.createdAt).valueOf() : 0;
+        const timeB = dayjs(b?.createdAt).isValid() ? dayjs(b.createdAt).valueOf() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return (b?.id || 0) - (a?.id || 0);
+    });
+
+const canSupportConfirm = (status) => status === 'WAITING_CONFIRM' || status === 'PAID';
+
 const SupportOrdersPage = () => {
     const navigate = useNavigate();
     const { user, setUser } = useContext(AuthContext);
     const [orders, setOrders] = useState([]);
     const [ordersTotal, setOrdersTotal] = useState(0);
     const [loading, setLoading] = useState(true);
+    const [ordersError, setOrdersError] = useState('');
     const [actioning, setActioning] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 6;
 
     const [returnRequests, setReturnRequests] = useState([]);
     const [returnLoading, setReturnLoading] = useState(true);
+    const [returnsError, setReturnsError] = useState('');
     const [returnActioning, setReturnActioning] = useState(null);
     const [returnPage, setReturnPage] = useState(1);
     const returnPageSize = 6;
@@ -77,16 +112,20 @@ const SupportOrdersPage = () => {
         setReturnPage(1);
     };
 
-    const loadOrders = async (page = currentPage) => {
+    const loadOrders = async () => {
         setLoading(true);
+        setOrdersError('');
         try {
-            const res = await getSupportOrdersAPI(page - 1, pageSize);
-            const { items, total } = normalizeOrdersResponse(res);
-            setOrders(items);
-            setOrdersTotal(total);
+            const res = await getSupportOrdersAPI();
+            const { items } = normalizeOrdersResponse(res);
+            const sortedItems = sortByNewest(items);
+            setOrders(sortedItems);
+            setOrdersTotal(sortedItems.length);
         } catch (err) {
             console.error('[Genetix] loadOrders error:', err);
-            message.error('Không thể tải đơn hàng');
+            setOrders([]);
+            setOrdersTotal(0);
+            setOrdersError(getFriendlyError(err, 'Không thể tải danh sách đơn chờ duyệt từ backend.'));
         } finally {
             setLoading(false);
         }
@@ -94,22 +133,31 @@ const SupportOrdersPage = () => {
 
     const loadReturnRequests = async () => {
         setReturnLoading(true);
+        setReturnsError('');
         try {
             const res = await getSupportReturnRequestsAPI();
             const items = normalizeReturnRequestsResponse(res);
-            applyReturnRequests(items);
+            applyReturnRequests(sortByNewest(items));
         } catch (err) {
             console.error('[Genetix] loadReturnRequests error:', err);
-            message.error('Không thể tải yêu cầu trả hàng');
+            applyReturnRequests([]);
+            setReturnsError(getFriendlyError(err, 'Không thể tải danh sách yêu cầu trả hàng từ backend.'));
         } finally {
             setReturnLoading(false);
         }
     };
 
     useEffect(() => {
-        loadOrders(1);
+        loadOrders();
         loadReturnRequests();
     }, []);
+
+    useEffect(() => {
+        const maxPage = Math.max(Math.ceil(orders.filter(order => canSupportConfirm(order.orderStatus)).length / pageSize), 1);
+        if (currentPage > maxPage) {
+            setCurrentPage(maxPage);
+        }
+    }, [currentPage, orders]);
 
     const handleAction = async (orderId, actionAPI, successMsg) => {
         setActioning(orderId);
@@ -117,8 +165,8 @@ const SupportOrdersPage = () => {
             await actionAPI(orderId);
             message.success(successMsg);
             loadOrders();
-        } catch {
-            message.error('Thao tác thất bại');
+        } catch (err) {
+            message.error(getFriendlyError(err, 'Thao tác thất bại'));
         } finally {
             setActioning(null);
         }
@@ -159,7 +207,7 @@ const SupportOrdersPage = () => {
             });
             message.success(`Đã hủy đơn #${cancelTarget.id}`);
             setIsCancelModalOpen(false);
-            loadOrders(currentPage);
+            loadOrders();
         } catch {
             message.error('Hủy đơn thất bại');
         } finally {
@@ -230,16 +278,26 @@ const SupportOrdersPage = () => {
         return type || '—';
     };
 
-    const waitingCount = ordersTotal;
-    const pageOrders = orders;
+    const actionableOrders = orders.filter(order => canSupportConfirm(order.orderStatus));
+    const waitingCount = actionableOrders.length;
+    const orderStart = (currentPage - 1) * pageSize;
+    const pageOrders = actionableOrders.slice(orderStart, orderStart + pageSize);
 
     const returnTotal = returnRequests.length;
     const returnStart = (returnPage - 1) * returnPageSize;
     const returnPageItems = returnRequests.slice(returnStart, returnStart + returnPageSize);
+    const loadedOrderCount = pageOrders.length;
+
+    const endpointPills = [
+        { label: 'Orders Queue', value: '/api/support_staff/orders' },
+        { label: 'Returns Queue', value: '/api/support_staff/return-requests/submitted' },
+    ];
+    const orderPageCount = Math.max(Math.ceil(waitingCount / pageSize), 1);
+    const returnPageCount = Math.max(Math.ceil(returnTotal / returnPageSize), 1);
 
     const renderOrderActions = (record) => {
         const isLoading = actioning === record.id;
-        const canAction = record.orderStatus === 'WAITING_CONFIRM';
+        const canAction = canSupportConfirm(record.orderStatus);
         return (
             <Space size={8}>
                 {canAction ? (
@@ -293,7 +351,15 @@ const SupportOrdersPage = () => {
                 <div className="support-branding">
                     <p className="support-label">Support Desk</p>
                     <h1>Genetix Support Workspace</h1>
-                    <span>Kiểm tra đơn hàng và yêu cầu trả hàng theo đúng quy trình</span>
+                    <span>Giao diện này bám trực tiếp theo 2 queue BE hiện có: danh sách đơn support và return request đã submitted.</span>
+                    <div className="endpoint-pills">
+                        {endpointPills.map((item) => (
+                            <span key={item.value} className="endpoint-pill">
+                                <strong>{item.label}</strong>
+                                <code>{item.value}</code>
+                            </span>
+                        ))}
+                    </div>
                 </div>
                 <div className="support-metrics">
                     <div className="metric-card">
@@ -301,8 +367,8 @@ const SupportOrdersPage = () => {
                         <strong>{waitingCount}</strong>
                     </div>
                     <div className="metric-card">
-                        <span>Tổng đơn</span>
-                        <strong>{ordersTotal}</strong>
+                        <span>Đơn đang hiển thị</span>
+                        <strong>{loadedOrderCount}</strong>
                     </div>
                     <div className="metric-card">
                         <span>Yêu cầu trả</span>
@@ -345,21 +411,47 @@ const SupportOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Đơn hàng cần duyệt</h2>
-                            <p>Chỉ duyệt các đơn ở trạng thái chờ xác nhận từ Support.</p>
+                            <p>BE hiện trả full `List&lt;OrderResponseDTO&gt;`, nên trang này sắp xếp mới nhất trước và phân trang phía FE.</p>
                         </div>
-                        <div className="support-filters">
-                            <button type="button" className="filter-btn active">
-                                Payload BE hiện tại: chỉ trả đơn `WAITING_CONFIRM`
-                            </button>
+                        <div className="support-panel-meta">
+                            <span className="queue-badge queue-orders">Orders Queue</span>
+                            <span className="queue-hint">Trang {currentPage}/{orderPageCount}</span>
+                        </div>
+                    </div>
+
+                    <div className="queue-toolbar">
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Sắp xếp</span>
+                            <strong>Mới nhất trước</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Đang hiển thị</span>
+                            <strong>{pageOrders.length} / {waitingCount} đơn</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Từ backend</span>
+                            <strong>{ordersTotal} đơn</strong>
                         </div>
                     </div>
 
                     <div className="panel-body">
                         {loading ? (
                             <div className="orders-loading" style={{ minHeight: 240 }} />
-                        ) : ordersTotal === 0 ? (
+                        ) : ordersError ? (
+                            <div className="support-callout error">
+                                <strong>Không tải được queue đơn hàng</strong>
+                                <span>{ordersError}</span>
+                                <Button
+                                    size="small"
+                                    icon={<ReloadOutlined />}
+                                    onClick={() => loadOrders(currentPage)}
+                                >
+                                    Thử lại
+                                </Button>
+                            </div>
+                        ) : waitingCount === 0 ? (
                             <div className="orders-empty">
-                                <Empty description={<span>Không có đơn phù hợp.</span>} />
+                                <Empty description={<span>Không có đơn nào đang chờ support duyệt.</span>} />
                             </div>
                         ) : (
                             <div className="orders-list">
@@ -370,7 +462,7 @@ const SupportOrdersPage = () => {
                                             <div className="order-header">
                                                 <div>
                                                     <span className="order-id">{order.orderCode || `Đơn #${order.id}`}</span>
-                                                    <span className="order-date">{dayjs(order.createdAt).format('DD/MM/YYYY HH:mm')}</span>
+                                                    <span className="order-date">{formatDateTime(order.createdAt)}</span>
                                                 </div>
                                                 <div className="order-header-right">
                                                     <Tag className={statusMeta.className} icon={<ClockCircleOutlined />}>
@@ -392,6 +484,14 @@ const SupportOrdersPage = () => {
                                                 <div className="info-row full">
                                                     <span className="info-label">Địa chỉ</span>
                                                     <span className="info-value">{formatAddressText(order.address)}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Mã vận đơn</span>
+                                                    <span className="info-value tracking-code">{order.ghnOrderCode || 'Chưa tạo vận đơn'}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Trạng thái GHN</span>
+                                                    <span className="info-value">{getShipmentLabel(order.shipmentStatus)}</span>
                                                 </div>
                                             </div>
 
@@ -416,15 +516,14 @@ const SupportOrdersPage = () => {
                         )}
                     </div>
 
-                    {!loading && ordersTotal > pageSize && (
+                    {!loading && waitingCount > pageSize && (
                         <div className="support-pagination">
                             <Pagination
                                 current={currentPage}
                                 pageSize={pageSize}
-                                total={ordersTotal}
+                                total={waitingCount}
                                 onChange={(page) => {
                                     setCurrentPage(page);
-                                    loadOrders(page);
                                 }}
                                 showSizeChanger={false}
                             />
@@ -436,16 +535,40 @@ const SupportOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Yêu cầu trả hàng</h2>
-                            <p>Xác nhận các yêu cầu trả hàng đã được gửi.</p>
+                            <p>Danh sách return request được sắp xếp mới nhất trước và phân trang phía FE theo payload `submitted`.</p>
                         </div>
-                        <div className="panel-icon">
-                            <InboxOutlined />
+                        <div className="support-panel-meta">
+                            <span className="queue-badge queue-returns">Returns Queue</span>
+                            <span className="queue-hint">Trang {returnPage}/{returnPageCount}</span>
+                        </div>
+                    </div>
+
+                    <div className="queue-toolbar">
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Sắp xếp</span>
+                            <strong>Mới nhất trước</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Đang hiển thị</span>
+                            <strong>{returnPageItems.length} / {returnTotal} yêu cầu</strong>
                         </div>
                     </div>
 
                     <div className="panel-body">
                         {returnLoading ? (
                             <div className="orders-loading" style={{ minHeight: 240 }} />
+                        ) : returnsError ? (
+                            <div className="support-callout error">
+                                <strong>Không tải được queue trả hàng</strong>
+                                <span>{returnsError}</span>
+                                <Button
+                                    size="small"
+                                    icon={<ReloadOutlined />}
+                                    onClick={loadReturnRequests}
+                                >
+                                    Thử lại
+                                </Button>
+                            </div>
                         ) : returnTotal === 0 ? (
                             <div className="orders-empty">
                                 <Empty description={<span>Chưa có yêu cầu trả hàng.</span>} />
@@ -460,7 +583,7 @@ const SupportOrdersPage = () => {
                                             <div className="return-header">
                                                 <div>
                                                     <span className="return-id">RR-{req.id}</span>
-                                                    <span className="return-date">{req.createdAt ? dayjs(req.createdAt).format('DD/MM/YYYY HH:mm') : '—'}</span>
+                                                    <span className="return-date">{formatDateTime(req.createdAt)}</span>
                                                 </div>
                                                 <Tag className={statusMeta.className} icon={<ClockCircleOutlined />}>
                                                     {statusMeta.label}
@@ -566,7 +689,7 @@ const SupportOrdersPage = () => {
                                 {selectedOrder.orderCode || '—'}
                             </Descriptions.Item>
                             <Descriptions.Item label="Ngày đặt">
-                                {dayjs(selectedOrder.createdAt).format('DD/MM/YYYY HH:mm')}
+                                {formatDateTime(selectedOrder.createdAt)}
                             </Descriptions.Item>
                             <Descriptions.Item label="Loại đơn">
                                 <Tag color="purple">{getOrderTypeLabel(selectedOrder.orderType)}</Tag>
@@ -595,6 +718,12 @@ const SupportOrdersPage = () => {
                             </Descriptions.Item>
                             <Descriptions.Item label="Địa chỉ" span={2}>
                                 {formatAddressText(selectedOrder.address)}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Mã vận đơn">
+                                <span className="tracking-code">{selectedOrder.ghnOrderCode || 'Chưa tạo vận đơn'}</span>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Trạng thái GHN">
+                                {getShipmentLabel(selectedOrder.shipmentStatus)}
                             </Descriptions.Item>
                         </Descriptions>
                     </div>

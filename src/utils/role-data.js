@@ -177,6 +177,7 @@ export const normalizeCartItem = (input) => {
         ...item,
         id: firstDefined(item.id, item.itemId, item.cartItemId),
         clientKey: firstDefined(item.id, item.itemId, item.cartItemId, item.productId, item.productComboId, `${productName || 'item'}-${quantity}`),
+        saleType: firstDefined(item.saleType, item.type),
         productName,
         variantName,
         brand: firstDefined(item.brand, item.brandName, item.product?.brandName),
@@ -205,11 +206,14 @@ export const normalizeOrder = (input) => {
     const normalizedAddress = normalizeAddress(firstDefined(order.address, order.shippingAddress, order.deliveryAddress));
     const items = normalizeCollectionResponse(firstDefined(order.items, order.orderItems, order.orderDetails, [])).items
         .map(normalizeCartItem);
+    const orderType = firstDefined(order.orderType, order.saleType, order.type);
     const totalAmount = toNumber(firstDefined(order.totalAmount, order.total, order.grandTotal));
     const deposit = toNumber(firstDefined(order.deposit, order.depositAmount));
     const remainingAmount = toNumber(
         firstDefined(order.remainingAmount, order.balanceAmount),
-        Math.max(totalAmount - deposit, 0)
+        orderType === 'PRE_ORDER'
+            ? Math.max(totalAmount - deposit, 0)
+            : 0
     );
 
     return {
@@ -217,9 +221,12 @@ export const normalizeOrder = (input) => {
         id: firstDefined(order.id, order.orderId),
         orderCode: firstDefined(order.orderCode, order.code),
         orderStatus: firstDefined(order.orderStatus, order.status, order.order_state),
-        orderType: firstDefined(order.orderType, order.saleType, order.type),
+        orderType,
         paymentMethod: firstDefined(order.paymentMethod, order.paymentType),
+        paymentStatus: firstDefined(order.paymentStatus, order.payment_state),
         remainingPaymentMethod: firstDefined(order.remainingPaymentMethod, order.balancePaymentMethod),
+        ghnOrderCode: firstDefined(order.ghnOrderCode, order.shipment?.ghnOrderCode, order.trackingCode),
+        shipmentStatus: firstDefined(order.shipmentStatus, order.shipment?.status, order.deliveryStatus),
         createdAt: firstDefined(order.createdAt, order.createdDate, order.created_time),
         totalAmount,
         deposit,

@@ -1,10 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Slider, Checkbox, Pagination, Spin, Empty } from 'antd';
-import { FilterOutlined, ThunderboltOutlined, RocketOutlined, AppstoreOutlined } from '@ant-design/icons';
+import { FilterOutlined, ThunderboltOutlined, RocketOutlined, AppstoreOutlined, TagOutlined } from '@ant-design/icons';
 import { searchProductsAPI, getBrandsAPI, getPublicProductDetailAPI } from '../../services/api.service';
 import { enrichPublicProducts } from '../../utils/public-product-view';
 import './product-list.css';
+
+const formatVND = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+
+const formatDate = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat('vi-VN').format(date);
+};
 
 const ProductListPage = () => {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -18,7 +27,7 @@ const ProductListPage = () => {
     const inStock = searchParams.get('inStock') === 'true';
     const view = searchParams.get('view') || 'all';
     const page = parseInt(searchParams.get('page') || '0', 10);
-    const size = 12;
+    const size = view === 'all' ? 18 : 12;
 
     const [priceRange, setPriceRange] = useState([0, 10000000]);
 
@@ -73,8 +82,6 @@ const ProductListPage = () => {
         setSearchParams(params);
     };
 
-    const formatVND = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-
     const formatPrice = (product) => {
         if (product.priceLabel?.type === 'range') {
             return `${formatVND(product.priceLabel.minPrice)} - ${formatVND(product.priceLabel.maxPrice)}`;
@@ -83,31 +90,145 @@ const ProductListPage = () => {
         return 'Liên hệ';
     };
 
-    const filteredProducts = products.filter((product) => {
-        if (view === 'pre-order') return product.hasPreOrder;
-        if (view === 'ready') return product.productMode === 'IN_STOCK' || product.productMode === 'MIXED';
-        return true;
-    });
+    const groups = {
+        preorder: products.filter((product) => product.productMode === 'PRE_ORDER'),
+        mixed: products.filter((product) => product.productMode === 'MIXED'),
+        ready: products.filter((product) => product.productMode === 'IN_STOCK'),
+    };
 
-    const modeStats = {
-        preorder: products.filter((product) => product.hasPreOrder).length,
-        ready: products.filter((product) => product.productMode === 'IN_STOCK' || product.productMode === 'MIXED').length,
+    const viewConfig = {
+        all: { label: 'Tất cả', icon: <AppstoreOutlined /> },
+        ready: { label: 'In-stock', icon: <RocketOutlined /> },
+        'pre-order': { label: 'Pre-order', icon: <ThunderboltOutlined /> },
+        mixed: { label: 'Mixed', icon: <TagOutlined /> },
+    };
+
+    const filteredProducts = (() => {
+        if (view === 'pre-order') return groups.preorder;
+        if (view === 'ready') return groups.ready;
+        if (view === 'mixed') return groups.mixed;
+        return products;
+    })();
+
+    const listStats = {
+        total: products.length,
+        preorder: groups.preorder.length,
+        mixed: groups.mixed.length,
+        ready: groups.ready.length,
     };
 
     const getModeBadge = (product) => {
         if (product.productMode === 'PRE_ORDER') {
-            return { className: 'badge-preorder', label: 'Pre-order', sublabel: 'Đặt trước toàn bộ' };
+            const fulfillmentDate = product?.variants?.find((variant) => variant?.saleType === 'PRE_ORDER')?.preorderFulfillmentDate;
+            return {
+                className: 'badge-preorder',
+                label: 'Đặt trước',
+                sublabel: fulfillmentDate
+                    ? `Dự kiến có hàng từ ${formatDate(fulfillmentDate)}`
+                    : 'Đi theo luồng cọc và chờ hàng về.',
+            };
         }
+
         if (product.productMode === 'MIXED') {
-            return { className: 'badge-mixed', label: 'Có pre-order', sublabel: 'Có cả hàng sẵn và đặt trước' };
+            return {
+                className: 'badge-mixed',
+                label: 'Hai hình thức',
+                sublabel: 'Có cả biến thể hàng sẵn và biến thể đặt trước trong cùng một mẫu.',
+            };
         }
-        return { className: 'badge-ready', label: 'Giao ngay', sublabel: 'Có hàng sẵn để xử lý đơn' };
+
+        return {
+            className: 'badge-ready',
+                label: 'Hàng sẵn',
+                sublabel: `Chỉ còn lại ${product.totalStock ?? 0} sản phẩm.`,
+        };
+    };
+
+    const renderProductCard = (product) => {
+        const modeBadge = getModeBadge(product);
+
+        return (
+            <Link key={product.id} to={`/customer/products/${product.id}`} className={`product-card mode-${product.productMode?.toLowerCase() || 'unknown'}`}>
+                <div className="product-img-wrap">
+                    {product.productImage ? (
+                        <img src={product.productImage} alt={product.name} className="product-img" />
+                    ) : (
+                        <div className="product-img-placeholder">👓</div>
+                    )}
+                    <span className={`mode-badge ${modeBadge.className}`}>{modeBadge.label}</span>
+                </div>
+                <div className="product-info">
+                    <p className="product-brand">{product.brandName || '—'}</p>
+                    <h3 className="product-name">{product.name}</h3>
+                    <p className="product-mode-copy">{modeBadge.sublabel}</p>
+                    <p className="product-price">{formatPrice(product)}</p>
+                </div>
+            </Link>
+        );
+    };
+
+    const renderSection = (sectionKey, title, description, items, emptyIcon, emptyCopy, limit = null) => {
+        const sectionItems = limit ? items.slice(0, limit) : items;
+
+        return (
+        <section className={`catalog-section catalog-section-${sectionKey}`}>
+            <div className="catalog-section-head">
+                <div>
+                    <span className={`catalog-kicker ${sectionKey}`}>{title}</span>
+                    <h2>{title === 'Hai hình thức' ? 'Mẫu có cả biến thể hàng sẵn và đặt trước' : title === 'Đặt trước' ? 'Mẫu chỉ bán theo luồng pre-order' : 'Mẫu đang có hàng sẵn để chốt đơn nhanh'}</h2>
+                    <p>{description}</p>
+                </div>
+                <span className="catalog-section-count">{sectionItems.length} mẫu</span>
+            </div>
+            {sectionItems.length > 0 ? (
+                <div className="products-grid">
+                    {sectionItems.map(renderProductCard)}
+                </div>
+            ) : (
+                <div className="catalog-empty-state">
+                    <span>{emptyIcon}</span>
+                    <p>{emptyCopy}</p>
+                </div>
+            )}
+        </section>
+        );
     };
 
     return (
         <div className="product-list-page">
+            <div className="catalog-hero">
+                <div className="catalog-hero-inner">
+                    <div className="catalog-hero-copy">
+                        <span className="catalog-pill">{viewConfig[view]?.icon || <AppstoreOutlined />} Danh mục sản phẩm</span>
+                        <h1>Phân biệt rõ Pre-order và In-stock ngay từ lúc duyệt catalog</h1>
+                        <p>
+                            Mỗi sản phẩm được gắn đúng luồng bán. Khi để chế độ xem tất cả, danh mục sẽ tách riêng hàng đặt trước,
+                            hàng sẵn và nhóm sản phẩm có hai hình thức mua.
+                        </p>
+                    </div>
+                    <div className="catalog-stats">
+                        <div className="catalog-stat-card">
+                            <span>Tổng mẫu đang hiển thị</span>
+                            <strong>{filteredProducts.length}</strong>
+                        </div>
+                        <div className="catalog-stat-card preorder">
+                            <span>Pre-order</span>
+                            <strong>{listStats.preorder}</strong>
+                        </div>
+                        <div className="catalog-stat-card ready">
+                            <span>In-stock</span>
+                            <strong>{listStats.ready}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div className="list-body">
                 <aside className="filter-sidebar">
+                    <div className="filter-intro">
+                        <strong>LỌC THEO:</strong>
+                    </div>
+
                     <div className="filter-section">
                         <h4><FilterOutlined /> Lọc giá</h4>
                         <Slider
@@ -143,21 +264,24 @@ const ProductListPage = () => {
                     <div className="filter-section">
                         <h4>Tồn kho</h4>
                         <Checkbox checked={inStock} onChange={(event) => updateParam('inStock', event.target.checked ? 'true' : '')}>
-                            Chỉ xem sản phẩm còn hàng
+                            Chỉ xem sản phẩm còn hàng sẵn
                         </Checkbox>
                     </div>
 
                     <div className="filter-section">
                         <h4>Kiểu bán</h4>
                         <div className="view-switch">
-                            <button type="button" className={view === 'all' ? 'active' : ''} onClick={() => updateParam('view', 'all')}>
+                            <button type="button" className={view === 'all' ? 'active all' : ''} onClick={() => updateParam('view', 'all')}>
                                 <AppstoreOutlined /> Tất cả
                             </button>
-                            <button type="button" className={view === 'ready' ? 'active' : ''} onClick={() => updateParam('view', 'ready')}>
-                                <RocketOutlined /> Giao ngay
+                            <button type="button" className={view === 'ready' ? 'active ready' : ''} onClick={() => updateParam('view', 'ready')}>
+                                <RocketOutlined /> In-stock
                             </button>
-                            <button type="button" className={view === 'pre-order' ? 'active' : ''} onClick={() => updateParam('view', 'pre-order')}>
+                            <button type="button" className={view === 'pre-order' ? 'active preorder' : ''} onClick={() => updateParam('view', 'pre-order')}>
                                 <ThunderboltOutlined /> Pre-order
+                            </button>
+                            <button type="button" className={view === 'mixed' ? 'active mixed' : ''} onClick={() => updateParam('view', 'mixed')}>
+                                <TagOutlined /> Mixed
                             </button>
                         </div>
                     </div>
@@ -165,20 +289,33 @@ const ProductListPage = () => {
 
                 <div className="grid-area">
                     <div className="list-summary">
-                        <div className="summary-chip">
-                            <span className="summary-label">Đang xem</span>
-                            <strong>{filteredProducts.length}</strong>
+                        <div className="summary-chip active-view">
+                            <span className="summary-label">Chế độ xem</span>
+                            <strong>{viewConfig[view]?.label || 'Tất cả'}</strong>
                         </div>
                         <div className="summary-chip">
                             <span className="summary-label">Pre-order</span>
-                            <strong>{modeStats.preorder}</strong>
+                            <strong>{listStats.preorder}</strong>
                         </div>
                         <div className="summary-chip">
-                            <span className="summary-label">Giao ngay</span>
-                            <strong>{modeStats.ready}</strong>
+                            <span className="summary-label">In-stock</span>
+                            <strong>{listStats.ready}</strong>
                         </div>
-                        <span className="result-count">{total} sản phẩm từ BE</span>
+                        <span className="result-count">{total} sản phẩm</span>
                     </div>
+
+                    {groups.mixed.length > 0 && view !== 'mixed' && (
+                        <div className="mixed-notice">
+                            <div>
+                                <span className="mixed-notice-label">Sản phẩm có hai hình thức</span>
+                                <strong>{groups.mixed.length} mẫu đang mở đồng thời pre-order và in-stock</strong>
+                                <p>Danh mục chính vẫn ưu tiên hai nhóm riêng để dễ chọn. Bạn có thể mở nhóm này riêng khi cần.</p>
+                            </div>
+                            <button type="button" onClick={() => updateParam('view', 'mixed')}>
+                                Xem nhóm mixed
+                            </button>
+                        </div>
+                    )}
 
                     {loading ? (
                         <div className="grid-loading"><Spin size="large" /></div>
@@ -186,32 +323,32 @@ const ProductListPage = () => {
                         <Empty description="Không tìm thấy sản phẩm phù hợp" style={{ marginTop: 60 }} />
                     ) : (
                         <>
-                            <div className="products-grid">
-                                {filteredProducts.map((product) => {
-                                    const modeBadge = getModeBadge(product);
-                                    return (
-                                        <Link key={product.id} to={`/customer/products/${product.id}`} className={`product-card mode-${product.productMode?.toLowerCase() || 'unknown'}`}>
-                                            <div className="product-img-wrap">
-                                                {product.productImage ? (
-                                                    <img src={product.productImage} alt={product.name} className="product-img" />
-                                                ) : (
-                                                    <div className="product-img-placeholder">👓</div>
-                                                )}
-                                                <span className={`mode-badge ${modeBadge.className}`}>{modeBadge.label}</span>
-                                                <span className={`stock-badge ${product.hasStock === false ? 'out' : 'in'}`}>
-                                                    {product.hasStock === false ? 'Hết hàng' : `Kho: ${product.totalStock ?? 0}`}
-                                                </span>
-                                            </div>
-                                            <div className="product-info">
-                                                <p className="product-brand">{product.brandName || '—'}</p>
-                                                <h3 className="product-name">{product.name}</h3>
-                                                <p className="product-mode-copy">{modeBadge.sublabel}</p>
-                                                <p className="product-price">{formatPrice(product)}</p>
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
+                            {view === 'all' ? (
+                                <div className="catalog-sections">
+                                    {renderSection(
+                                        'preorder',
+                                        'Đặt trước',
+                                        'Nhóm này chỉ gồm các sản phẩm đi theo luồng cọc và chờ hàng về.',
+                                        groups.preorder,
+                                        '⌛',
+                                        'Chưa có mẫu chỉ bán pre-order trong bộ lọc hiện tại.'
+                                    )}
+                                    {renderSection(
+                                        'ready',
+                                        'Hàng sẵn',
+                                        'Nhóm này tập trung vào các sản phẩm đang có tồn kho thực tế để xử lý đơn nhanh.',
+                                        groups.ready,
+                                        '🕶️',
+                                        'Chưa có mẫu hàng sẵn trong bộ lọc hiện tại.',
+                                        6
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="products-grid">
+                                    {filteredProducts.map(renderProductCard)}
+                                </div>
+                            )}
+
                             {total > size && (
                                 <div className="pagination-wrap">
                                     <Pagination

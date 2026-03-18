@@ -8,13 +8,20 @@ import './home.css';
 
 const formatVND = (amount) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 
+const formatDate = (value) => {
+    if (!value) return null;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat('vi-VN').format(date);
+};
+
 const HomePage = () => {
     const [featured, setFeatured] = useState([]);
     const [brands, setBrands] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        Promise.all([searchProductsAPI({ page: 0, size: 9 }), getBrandsAPI()])
+        Promise.all([searchProductsAPI({ page: 0, size: 24 }), getBrandsAPI()])
             .then(async ([productResponse, brandResponse]) => {
                 const rawProducts = productResponse?.content || [];
                 const enriched = await enrichPublicProducts(rawProducts, getPublicProductDetailAPI);
@@ -27,21 +34,40 @@ const HomePage = () => {
 
     if (loading) return <div className="home-loading"><Spin size="large" /></div>;
 
-    const preOrderProducts = featured.filter((product) => product.hasPreOrder).slice(0, 3);
-    const readyProducts = featured.filter((product) => product.productMode === 'IN_STOCK' || product.productMode === 'MIXED').slice(0, 3);
+    const preOrderProducts = featured.filter((product) => product.productMode === 'PRE_ORDER').slice(0, 3);
+    const mixedProducts = featured.filter((product) => product.productMode === 'MIXED').slice(0, 3);
+    const readyProducts = featured.filter((product) => product.productMode === 'IN_STOCK').slice(0, 3);
 
     const getModeMeta = (product) => {
         if (product.productMode === 'PRE_ORDER') {
-            return { className: 'mode-preorder', label: 'Pre-order', copy: 'Đặt trước' };
+            const fulfillmentDate = product?.variants?.find((variant) => variant?.saleType === 'PRE_ORDER')?.preorderFulfillmentDate;
+            return {
+                className: 'mode-preorder',
+                label: 'Đặt trước',
+                copy: fulfillmentDate
+                    ? `Dự kiến có hàng từ ${formatDate(fulfillmentDate)}`
+                    : 'Thanh toán theo luồng pre-order và chờ hàng về.',
+            };
         }
+
         if (product.productMode === 'MIXED') {
-            return { className: 'mode-mixed', label: 'Có pre-order', copy: 'Có cả hàng sẵn và đặt trước' };
+            return {
+                className: 'mode-mixed',
+                label: 'Hai hình thức',
+                copy: 'Cùng một mẫu nhưng có cả biến thể giao ngay và biến thể đặt trước.',
+            };
         }
-        return { className: 'mode-ready', label: 'Giao ngay', copy: 'Có hàng sẵn' };
+
+        return {
+            className: 'mode-ready',
+            label: 'Hàng sẵn',
+            copy: `Chỉ còn lại ${product.totalStock ?? 0} sản phẩm.`,
+        };
     };
 
     const renderProductCard = (product) => {
         const modeMeta = getModeMeta(product);
+
         return (
             <Link key={product.id} to={`/customer/products/${product.id}`} className={`showcase-card ${modeMeta.className}`}>
                 <div className="showcase-image">
@@ -51,9 +77,6 @@ const HomePage = () => {
                         <div className="showcase-placeholder">👓</div>
                     )}
                     <span className={`showcase-mode-pill ${modeMeta.className}`}>{modeMeta.label}</span>
-                    <span className={`showcase-stock-pill ${product.hasStock ? 'in' : 'out'}`}>
-                        {product.hasStock ? `Kho: ${product.totalStock ?? 0}` : 'Hết hàng'}
-                    </span>
                 </div>
                 <div className="showcase-content">
                     <p className="showcase-brand">{product.brandName || 'Unknown'}</p>
@@ -78,8 +101,8 @@ const HomePage = () => {
                             <span>pre-order và hàng sẵn được tách rõ</span>
                         </h1>
                         <p className="hero-desc">
-                            Trang chủ mới ưu tiên sự rõ ràng: sản phẩm giao ngay, sản phẩm đặt trước
-                            và các mẫu có cả hai hình thức đều được đánh dấu trực quan.
+                            Trang chủ mới ưu tiên sự rõ ràng theo đúng nghiệp vụ bán hàng: nhóm chỉ đặt trước,
+                            nhóm chỉ có hàng sẵn và nhóm có cả hai luồng mua được hiển thị thành từng khu riêng.
                         </p>
                         <div className="hero-actions">
                             <Link to="/customer/products" className="btn-primary">
@@ -96,11 +119,11 @@ const HomePage = () => {
                             </div>
                             <div>
                                 <strong>{preOrderProducts.length}</strong>
-                                <span>Có pre-order</span>
+                                <span>Mẫu chỉ đặt trước</span>
                             </div>
                             <div>
                                 <strong>{readyProducts.length}</strong>
-                                <span>Có thể giao ngay</span>
+                                <span>Mẫu hàng sẵn</span>
                             </div>
                         </div>
                     </div>
@@ -111,36 +134,24 @@ const HomePage = () => {
                                 <ThunderboltOutlined />
                                 <div>
                                     <strong>Pre-order</strong>
-                                    <span>Cho khách biết rõ đây là mẫu đặt trước.</span>
+                                    <span>Hỗ trợ đặt cọc 30% và chờ hàng về.</span>
                                 </div>
                             </div>
                             <div className="mode-card ready">
                                 <RocketOutlined />
                                 <div>
-                                    <strong>Giao ngay</strong>
-                                    <span>Cho khách biết có thể chốt đơn theo luồng hàng sẵn.</span>
-                                </div>
-                            </div>
-                            <div className="mode-card mixed">
-                                <TagOutlined />
-                                <div>
-                                    <strong>Mixed</strong>
-                                    <span>Một sản phẩm có thể chứa cả variant hàng sẵn và pre-order.</span>
+                                    <strong>In-stock</strong>
+                                    <span>Lên đơn để được giao hàng ngay.</span>
                                 </div>
                             </div>
                         </div>
+                        {mixedProducts.length > 0 && (
+                            <div className="hero-note">
+                                <TagOutlined />
+                                <span>{mixedProducts.length} mẫu đang có cả pre-order và in-stock.</span>
+                            </div>
+                        )}
                     </div>
-                </div>
-            </section>
-
-            <section className="signal-strip">
-                <div className="signal-card">
-                    <span className="signal-title">Mã màu mới</span>
-                    <strong>Màu cam cho pre-order, xanh ngọc cho hàng sẵn</strong>
-                </div>
-                <div className="signal-card">
-                    <span className="signal-title">Trải nghiệm chọn nhanh</span>
-                    <strong>Khách không cần mở chi tiết vẫn hiểu mô hình bán</strong>
                 </div>
             </section>
 
@@ -162,7 +173,8 @@ const HomePage = () => {
                 <div className="showcase-header">
                     <div>
                         <span className="section-kicker preorder">Pre-order</span>
-                        <h2>Mẫu dành cho khách sẵn sàng chờ phiên bản mới</h2>
+                        <h2>Mẫu chỉ bán theo luồng đặt trước</h2>
+                        <p className="section-subcopy">Khách đặt cọc trước, chờ hàng về rồi hoàn tất thanh toán theo tiến độ pre-order.</p>
                     </div>
                     <Link to="/customer/products?view=pre-order" className="section-link">
                         Xem pre-order <RightOutlined />
@@ -178,11 +190,25 @@ const HomePage = () => {
                 </div>
             </section>
 
+            {mixedProducts.length > 0 && (
+                <section className="mixed-brief">
+                    <div className="mixed-brief-copy">
+                        <span className="section-kicker mixed">Hybrid note</span>
+                        <h2>Một số mẫu đang mở đồng thời hai cách mua</h2>
+                        <p>Những sản phẩm có cả biến thể đặt trước và biến thể hàng sẵn được gom riêng trong trang catalog để tránh làm rối trang chủ.</p>
+                    </div>
+                    <Link to="/customer/products?view=mixed" className="section-link">
+                        Xem mẫu có hai hình thức <RightOutlined />
+                    </Link>
+                </section>
+            )}
+
             <section className="showcase-section ready-block">
                 <div className="showcase-header">
                     <div>
-                        <span className="section-kicker ready">Ready to ship</span>
-                        <h2>Mẫu đang có hàng để khách chốt đơn nhanh</h2>
+                        <span className="section-kicker ready">In-stock</span>
+                        <h2>Mẫu đang có hàng sẵn để xử lý đơn ngay</h2>
+                        <p className="section-subcopy">Tập trung vào các sản phẩm đang có tồn kho thực tế để khách chốt đơn nhanh.</p>
                     </div>
                     <Link to="/customer/products?view=ready" className="section-link">
                         Xem hàng sẵn <RightOutlined />
@@ -201,7 +227,7 @@ const HomePage = () => {
             <section className="cta-strip">
                 <div>
                     <h2>Bắt đầu với một catalog rõ ràng hơn</h2>
-                    <p>Đi tới trang sản phẩm để lọc riêng pre-order hoặc hàng sẵn.</p>
+                    <p>Đi tới trang sản phẩm để duyệt riêng pre-order, hàng sẵn hoặc xem nhóm sản phẩm có hai hình thức mua.</p>
                 </div>
                 <Link to="/customer/products" className="btn-primary">Mở catalog</Link>
             </section>

@@ -10,6 +10,7 @@ import { normalizeAddress, normalizeAddressListResponse, normalizeCart, formatAd
 import './checkout.css';
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
+const getMinDeposit = (amount) => Math.ceil((Number(amount) || 0) * 0.3);
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
@@ -19,6 +20,7 @@ const CheckoutPage = () => {
     const [addresses, setAddresses] = useState([]);
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState('COD');
+    const [depositOption, setDepositOption] = useState('30');
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [addrModalOpen, setAddrModalOpen] = useState(false);
@@ -64,9 +66,16 @@ const CheckoutPage = () => {
         if (!selectedAddressId) { message.warning('Vui lòng chọn địa chỉ giao hàng'); return; }
         setSubmitting(true);
         try {
-            const res = await checkoutAPI({ addressId: selectedAddressId, paymentMethod });
+            const payload = { addressId: selectedAddressId, paymentMethod };
+
+            if (isPreOrderCart) {
+                payload.paymentMethod = 'VNPAY';
+                payload.depositAmount = depositAmount;
+            }
+
+            const res = await checkoutAPI(payload);
             await fetchCart();
-            if (paymentMethod === 'VNPAY' && res?.paymentUrl) {
+            if (payload.paymentMethod === 'VNPAY' && res?.paymentUrl) {
                 window.location.href = res.paymentUrl;
             } else {
                 navigate('/customer/orders', { state: { ordered: true } });
@@ -74,13 +83,23 @@ const CheckoutPage = () => {
             }
         } catch (e) {
             console.error('Checkout error:', e);
-            message.error(e?.message || 'Đặt hàng thất bại');
+            const errorMessage = e?.response?.data?.message || e?.message || 'Đặt hàng thất bại';
+            if (typeof errorMessage === 'string' && errorMessage.includes('PRE_ORDER must be paid online by VNPAY')) {
+                setPaymentMethod('VNPAY');
+                setStep(1);
+                message.warning('Đơn pre-order cần thanh toán online qua VNPAY. Tôi đã chuyển bạn về bước chọn thanh toán.');
+            } else {
+                message.error(errorMessage);
+            }
         } finally { setSubmitting(false); }
     };
 
     if (loading) return <div className="checkout-loading"><Spin size="large" /></div>;
     const total = cart?.finalTotal || 0;
-    // items mapping: use productName and unitPrice
+    const isPreOrderCart = cart?.items?.some(item => item.saleType === 'PRE_ORDER');
+    const minDeposit = getMinDeposit(total);
+    const depositAmount = depositOption === '100' ? total : minDeposit;
+    const remainingAmount = Math.max(total - depositAmount, 0);
 
     const steps = [
         { title: 'Địa chỉ', icon: <EnvironmentOutlined /> },
@@ -128,20 +147,49 @@ const CheckoutPage = () => {
                         {step === 1 && (
                             <div className="step-card">
                                 <h3>Phương thức thanh toán</h3>
-                                <Radio.Group value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="payment-group">
-                                    <Radio value="COD" className="payment-radio">
-                                        <div className="payment-option">
-                                            <span className="pay-icon">🚚</span>
-                                            <div><strong>Thanh toán khi nhận hàng (COD)</strong><p>Trả tiền mặt khi nhận hàng</p></div>
+                                {isPreOrderCart ? (
+                                    <>
+                                        <div className="preorder-payment-note">
+                                            <strong>Đơn pre-order thanh toán online qua VNPay.</strong>
+                                            <p>Bạn chọn một trong hai mức cọc theo nghiệp vụ: `30%` hoặc `100%`.</p>
                                         </div>
-                                    </Radio>
-                                    <Radio value="VNPAY" className="payment-radio">
-                                        <div className="payment-option">
-                                            <span className="pay-icon">💳</span>
-                                            <div><strong>Thanh toán qua VNPay</strong><p>ATM, Visa, MasterCard, QR Code</p></div>
-                                        </div>
-                                    </Radio>
-                                </Radio.Group>
+                                        <Radio.Group value={depositOption} onChange={e => setDepositOption(e.target.value)} className="payment-group">
+                                            <Radio value="30" className="payment-radio">
+                                                <div className="payment-option">
+                                                    <span className="pay-icon">💳</span>
+                                                    <div>
+                                                        <strong>Cọc 30%</strong>
+                                                        <p>Thanh toán trước {formatVND(minDeposit)}, còn lại {formatVND(remainingAmount)} khi hàng về.</p>
+                                                    </div>
+                                                </div>
+                                            </Radio>
+                                            <Radio value="100" className="payment-radio">
+                                                <div className="payment-option">
+                                                    <span className="pay-icon">💳</span>
+                                                    <div>
+                                                        <strong>Thanh toán 100%</strong>
+                                                        <p>Thanh toán toàn bộ {formatVND(total)} ngay trong lần đặt đơn.</p>
+                                                    </div>
+                                                </div>
+                                            </Radio>
+                                        </Radio.Group>
+                                    </>
+                                ) : (
+                                    <Radio.Group value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="payment-group">
+                                        <Radio value="COD" className="payment-radio">
+                                            <div className="payment-option">
+                                                <span className="pay-icon">🚚</span>
+                                                <div><strong>Thanh toán khi nhận hàng (COD)</strong><p>Trả tiền mặt khi nhận hàng</p></div>
+                                            </div>
+                                        </Radio>
+                                        <Radio value="VNPAY" className="payment-radio">
+                                            <div className="payment-option">
+                                                <span className="pay-icon">💳</span>
+                                                <div><strong>Thanh toán qua VNPay</strong><p>ATM, Visa, MasterCard, QR Code</p></div>
+                                            </div>
+                                        </Radio>
+                                    </Radio.Group>
+                                )}
                                 <div className="step-btns">
                                     <Button onClick={() => setStep(0)}>Quay lại</Button>
                                     <Button type="primary" className="next-btn" onClick={() => setStep(2)}>Xem lại đơn hàng</Button>
@@ -162,7 +210,19 @@ const CheckoutPage = () => {
                                 </div>
                                 <div className="confirm-section">
                                     <h4>Thanh toán:</h4>
-                                    <p>{paymentMethod === 'VNPAY' ? '💳 VNPay' : '🚚 COD – Thanh toán khi nhận'}</p>
+                                    <p>
+                                        {isPreOrderCart
+                                            ? `💳 VNPay - ${depositOption === '100' ? 'Thanh toán 100%' : 'Cọc 30%'}`
+                                            : paymentMethod === 'VNPAY'
+                                                ? '💳 VNPay'
+                                                : '🚚 COD – Thanh toán khi nhận'}
+                                    </p>
+                                    {isPreOrderCart && (
+                                        <div className="preorder-payment-breakdown">
+                                            <span>Thanh toán ngay: <strong>{formatVND(depositAmount)}</strong></span>
+                                            <span>Còn lại: <strong>{formatVND(remainingAmount)}</strong></span>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="confirm-section">
                                     <h4>Sản phẩm:</h4>
@@ -176,7 +236,11 @@ const CheckoutPage = () => {
                                 <div className="step-btns">
                                     <Button onClick={() => setStep(1)}>Quay lại</Button>
                                     <Button type="primary" className="next-btn order-btn" loading={submitting} onClick={handleCheckout}>
-                                        {paymentMethod === 'VNPAY' ? '💳 Thanh toán VNPay' : '✅ Đặt hàng COD'}
+                                        {isPreOrderCart
+                                            ? `💳 Thanh toán ${depositOption === '100' ? '100%' : 'tiền cọc'}`
+                                            : paymentMethod === 'VNPAY'
+                                                ? '💳 Thanh toán VNPay'
+                                                : '✅ Đặt hàng COD'}
                                     </Button>
                                 </div>
                             </div>
@@ -193,6 +257,19 @@ const CheckoutPage = () => {
                             </div>
                         ))}
                         <div className="summary-divider" />
+                        {isPreOrderCart && (
+                            <>
+                                <div className="summary-item">
+                                    <span className="summary-item-name">Thanh toán ngay</span>
+                                    <span>{formatVND(depositAmount)}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span className="summary-item-name">Thanh toán còn lại</span>
+                                    <span>{formatVND(remainingAmount)}</span>
+                                </div>
+                                <div className="summary-divider" />
+                            </>
+                        )}
                         <div className="summary-total"><strong>Tổng cộng</strong><strong className="total-num">{formatVND(total)}</strong></div>
                     </div>
                 </div>

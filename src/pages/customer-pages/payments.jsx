@@ -117,7 +117,7 @@ const PaymentsPage = () => {
                                             <span className="oi-price"><Tag color={stageCfg.color}>{stageCfg.label}</Tag></span>
                                         </div>
                                         <div className="order-item">
-                                            <span className="oi-name">Khởi tạo</span>
+                                            <span className="oi-name">Khởi tạo: </span>
                                             <span className="oi-price">{formatDate(payment.createAt)}</span>
                                         </div>
                                     </div>

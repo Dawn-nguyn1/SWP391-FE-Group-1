@@ -168,6 +168,24 @@
     backdrop-filter: blur(16px);
 }
 
+.hero-note {
+    display: flex;
+    align-items: start;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(241, 245, 249, 0.84);
+    line-height: 1.6;
+}
+
+.hero-note svg {
+    margin-top: 2px;
+    color: #fdba74;
+}
+
 .mode-card {
     display: grid;
     grid-template-columns: 42px 1fr;
@@ -210,6 +228,7 @@
 .signal-strip,
 .brand-section,
 .showcase-section,
+.mixed-brief,
 .cta-strip {
     max-width: 1240px;
     margin: 0 auto;
@@ -274,6 +293,13 @@
     color: var(--home-soft);
 }
 
+.section-subcopy {
+    margin: 10px 0 0;
+    max-width: 720px;
+    color: var(--home-soft);
+    line-height: 1.65;
+}
+
 .brand-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -319,6 +345,11 @@
 .section-kicker.ready {
     background: rgba(20, 184, 166, 0.14);
     color: #0f766e;
+}
+
+.section-kicker.mixed {
+    background: rgba(234, 88, 12, 0.14);
+    color: #c2410c;
 }
 
 .section-link {
@@ -389,7 +420,7 @@
 }
 
 .showcase-mode-pill,
-.showcase-stock-pill {
+.showcase-mode-pill {
     position: absolute;
     display: inline-flex;
     align-items: center;
@@ -408,12 +439,6 @@
     left: 16px;
 }
 
-.showcase-stock-pill {
-    right: 16px;
-    bottom: 16px;
-    font-size: 10px;
-}
-
 .showcase-mode-pill.mode-preorder {
     background: linear-gradient(135deg, var(--home-amber) 0%, var(--home-orange) 100%);
 }
@@ -424,14 +449,6 @@
 
 .showcase-mode-pill.mode-ready {
     background: linear-gradient(135deg, var(--home-teal) 0%, var(--home-mint) 100%);
-}
-
-.showcase-stock-pill.in {
-    background: rgba(15, 118, 110, 0.88);
-}
-
-.showcase-stock-pill.out {
-    background: rgba(239, 68, 68, 0.9);
 }
 
 .showcase-content {
@@ -470,6 +487,30 @@
 
 .ready-block {
     padding-bottom: 14px;
+}
+
+.mixed-brief {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 20px;
+    padding-top: 54px;
+    padding-bottom: 8px;
+}
+
+.mixed-brief-copy h2 {
+    margin: 0 0 8px;
+    font-family: 'Sora', sans-serif;
+    font-size: clamp(24px, 2.6vw, 34px);
+    line-height: 1.08;
+    letter-spacing: -0.04em;
+}
+
+.mixed-brief-copy p {
+    margin: 0;
+    max-width: 760px;
+    color: var(--home-soft);
+    line-height: 1.65;
 }
 
 .empty-state {
@@ -526,13 +567,15 @@
     .signal-strip,
     .brand-section,
     .showcase-section,
+    .mixed-brief,
     .cta-strip {
         padding-left: 16px;
         padding-right: 16px;
     }
 
     .section-head,
-    .showcase-header {
+    .showcase-header,
+    .mixed-brief {
         align-items: start;
         flex-direction: column;
     }
