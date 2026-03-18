@@ -115,7 +115,18 @@ const UpdateProductModal = (props) => {
                     if (variant.id) {
                         // Update existing variant
                         console.log("Updating variant:", variant.id);
-                        await updateVariantAPI(variant.id, variant.sku, variant.price, variant.stockQuantity, variant.saleType);
+                        await updateVariantAPI(
+                            variant.id, 
+                            variant.sku, 
+                            variant.price, 
+                            variant.stockQuantity, 
+                            variant.saleType,
+                            variant.allowPreorder || false,
+                            variant.preorderLimit || 0,
+                            variant.preorderFulfillmentDate || null,
+                            variant.preorderStartDate || null,
+                            variant.preorderEndDate || null
+                        );
 
                         // Update attributes
                         if (variant.attributes) {
