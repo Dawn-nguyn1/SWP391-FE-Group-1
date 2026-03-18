@@ -173,9 +173,19 @@ const createProductAPI = (name, description, brandName, productImage) => {
     return axios.post(URL_BACKEND, data);
 }
 
-const createVariantAPI = (productId, sku, price, stockQuantity) => {
+const createVariantAPI = (productId, sku, price, stockQuantity, saleType, allowPreorder = false, preorderLimit = 0, preorderFulfillmentDate = null, preorderStartDate = null, preorderEndDate = null) => {
     const URL_BACKEND = `/api/manager/products/${productId}/variants`;
-    const data = { sku, price, stockQuantity, saleType: "IN_STOCK" };
+    const data = { 
+        sku, 
+        price, 
+        stockQuantity, 
+        saleType,
+        allowPreorder,
+        preorderLimit,
+        preorderFulfillmentDate,
+        preorderStartDate,
+        preorderEndDate
+    };
     return axios.post(URL_BACKEND, data);
 }
 
@@ -212,9 +222,19 @@ const updateProductAPI = (id, name, description, brandName, productImage) => {
     return axios.put(URL_BACKEND, data);
 }
 
-const updateVariantAPI = (variantId, sku, price, stockQuantity, saleType) => {
+const updateVariantAPI = (variantId, sku, price, stockQuantity, saleType, allowPreorder = false, preorderLimit = 0, preorderFulfillmentDate = null, preorderStartDate = null, preorderEndDate = null) => {
     const URL_BACKEND = `/api/manager/variants/${variantId}`;
-    const data = { sku, price, stockQuantity, saleType };
+    const data = { 
+        sku, 
+        price, 
+        stockQuantity, 
+        saleType,
+        allowPreorder,
+        preorderLimit,
+        preorderFulfillmentDate,
+        preorderStartDate,
+        preorderEndDate
+    };
     return axios.put(URL_BACKEND, data);
 }
 
