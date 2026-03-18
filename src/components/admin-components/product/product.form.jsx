@@ -58,7 +58,7 @@ const ProductForm = (props) => {
                 for (const variant of values.variants) {
                     // Ensure saleType is provided, fallback to IN_STOCK only if undefined/null
                     const saleType = variant.saleType || 'IN_STOCK';
-                    
+
                     const resVariant = await createVariantAPI(
                         productId,
                         variant.sku,
@@ -251,25 +251,25 @@ const ProductForm = (props) => {
                                                 rules={[
                                                     { required: true, message: 'Missing SKU' },
                                                     { max: 255, message: 'SKU cannot exceed 255 characters!' },
-                                                    { 
-                                                        pattern: /^SKU-\d+$/, 
-                                                        message: 'SKU phải có định dạng SKU-number (ví dụ: SKU-001, SKU-123)' 
+                                                    {
+                                                        pattern: /^SKU-\d+$/,
+                                                        message: 'SKU phải có định dạng SKU-number (ví dụ: SKU-001, SKU-123)'
                                                     },
                                                     {
                                                         validator: async (_, value) => {
                                                             if (!value) return Promise.resolve();
-                                                            
+
                                                             // Check for duplicate SKUs within the form
                                                             const allVariants = form.getFieldValue('variants') || [];
                                                             const currentVariantIndex = name;
-                                                            const duplicateCount = allVariants.filter((variant, index) => 
+                                                            const duplicateCount = allVariants.filter((variant, index) =>
                                                                 index !== currentVariantIndex && variant.sku === value
                                                             ).length;
-                                                            
+
                                                             if (duplicateCount > 0) {
                                                                 return Promise.reject('SKU này đã tồn tại trong danh sách!');
                                                             }
-                                                            
+
                                                             return Promise.resolve();
                                                         }
                                                     }
@@ -290,12 +290,46 @@ const ProductForm = (props) => {
                                         </Col>
                                         <Col span={6}>
                                             <Form.Item
-                                                {...restField}
-                                                name={[name, 'stockQuantity']}
-                                                label="Stock"
-                                                rules={[{ required: true, message: 'Missing stock' }]}
+                                                noStyle
+                                                shouldUpdate={(prevValues, currentValues) =>
+                                                    prevValues.variants?.[name]?.saleType !== currentValues.variants?.[name]?.saleType
+                                                }
                                             >
-                                                <InputNumber style={{ width: '100%' }} />
+                                                {({ getFieldValue }) => {
+                                                    const currentSaleType = getFieldValue(['variants', name, 'saleType']);
+                                                    const isPreOrder = currentSaleType === 'PRE_ORDER';
+
+                                                    // Tự động set về 0 khi chọn PRE_ORDER
+                                                    if (isPreOrder) {
+                                                        form.setFieldValue(['variants', name, 'stockQuantity'], 0);
+                                                    }
+
+                                                    return (
+                                                        <Form.Item
+                                                            {...restField}
+                                                            name={[name, 'stockQuantity']}
+                                                            label="Stock"
+                                                            rules={[
+                                                                { required: true, message: 'Missing stock' },
+                                                                {
+                                                                    validator(_, value) {
+                                                                        if (!isPreOrder && (value === undefined || value === null || value < 0)) {
+                                                                            return Promise.reject('Stock must be a non-negative number!');
+                                                                        }
+                                                                        return Promise.resolve();
+                                                                    }
+                                                                }
+                                                            ]}
+                                                        >
+                                                            <InputNumber
+                                                                style={{ width: '100%' }}
+                                                                disabled={isPreOrder}
+                                                                min={0}
+                                                                placeholder={isPreOrder ? '0 (auto)' : 'Enter stock'}
+                                                            />
+                                                        </Form.Item>
+                                                    );
+                                                }}
                                             </Form.Item>
                                         </Col>
                                         <Col span={6}>
@@ -331,7 +365,6 @@ const ProductForm = (props) => {
                                                                     {...restField}
                                                                     name={[name, 'allowPreorder']}
                                                                     label="Allow Preorder"
-                                                                    valuePropName="checked"
                                                                     initialValue={true}
                                                                 >
                                                                     <Select style={{ width: '100%' }}>
@@ -377,8 +410,8 @@ const ProductForm = (props) => {
                                                                         }),
                                                                     ]}
                                                                 >
-                                                                    <Input 
-                                                                        type="date" 
+                                                                    <Input
+                                                                        type="date"
                                                                         style={{ width: '100%' }}
                                                                         min={new Date().toISOString().split('T')[0]}
                                                                     />
@@ -403,21 +436,21 @@ const ProductForm = (props) => {
                                                                         }),
                                                                     ]}
                                                                 >
-                                                                    <Input 
-                                                                        type="date" 
+                                                                    <Input
+                                                                        type="date"
                                                                         style={{ width: '100%' }}
                                                                         min={new Date().toISOString().split('T')[0]}
                                                                         onChange={(e) => {
                                                                             const startDate = e.target.value;
                                                                             if (startDate) {
                                                                                 const endDate = new Date(startDate);
-                                                endDate.setDate(endDate.getDate() + 7);
-                                                const endDateString = endDate.toISOString().split('T')[0];
-                                                form.setFieldValue(['variants', name, 'preorderEndDate'], endDateString);
-                                            } else {
-                                                form.setFieldValue(['variants', name, 'preorderEndDate'], null);
-                                            }
-                                        }}
+                                                                                endDate.setDate(endDate.getDate() + 7);
+                                                                                const endDateString = endDate.toISOString().split('T')[0];
+                                                                                form.setFieldValue(['variants', name, 'preorderEndDate'], endDateString);
+                                                                            } else {
+                                                                                form.setFieldValue(['variants', name, 'preorderEndDate'], null);
+                                                                            }
+                                                                        }}
                                                                     />
                                                                 </Form.Item>
                                                             </Col>
@@ -442,8 +475,8 @@ const ProductForm = (props) => {
                                                                         }),
                                                                     ]}
                                                                 >
-                                                                    <Input 
-                                                                        type="date" 
+                                                                    <Input
+                                                                        type="date"
                                                                         style={{ width: '100%' }}
                                                                         min={new Date().toISOString().split('T')[0]}
                                                                     />

@@ -73,7 +73,7 @@ const ProductPage = () => {
             <div className="page-header">
                 <div>
                     <h1 className="page-title">Product Management</h1>
-                    <p className="page-subtitle">Manage products, variants, and stock</p>
+                    <p className="page-subtitle" style={{ color: '#ffffff' }}>Manage products, variants, and stock</p>
                 </div>
                 <Button
                     type="primary"
