@@ -115,7 +115,6 @@ const CustomerHeader = () => {
             <nav className="header-nav">
                 <Link to="/customer" className="nav-link">Trang chủ</Link>
                 <Link to="/customer/products" className="nav-link">Sản phẩm</Link>
-                <Link to="/customer/combos" className="nav-link">Combo</Link>
                 <Link to="/customer/orders" className="nav-link">Đơn hàng của tôi</Link>
                 <Link to="/customer/payments" className="nav-link">Lịch sử thanh toán</Link>
                 <Link to="/customer/products?brand=Ray-Ban" className="nav-link">Ray-Ban</Link>

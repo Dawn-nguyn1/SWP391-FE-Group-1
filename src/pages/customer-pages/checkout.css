@@ -24,17 +24,6 @@
     margin-bottom: 28px;
 }
 
-.checkout-empty-note {
-    margin-bottom: 20px;
-    padding: 14px 16px;
-    border-radius: 14px;
-    background: #fff7ed;
-    border: 1px solid #fdba74;
-    color: #9a3412;
-    font-size: 13px;
-    font-weight: 600;
-}
-
 .checkout-layout {
     display: grid;
     grid-template-columns: 1fr 300px;
@@ -176,34 +165,6 @@
     font-size: 14px;
     padding: 6px 0;
     border-bottom: 1px dashed #f0f0f0;
-    align-items: center;
-}
-
-.confirm-item-info {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-.confirm-item-info small,
-.summary-item-name small {
-    display: block;
-    color: #94a3b8;
-    font-size: 12px;
-    margin-top: 4px;
-}
-
-.combo-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: #e0f2fe;
-    color: #0369a1;
-    font-weight: 700;
-    margin-right: 8px;
 }
 
 /* Summary */
@@ -246,74 +207,7 @@
     justify-content: space-between;
 }
 
-.summary-sub {
-    margin-bottom: 10px;
-    font-size: 13px;
-    color: #475569;
-}
-
 .total-num {
     color: #764ba2;
     font-size: 18px;
-}
-
-.checkout-summary-note {
-    margin-top: 10px;
-    padding: 10px 12px;
-    border-radius: 10px;
-    background: #f8fafc;
-    color: #475569;
-    font-size: 12px;
-    line-height: 1.5;
-}
-
-.checkout-preorder-banner {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 20px;
-    padding: 16px 18px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #eff6ff, #f5f3ff);
-    border: 1px solid #c7d2fe;
-    color: #312e81;
-}
-
-.checkout-preorder-banner strong {
-    font-size: 15px;
-}
-
-.payment-radio-featured {
-    border-color: #818cf8;
-    background: #f8faff;
-}
-
-.checkout-policy-card {
-    margin-top: 18px;
-    padding: 16px 18px;
-    border-radius: 14px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-}
-
-.checkout-policy-row {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    font-size: 14px;
-    color: #1e293b;
-    margin-bottom: 10px;
-}
-
-.checkout-policy-copy {
-    margin: 4px 0 0;
-    font-size: 12px;
-    color: #64748b;
-    line-height: 1.6;
-}
-
-@media (max-width: 900px) {
-    .checkout-layout {
-        grid-template-columns: 1fr;
-    }
 }
