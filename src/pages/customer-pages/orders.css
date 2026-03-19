@@ -24,6 +24,34 @@
     margin-bottom: 24px;
 }
 
+.orders-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.orders-toolbar .orders-title {
+    margin-bottom: 0;
+}
+
+.orders-toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.orders-toolbar-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.orders-sort-select {
+    min-width: 150px;
+}
+
 .orders-empty {
     background: #fff;
     border-radius: 16px;
@@ -35,6 +63,25 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
+}
+
+.orders-page-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 18px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid #e5e7eb;
+    color: #475569;
+    font-size: 13px;
+}
+
+.orders-page-meta strong {
+    color: #111827;
+    font-size: 14px;
 }
 
 .order-card {
@@ -131,8 +178,67 @@
     color: #1f2937;
 }
 
+.tracking-code {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    letter-spacing: 0.02em;
+    word-break: break-all;
+}
+
 .info-block.full {
     grid-column: span 3;
+}
+
+.remaining-payment-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    margin-bottom: 16px;
+    border: 1px solid transparent;
+}
+
+.remaining-payment-banner strong {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+}
+
+.remaining-payment-banner p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.remaining-payment-banner.waiting {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.remaining-payment-banner.waiting strong,
+.remaining-payment-banner.waiting p {
+    color: #1d4ed8;
+}
+
+.remaining-payment-banner.ready {
+    background: #fff7ed;
+    border-color: #fdba74;
+}
+
+.remaining-payment-banner.ready strong,
+.remaining-payment-banner.ready p {
+    color: #c2410c;
+}
+
+.remaining-payment-banner.done {
+    background: #ecfdf5;
+    border-color: #86efac;
+}
+
+.remaining-payment-banner.done strong,
+.remaining-payment-banner.done p {
+    color: #15803d;
 }
 
 .order-summary {
@@ -179,10 +285,33 @@
     background: #fecaca;
 }
 
+.pay-remaining-btn {
+    background: linear-gradient(135deg, #f97316, #ea580c);
+    border: none;
+    color: #fff;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.pay-remaining-btn:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
 .cancel-disabled {
     font-size: 12px;
     color: #9ca3af;
     font-weight: 600;
+}
+
+.orders-pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 28px;
 }
 
 @media (max-width: 1024px) {
@@ -198,6 +327,18 @@
     .orders-inner {
         padding: 0 16px;
     }
+    .orders-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .orders-toolbar-actions {
+        width: 100%;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .orders-sort-select {
+        width: 100%;
+    }
     .order-header {
         flex-direction: column;
         align-items: flex-start;
@@ -209,6 +350,14 @@
         grid-column: span 1;
     }
     .order-summary {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .remaining-payment-banner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .orders-page-meta {
         flex-direction: column;
         align-items: flex-start;
     }
