@@ -111,8 +111,16 @@ const getRemainingPaymentMeta = (order) => {
     if (order.orderStatus === 'PAID') {
         return {
             tone: 'waiting',
-            title: 'Đã thanh toán tiền cọc',
-            description: 'Support đã xác nhận thanh toán ban đầu. Hệ thống đang chờ manager cập nhật hàng về để mở thanh toán phần còn lại.',
+            title: 'Đã ghi nhận thanh toán tiền cọc',
+            description: 'Hệ thống đã ghi nhận khoản thanh toán ban đầu. Đơn hàng đang chờ cập nhật trạng thái tiếp theo để mở thanh toán phần còn lại.',
+        };
+    }
+
+    if (order.orderStatus === 'SUPPORT_CONFIRMED' || order.orderStatus === 'CONFIRMED') {
+        return {
+            tone: 'waiting',
+            title: 'Đơn đã được xác nhận',
+            description: 'Đơn pre-order đã qua bước xác nhận và đang chờ manager cập nhật hàng về để mở thanh toán phần còn lại.',
         };
     }
 
@@ -127,7 +135,7 @@ const getRemainingPaymentMeta = (order) => {
     return {
         tone: 'waiting',
         title: 'Chờ mở thanh toán phần còn lại',
-        description: 'Bạn đã cọc 30%. Khi manager xác nhận hàng đã về, hệ thống sẽ mở nút thanh toán phần còn lại tại đây.',
+        description: 'Đơn pre-order vẫn đang ở bước trung gian. Thanh toán phần còn lại sẽ xuất hiện khi hệ thống chuyển sang trạng thái phù hợp.',
     };
 };
 
@@ -182,7 +190,12 @@ const OrdersPage = () => {
             message.success('Đã tạo yêu cầu thanh toán phần còn lại.');
             load();
         } catch (e) {
-            message.error(e?.response?.data?.message || 'Không thể thanh toán phần còn lại');
+            const backendMessage = e?.response?.data?.message || e?.message || 'Không thể thanh toán phần còn lại';
+            if (typeof backendMessage === 'string' && backendMessage.includes('Remaining payment is not opened yet')) {
+                message.warning('BE chưa mở thanh toán phần còn lại cho đơn này. Hãy thử lại sau khi manager cập nhật hàng về.');
+            } else {
+                message.error(backendMessage);
+            }
         } finally {
             setPayingOrderId(null);
         }
@@ -208,10 +221,11 @@ const OrdersPage = () => {
                         {paginatedOrders.map(order => {
                             const statusCfg = STATUS_CONFIG[order.orderStatus] || { label: order.orderStatus, color: 'default' };
                             const canCancel = order.orderStatus === 'WAITING_CONFIRM';
-                            const canPayRemaining =
+                            const isReadyToPayRemaining = order.orderStatus === 'PENDING_PAYMENT';
+                            const canAttemptPayRemaining =
                                 order.orderType === 'PRE_ORDER'
                                 && Number(order.remainingAmount) > 0
-                                && order.orderStatus === 'PENDING_PAYMENT';
+                                && isReadyToPayRemaining;
                             const remainingPaymentMeta = getRemainingPaymentMeta(order);
 
                             return (
@@ -259,14 +273,16 @@ const OrdersPage = () => {
                                                 <strong>{remainingPaymentMeta.title}</strong>
                                                 <p>{remainingPaymentMeta.description}</p>
                                             </div>
-                                            {canPayRemaining && (
+                                            {canAttemptPayRemaining && (
                                                 <button
                                                     className="pay-remaining-btn"
                                                     type="button"
                                                     onClick={() => handlePayRemaining(order.id)}
                                                     disabled={payingOrderId === order.id}
                                                 >
-                                                    {payingOrderId === order.id ? 'Đang chuyển thanh toán...' : 'Thanh toán phần còn lại'}
+                                                    {payingOrderId === order.id
+                                                        ? 'Đang chuyển thanh toán...'
+                                                        : (isReadyToPayRemaining ? 'Thanh toán phần còn lại' : 'Kiểm tra thanh toán phần còn lại')}
                                                 </button>
                                             )}
                                         </div>
