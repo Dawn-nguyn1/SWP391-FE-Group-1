@@ -6,7 +6,8 @@ import {
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
     deleteVariantAPI, deleteAttributeAPI,
     createVariantAPI, createAttributeAPI,
-    addImagesToAttributeAPI, updateAttributeImageAPI, deleteAttributeImageAPI
+    addImagesToAttributeAPI, updateAttributeImageAPI, deleteAttributeImageAPI,
+    markPreorderStockArrivedAPI
 } from '../../../services/api.service';
 
 const UpdateProductModal = (props) => {
@@ -50,6 +51,8 @@ const UpdateProductModal = (props) => {
                     sku: v.sku,
                     price: v.price,
                     stockQuantity: v.currentPreorders > 0 ? v.stockQuantity - v.currentPreorders : v.stockQuantity,
+                    originalStockQuantity: v.stockQuantity,
+                    arrivedQuantity: 0,
                     saleType: v.saleType || 'IN_STOCK',
                     allowPreorder: v.allowPreorder || false,
                     preorderLimit: v.currentPreorders > 0 ? v.preorderLimit - v.currentPreorders : v.preorderLimit,
@@ -119,7 +122,9 @@ const UpdateProductModal = (props) => {
                             variant.id,
                             variant.sku,
                             variant.price,
-                            variant.stockQuantity,
+                            variant.saleType === 'PRE_ORDER'
+                                ? (variant.originalStockQuantity ?? variant.stockQuantity ?? 0)
+                                : variant.stockQuantity,
                             variant.saleType,
                             variant.allowPreorder || false,
                             variant.preorderLimit || 0,
@@ -127,6 +132,10 @@ const UpdateProductModal = (props) => {
                             variant.preorderStartDate || null,
                             variant.preorderEndDate || null
                         );
+
+                        if (variant.saleType === 'PRE_ORDER' && Number(variant.arrivedQuantity) > 0) {
+                            await markPreorderStockArrivedAPI(variant.id, Number(variant.arrivedQuantity));
+                        }
 
                         // Update attributes
                         if (variant.attributes) {
@@ -492,6 +501,33 @@ const UpdateProductModal = (props) => {
                                                                 </Form.Item>
                                                             </Col>
                                                         </Row>
+                                                        {getFieldValue(['variants', name, 'id']) && (
+                                                            <Row gutter={16}>
+                                                                <Col span={8}>
+                                                                    <Form.Item
+                                                                        {...restField}
+                                                                        name={[name, 'arrivedQuantity']}
+                                                                        label="Stock Arrived"
+                                                                        extra="Dùng API stock-arrived để cộng thêm hàng về cho pre-order."
+                                                                    >
+                                                                        <InputNumber
+                                                                            style={{ width: '100%' }}
+                                                                            min={0}
+                                                                            placeholder="Nhập số lượng hàng mới về"
+                                                                        />
+                                                                    </Form.Item>
+                                                                </Col>
+                                                                <Col span={8}>
+                                                                    <Form.Item
+                                                                        {...restField}
+                                                                        name={[name, 'originalStockQuantity']}
+                                                                        label="Current Stock"
+                                                                    >
+                                                                        <InputNumber style={{ width: '100%' }} disabled />
+                                                                    </Form.Item>
+                                                                </Col>
+                                                            </Row>
+                                                        )}
                                                         <Row gutter={16}>
                                                             <Col span={12}>
                                                                 <Form.Item
