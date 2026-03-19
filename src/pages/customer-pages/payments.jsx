@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Empty, Spin, Tag, message, Pagination, Select } from 'antd';
 import { getCustomerPaymentsAPI } from '../../services/api.service';
+import { normalizePaymentsResponse } from '../../utils/role-data';
 import './orders.css';
 
 const PAYMENT_STATUS_CONFIG = {
@@ -40,7 +41,7 @@ const PaymentsPage = () => {
             try {
                 setLoading(true);
                 const res = await getCustomerPaymentsAPI();
-                setPayments(Array.isArray(res) ? res : res?.content || []);
+                setPayments(normalizePaymentsResponse(res));
             } catch {
                 message.error('Không thể tải lịch sử thanh toán');
             } finally {

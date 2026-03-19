@@ -254,6 +254,26 @@ export const normalizeOrdersResponse = (input) => {
     };
 };
 
+export const normalizePayment = (input) => {
+    const payment = unwrapData(input) || {};
+
+    return {
+        ...payment,
+        paymentId: firstDefined(payment.paymentId, payment.id),
+        orderCode: firstDefined(payment.orderCode, payment.order_code),
+        stage: firstDefined(payment.stage, payment.paymentStage),
+        method: firstDefined(payment.method, payment.paymentMethod),
+        status: firstDefined(payment.status, payment.paymentStatus),
+        amount: toNumber(payment.amount),
+        transactionCode: firstDefined(payment.transactionCode, payment.transactionNo),
+        createAt: firstDefined(payment.createAt, payment.createdAt, payment.createdDate),
+        paidAt: firstDefined(payment.paidAt, payment.updatedAt),
+    };
+};
+
+export const normalizePaymentsResponse = (input) =>
+    normalizeCollectionResponse(input).items.map(normalizePayment);
+
 export const parseEvidenceUrls = (value) => {
     if (!value) return [];
     if (Array.isArray(value)) return value;

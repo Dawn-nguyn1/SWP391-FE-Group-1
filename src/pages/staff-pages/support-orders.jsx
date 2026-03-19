@@ -75,7 +75,8 @@ const sortByNewest = (items = []) =>
         return (b?.id || 0) - (a?.id || 0);
     });
 
-const canSupportConfirm = (status) => status === 'WAITING_CONFIRM' || status === 'PAID';
+const canSupportConfirm = (status) =>
+    status === 'WAITING_CONFIRM' || status === 'PAID' || status === 'PENDING_PAYMENT';
 
 const SupportOrdersPage = () => {
     const navigate = useNavigate();
@@ -87,6 +88,7 @@ const SupportOrdersPage = () => {
     const [actioning, setActioning] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 6;
+    const [processedOrderIds, setProcessedOrderIds] = useState([]);
 
     const [returnRequests, setReturnRequests] = useState([]);
     const [returnLoading, setReturnLoading] = useState(true);
@@ -163,8 +165,20 @@ const SupportOrdersPage = () => {
         setActioning(orderId);
         try {
             await actionAPI(orderId);
+            if (actionAPI === supportConfirmOrderAPI) {
+                setProcessedOrderIds((prev) => Array.from(new Set([...prev, orderId])));
+                setOrders((prev) =>
+                    prev.map((order) =>
+                        order.id === orderId
+                            ? { ...order, orderStatus: 'SUPPORT_CONFIRMED' }
+                            : order
+                    )
+                );
+            }
             message.success(successMsg);
-            loadOrders();
+            if (actionAPI !== supportConfirmOrderAPI) {
+                loadOrders();
+            }
         } catch (err) {
             message.error(getFriendlyError(err, 'Thao tác thất bại'));
         } finally {
@@ -278,7 +292,9 @@ const SupportOrdersPage = () => {
         return type || '—';
     };
 
-    const actionableOrders = orders.filter(order => canSupportConfirm(order.orderStatus));
+    const actionableOrders = orders.filter(
+        (order) => canSupportConfirm(order.orderStatus) && !processedOrderIds.includes(order.id)
+    );
     const waitingCount = actionableOrders.length;
     const orderStart = (currentPage - 1) * pageSize;
     const pageOrders = actionableOrders.slice(orderStart, orderStart + pageSize);

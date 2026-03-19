@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Spin, Tag, Popconfirm, message, Empty, Tooltip, Pagination } from 'antd';
-import { getCustomerOrdersAPI, cancelOrderByCustomerAPI, payRemainingOrderAPI } from '../../services/api.service';
-import { formatAddressText, normalizeOrdersResponse } from '../../utils/role-data';
+import { getCustomerOrdersAPI, cancelOrderByCustomerAPI, payRemainingOrderAPI, getCustomerPaymentsAPI } from '../../services/api.service';
+import { formatAddressText, normalizeOrdersResponse, normalizePaymentsResponse } from '../../utils/role-data';
 import './orders.css';
 
 const STATUS_CONFIG = {
     PENDING_PAYMENT:   { label: 'Chờ thanh toán', color: 'gold' },
     WAITING_CONFIRM:   { label: 'Chờ xác nhận',   color: 'orange' },
+    PAID:              { label: 'Đã cọc / chờ hàng về', color: 'blue' },
     SUPPORT_CONFIRMED: { label: 'Đã xác nhận',    color: 'blue' },
     CONFIRMED:         { label: 'Đã xác nhận',    color: 'blue' },
     OPERATION_CONFIRMED:{ label: 'Đã tạo vận đơn', color: 'cyan' },
@@ -15,10 +16,70 @@ const STATUS_CONFIG = {
     COMPLETED:         { label: 'Hoàn thành',     color: 'green' },
     CANCELLED:         { label: 'Đã hủy',         color: 'red' },
     RETURNED:          { label: 'Hoàn trả',       color: 'volcano' },
+    FAILED:            { label: 'Thất bại',       color: 'red' },
 };
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : 'BE chưa trả ngày đặt';
+const getPaymentTimestamp = (payment) => {
+    const rawDate = payment?.paidAt || payment?.createAt;
+    const time = rawDate ? new Date(rawDate).getTime() : 0;
+    return Number.isNaN(time) ? 0 : time;
+};
+
+const buildPaymentSummaryMap = (payments) => {
+    const grouped = new Map();
+
+    payments.forEach((payment) => {
+        if (!payment?.orderCode) return;
+        const current = grouped.get(payment.orderCode) || [];
+        current.push(payment);
+        grouped.set(payment.orderCode, current);
+    });
+
+    const summaryMap = new Map();
+    grouped.forEach((orderPayments, orderCode) => {
+        const sorted = [...orderPayments].sort((a, b) => getPaymentTimestamp(b) - getPaymentTimestamp(a));
+        summaryMap.set(orderCode, {
+            latest: sorted[0] || null,
+            byStage: Object.fromEntries(
+                ['DEPOSIT', 'FULL', 'REMAINING'].map((stage) => [
+                    stage,
+                    sorted.find((payment) => payment.stage === stage) || null,
+                ])
+            ),
+        });
+    });
+
+    return summaryMap;
+};
+
+const enrichOrdersWithPayments = (orders, payments) => {
+    const paymentSummaryMap = buildPaymentSummaryMap(payments);
+
+    return orders.map((order) => {
+        const paymentSummary = paymentSummaryMap.get(order.orderCode);
+        const latestPayment = paymentSummary?.latest || null;
+        const remainingPayment = paymentSummary?.byStage?.REMAINING || null;
+        const hasRemainingBalance = Number(order.remainingAmount) > 0;
+
+        return {
+            ...order,
+            paymentMethod: order.paymentMethod || latestPayment?.method || (order.orderType === 'PRE_ORDER' ? 'VNPAY' : null),
+            paymentStatus: order.paymentStatus || latestPayment?.status || null,
+            remainingPaymentMethod: order.remainingPaymentMethod || (hasRemainingBalance ? (remainingPayment?.method || 'VNPAY') : null),
+        };
+    });
+};
+
+const getOrderDisplayPaymentMethod = (order) => {
+    if (order.orderType === 'PRE_ORDER' && Number(order.remainingAmount) > 0) {
+        return order.remainingPaymentMethod || 'VNPAY';
+    }
+
+    return order.paymentMethod || order.remainingPaymentMethod || 'Không có thông tin thanh toán';
+};
+
 const getShipmentLabel = (status) => {
     if (!status) return 'Chưa có trạng thái giao vận';
     const labels = {
@@ -47,6 +108,14 @@ const getRemainingPaymentMeta = (order) => {
         };
     }
 
+    if (order.orderStatus === 'PAID') {
+        return {
+            tone: 'waiting',
+            title: 'Đã thanh toán tiền cọc',
+            description: 'Support đã xác nhận thanh toán ban đầu. Hệ thống đang chờ manager cập nhật hàng về để mở thanh toán phần còn lại.',
+        };
+    }
+
     if (order.orderStatus === 'COMPLETED' || Number(order.remainingAmount) <= 0) {
         return {
             tone: 'done',
@@ -72,8 +141,13 @@ const OrdersPage = () => {
     const load = async () => {
         try {
             setLoading(true);
-            const res = await getCustomerOrdersAPI();
-            setOrders(normalizeOrdersResponse(res).items);
+            const [ordersRes, paymentsRes] = await Promise.all([
+                getCustomerOrdersAPI(),
+                getCustomerPaymentsAPI(),
+            ]);
+            const normalizedOrders = normalizeOrdersResponse(ordersRes).items;
+            const normalizedPayments = normalizePaymentsResponse(paymentsRes);
+            setOrders(enrichOrdersWithPayments(normalizedOrders, normalizedPayments));
         } catch { message.error('Không thể tải đơn hàng'); }
         finally { setLoading(false); }
     };
@@ -152,7 +226,7 @@ const OrdersPage = () => {
                                         </div>
                                         <div className="order-header-right">
                                             <Tag color={statusCfg.color}>{statusCfg.label}</Tag>
-                                            <span className="order-pay-method">{order.remainingPaymentMethod || order.paymentMethod || 'Không có thông tin thanh toán'}</span>
+                                            <span className="order-pay-method">{getOrderDisplayPaymentMethod(order)}</span>
                                         </div>
                                     </div>
 

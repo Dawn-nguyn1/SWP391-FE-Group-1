@@ -101,8 +101,8 @@ const HomePage = () => {
                             <span>pre-order và hàng sẵn được tách rõ</span>
                         </h1>
                         <p className="hero-desc">
-                            Trang chủ mới ưu tiên sự rõ ràng theo đúng nghiệp vụ bán hàng: nhóm chỉ đặt trước,
-                            nhóm chỉ có hàng sẵn và nhóm có cả hai luồng mua được hiển thị thành từng khu riêng.
+                            GENETIX là cửa hàng bán mắt kính uy tín, đảm bảo tối đa quyền lợi cho khách hàng.          
+                            CHUYÊN NGHIỆP - UY TÍN - CHẤT LƯỢNG.
                         </p>
                         <div className="hero-actions">
                             <Link to="/customer/products" className="btn-primary">
@@ -173,7 +173,7 @@ const HomePage = () => {
                 <div className="showcase-header">
                     <div>
                         <span className="section-kicker preorder">Pre-order</span>
-                        <h2>Mẫu chỉ bán theo luồng đặt trước</h2>
+                        <h2>Các mẫu đặt trước</h2>
                         <p className="section-subcopy">Khách đặt cọc trước, chờ hàng về rồi hoàn tất thanh toán theo tiến độ pre-order.</p>
                     </div>
                     <Link to="/customer/products?view=pre-order" className="section-link">
@@ -193,7 +193,7 @@ const HomePage = () => {
             {mixedProducts.length > 0 && (
                 <section className="mixed-brief">
                     <div className="mixed-brief-copy">
-                        <span className="section-kicker mixed">Hybrid note</span>
+                        <span className="section-kicker mixed">Mixed</span>
                         <h2>Một số mẫu đang mở đồng thời hai cách mua</h2>
                         <p>Những sản phẩm có cả biến thể đặt trước và biến thể hàng sẵn được gom riêng trong trang catalog để tránh làm rối trang chủ.</p>
                     </div>
@@ -208,7 +208,7 @@ const HomePage = () => {
                     <div>
                         <span className="section-kicker ready">In-stock</span>
                         <h2>Mẫu đang có hàng sẵn để xử lý đơn ngay</h2>
-                        <p className="section-subcopy">Tập trung vào các sản phẩm đang có tồn kho thực tế để khách chốt đơn nhanh.</p>
+                        <p className="section-subcopy">Các sản phẩm đang còn thực tế có thể chốt đơn nhanh.</p>
                     </div>
                     <Link to="/customer/products?view=ready" className="section-link">
                         Xem hàng sẵn <RightOutlined />

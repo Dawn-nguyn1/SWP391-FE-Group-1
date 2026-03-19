@@ -18,6 +18,7 @@ import {
 } from '@ant-design/icons';
 import {
     getOperationOrdersAPI,
+    getApprovedOrdersAPI,
     operationsConfirmOrderAPI,
     getOperationReturnRequestsAPI,
     operationReceiveReturnRequestAPI,
@@ -56,6 +57,7 @@ const sortByNewest = (items = []) =>
     });
 
 const CAN_SHIP_STATUSES = ['SUPPORT_CONFIRMED', 'CONFIRMED'];
+const OPERATION_READY_QUEUE_SOURCE = 'approved_queue';
 
 const getOrderStatusLabel = (status) => {
     const labels = {
@@ -66,7 +68,7 @@ const getOrderStatusLabel = (status) => {
         CANCELLED: 'Đã hủy',
         FAILED: 'Thất bại',
         PENDING_PAYMENT: 'Chờ thanh toán',
-        PAID: 'Đã thanh toán',
+        PAID: 'Đã cọc / chờ hàng về',
         CONFIRMED: 'Đã xác nhận',
         OPERATION_CONFIRMED: 'Đã tạo vận đơn',
     };
@@ -133,8 +135,16 @@ const getOrderTypeLabel = (type) => {
     return type || '—';
 };
 
+const isOrderReadyForShipment = (order) =>
+    order.queueSource === OPERATION_READY_QUEUE_SOURCE
+    || CAN_SHIP_STATUSES.includes(order.orderStatus);
+
 const getShipReadinessText = (order) => {
+    if (isOrderReadyForShipment(order)) {
+        return 'Đơn đã nằm trong queue approved của BE và sẵn sàng để tạo vận đơn GHN.';
+    }
     if (order.orderStatus === 'SHIPPING') return 'Đơn đã có vận đơn và đang trong quá trình giao.';
+    if (order.orderStatus === 'PAID') return 'Đơn pre-order đã nhận tiền cọc hoặc thanh toán ban đầu, đang chờ manager cập nhật hàng về.';
     if (CAN_SHIP_STATUSES.includes(order.orderStatus)) return 'Đơn đã đủ điều kiện để tạo vận đơn GHN.';
     if (order.orderStatus === 'PENDING_PAYMENT') return 'Đơn đang chờ khách hoàn tất thanh toán trước khi giao.';
     return 'Đơn chưa sẵn sàng để tạo vận đơn.';
@@ -166,9 +176,21 @@ const OperationsOrdersPage = () => {
         setOrdersLoading(true);
         setOrdersError('');
         try {
-            const res = await getOperationOrdersAPI();
-            const { items } = normalizeOrdersResponse(res);
-            setOrders(sortByNewest(items));
+            const [allOrdersRes, approvedOrdersRes] = await Promise.all([
+                getOperationOrdersAPI(),
+                getApprovedOrdersAPI(),
+            ]);
+
+            const { items: allOrders } = normalizeOrdersResponse(allOrdersRes);
+            const { items: approvedOrders } = normalizeOrdersResponse(approvedOrdersRes);
+            const approvedIds = new Set(approvedOrders.map((order) => order.id));
+
+            const mergedOrders = allOrders.map((order) => ({
+                ...order,
+                queueSource: approvedIds.has(order.id) ? OPERATION_READY_QUEUE_SOURCE : 'all_orders',
+            }));
+
+            setOrders(sortByNewest(mergedOrders));
         } catch (error) {
             setOrders([]);
             setOrdersError(getFriendlyError(error, 'Không thể tải danh sách đơn vận hành.'));
@@ -258,7 +280,7 @@ const OperationsOrdersPage = () => {
         navigate('/login');
     };
 
-    const readyOrders = orders.filter((order) => CAN_SHIP_STATUSES.includes(order.orderStatus));
+    const readyOrders = orders.filter((order) => isOrderReadyForShipment(order));
     const shippingOrders = orders.filter((order) => order.orderStatus === 'SHIPPING');
     const completedOrders = orders.filter((order) => order.orderStatus === 'COMPLETED');
     const orderStart = (ordersPage - 1) * ordersPageSize;
@@ -336,7 +358,7 @@ const OperationsOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Đơn hàng vận hành</h2>
-                            <p>Ưu tiên các đơn đã được xác nhận để tạo vận đơn, đồng thời theo dõi tình trạng thanh toán và giao vận trên từng đơn.</p>
+                            <p>Danh sách này hiển thị toàn bộ đơn từ operations, đồng thời đánh dấu những đơn đã nằm trong queue `/approved` để bật thao tác tạo vận đơn.</p>
                         </div>
                         <div className="support-panel-meta">
                             <span className="queue-badge queue-orders">Đơn hàng</span>
@@ -381,7 +403,7 @@ const OperationsOrdersPage = () => {
                         ) : (
                             <div className="orders-list">
                                 {orderItems.map((order) => {
-                                    const canShip = CAN_SHIP_STATUSES.includes(order.orderStatus);
+                                    const canShip = isOrderReadyForShipment(order);
                                     return (
                                         <div key={order.id || order.orderCode} className="order-card ops-order ops-order-rich">
                                             <div className="order-header">
