@@ -1,41 +1,175 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Spin, Tag, Popconfirm, message, Empty, Tooltip } from 'antd';
-import { getCustomerOrdersAPI, cancelOrderByCustomerAPI } from '../../services/api.service';
+import { Spin, Tag, Popconfirm, message, Empty, Tooltip, Pagination } from 'antd';
+import { getCustomerOrdersAPI, cancelOrderByCustomerAPI, payRemainingOrderAPI, getCustomerPaymentsAPI } from '../../services/api.service';
+import { formatAddressText, normalizeOrdersResponse, normalizePaymentsResponse } from '../../utils/role-data';
 import './orders.css';
 
 const STATUS_CONFIG = {
     PENDING_PAYMENT:   { label: 'Chờ thanh toán', color: 'gold' },
     WAITING_CONFIRM:   { label: 'Chờ xác nhận',   color: 'orange' },
+    PAID:              { label: 'Đã cọc / chờ hàng về', color: 'blue' },
     SUPPORT_CONFIRMED: { label: 'Đã xác nhận',    color: 'blue' },
+    CONFIRMED:         { label: 'Đã xác nhận',    color: 'blue' },
+    OPERATION_CONFIRMED:{ label: 'Đã tạo vận đơn', color: 'cyan' },
     SHIPPING:          { label: 'Đang giao hàng', color: 'cyan' },
     COMPLETED:         { label: 'Hoàn thành',     color: 'green' },
     CANCELLED:         { label: 'Đã hủy',         color: 'red' },
     RETURNED:          { label: 'Hoàn trả',       color: 'volcano' },
+    FAILED:            { label: 'Thất bại',       color: 'red' },
 };
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
-const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : '';
-const formatAddress = (address) => {
-    if (!address) return '—';
-    const parts = [address.addressLine, address.ward, address.district, address.province].filter(Boolean);
-    return parts.join(', ');
+const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : 'BE chưa trả ngày đặt';
+const getPaymentTimestamp = (payment) => {
+    const rawDate = payment?.paidAt || payment?.createAt;
+    const time = rawDate ? new Date(rawDate).getTime() : 0;
+    return Number.isNaN(time) ? 0 : time;
+};
+
+const buildPaymentSummaryMap = (payments) => {
+    const grouped = new Map();
+
+    payments.forEach((payment) => {
+        if (!payment?.orderCode) return;
+        const current = grouped.get(payment.orderCode) || [];
+        current.push(payment);
+        grouped.set(payment.orderCode, current);
+    });
+
+    const summaryMap = new Map();
+    grouped.forEach((orderPayments, orderCode) => {
+        const sorted = [...orderPayments].sort((a, b) => getPaymentTimestamp(b) - getPaymentTimestamp(a));
+        summaryMap.set(orderCode, {
+            latest: sorted[0] || null,
+            byStage: Object.fromEntries(
+                ['DEPOSIT', 'FULL', 'REMAINING'].map((stage) => [
+                    stage,
+                    sorted.find((payment) => payment.stage === stage) || null,
+                ])
+            ),
+        });
+    });
+
+    return summaryMap;
+};
+
+const enrichOrdersWithPayments = (orders, payments) => {
+    const paymentSummaryMap = buildPaymentSummaryMap(payments);
+
+    return orders.map((order) => {
+        const paymentSummary = paymentSummaryMap.get(order.orderCode);
+        const latestPayment = paymentSummary?.latest || null;
+        const remainingPayment = paymentSummary?.byStage?.REMAINING || null;
+        const hasRemainingBalance = Number(order.remainingAmount) > 0;
+
+        return {
+            ...order,
+            paymentMethod: order.paymentMethod || latestPayment?.method || (order.orderType === 'PRE_ORDER' ? 'VNPAY' : null),
+            paymentStatus: order.paymentStatus || latestPayment?.status || null,
+            remainingPaymentMethod: order.remainingPaymentMethod || (hasRemainingBalance ? (remainingPayment?.method || 'VNPAY') : null),
+        };
+    });
+};
+
+const getOrderDisplayPaymentMethod = (order) => {
+    if (order.orderType === 'PRE_ORDER' && Number(order.remainingAmount) > 0) {
+        return order.remainingPaymentMethod || 'VNPAY';
+    }
+
+    return order.paymentMethod || order.remainingPaymentMethod || 'Không có thông tin thanh toán';
+};
+
+const getShipmentLabel = (status) => {
+    if (!status) return 'Chưa có trạng thái giao vận';
+    const labels = {
+        WAITING_CONFIRM: 'Chờ tạo vận đơn',
+        READY_TO_PICK: 'GHN chờ lấy hàng',
+        PICKING: 'GHN đang lấy hàng',
+        DELIVERING: 'GHN đang giao',
+        DELIVERED: 'Đã giao thành công',
+        FAILED: 'Giao hàng thất bại',
+        CANCELLED: 'Đã hủy vận đơn',
+        RETURNED: 'Đơn hoàn về'
+    };
+    return labels[status] || status;
+};
+
+const getRemainingPaymentMeta = (order) => {
+    const isPreOrderDeposit = order.orderType === 'PRE_ORDER' && Number(order.remainingAmount) > 0;
+
+    if (!isPreOrderDeposit) return null;
+
+    if (order.orderStatus === 'PENDING_PAYMENT') {
+        return {
+            tone: 'ready',
+            title: 'Đã mở thanh toán phần còn lại',
+            description: `Hàng đã về. Bạn có thể thanh toán ${formatVND(order.remainingAmount)} còn lại ngay bây giờ.`,
+        };
+    }
+
+    if (order.orderStatus === 'PAID') {
+        return {
+            tone: 'waiting',
+            title: 'Đã ghi nhận thanh toán tiền cọc',
+            description: 'Hệ thống đã ghi nhận khoản thanh toán ban đầu. Đơn hàng đang chờ cập nhật trạng thái tiếp theo để mở thanh toán phần còn lại.',
+        };
+    }
+
+    if (order.orderStatus === 'SUPPORT_CONFIRMED' || order.orderStatus === 'CONFIRMED') {
+        return {
+            tone: 'waiting',
+            title: 'Đơn đã được xác nhận',
+            description: 'Đơn pre-order đã qua bước xác nhận và đang chờ manager cập nhật hàng về để mở thanh toán phần còn lại.',
+        };
+    }
+
+    if (order.orderStatus === 'COMPLETED' || Number(order.remainingAmount) <= 0) {
+        return {
+            tone: 'done',
+            title: 'Đã hoàn tất thanh toán pre-order',
+            description: 'Đơn đã được thanh toán đủ và đang tiếp tục các bước giao vận.',
+        };
+    }
+
+    return {
+        tone: 'waiting',
+        title: 'Chờ mở thanh toán phần còn lại',
+        description: 'Đơn pre-order vẫn đang ở bước trung gian. Thanh toán phần còn lại sẽ xuất hiện khi hệ thống chuyển sang trạng thái phù hợp.',
+    };
 };
 
 const OrdersPage = () => {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [payingOrderId, setPayingOrderId] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 5;
 
     const load = async () => {
         try {
             setLoading(true);
-            const res = await getCustomerOrdersAPI();
-            setOrders(Array.isArray(res) ? res : res?.content || []);
+            const [ordersRes, paymentsRes] = await Promise.all([
+                getCustomerOrdersAPI(),
+                getCustomerPaymentsAPI(),
+            ]);
+            const normalizedOrders = normalizeOrdersResponse(ordersRes).items;
+            const normalizedPayments = normalizePaymentsResponse(paymentsRes);
+            setOrders(enrichOrdersWithPayments(normalizedOrders, normalizedPayments));
         } catch { message.error('Không thể tải đơn hàng'); }
         finally { setLoading(false); }
     };
 
     useEffect(() => { load(); }, []);
+
+    useEffect(() => {
+        const totalPages = Math.max(1, Math.ceil(orders.length / pageSize));
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [orders.length, currentPage]);
+
+    const paginatedOrders = orders.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const handleCancel = async (orderId) => {
         try {
@@ -43,6 +177,28 @@ const OrdersPage = () => {
             message.success('Đã hủy đơn hàng');
             load();
         } catch (e) { message.error(e?.response?.data?.message || 'Không thể hủy đơn'); }
+    };
+
+    const handlePayRemaining = async (orderId) => {
+        try {
+            setPayingOrderId(orderId);
+            const res = await payRemainingOrderAPI(orderId);
+            if (res?.paymentUrl) {
+                window.location.href = res.paymentUrl;
+                return;
+            }
+            message.success('Đã tạo yêu cầu thanh toán phần còn lại.');
+            load();
+        } catch (e) {
+            const backendMessage = e?.response?.data?.message || e?.message || 'Không thể thanh toán phần còn lại';
+            if (typeof backendMessage === 'string' && backendMessage.includes('Remaining payment is not opened yet')) {
+                message.warning('BE chưa mở thanh toán phần còn lại cho đơn này. Hãy thử lại sau khi manager cập nhật hàng về.');
+            } else {
+                message.error(backendMessage);
+            }
+        } finally {
+            setPayingOrderId(null);
+        }
     };
 
     if (loading) return <div className="orders-loading"><Spin size="large" /></div>;
@@ -56,10 +212,22 @@ const OrdersPage = () => {
                         <Empty description={<span>Bạn chưa có đơn hàng nào. <Link to="/customer/products">Mua sắm ngay!</Link></span>} />
                     </div>
                 ) : (
-                    <div className="orders-list">
-                        {orders.map(order => {
+                    <>
+                        <div className="orders-page-meta">
+                            <span>Hiển thị {paginatedOrders.length} / {orders.length} đơn hàng</span>
+                            <strong>Trang {currentPage}</strong>
+                        </div>
+                        <div className="orders-list">
+                        {paginatedOrders.map(order => {
                             const statusCfg = STATUS_CONFIG[order.orderStatus] || { label: order.orderStatus, color: 'default' };
                             const canCancel = order.orderStatus === 'WAITING_CONFIRM';
+                            const isReadyToPayRemaining = order.orderStatus === 'PENDING_PAYMENT';
+                            const canAttemptPayRemaining =
+                                order.orderType === 'PRE_ORDER'
+                                && Number(order.remainingAmount) > 0
+                                && isReadyToPayRemaining;
+                            const remainingPaymentMeta = getRemainingPaymentMeta(order);
+
                             return (
                                 <div key={order.id} className="order-card">
                                     <div className="order-header">
@@ -72,24 +240,53 @@ const OrdersPage = () => {
                                         </div>
                                         <div className="order-header-right">
                                             <Tag color={statusCfg.color}>{statusCfg.label}</Tag>
-                                            <span className="order-pay-method">{order.remainingPaymentMethod || order.paymentMethod || '—'}</span>
+                                            <span className="order-pay-method">{getOrderDisplayPaymentMethod(order)}</span>
                                         </div>
                                     </div>
 
                                     <div className="order-info-grid">
                                         <div className="info-block">
                                             <span>Người nhận</span>
-                                            <strong>{order.address?.receiverName || '—'}</strong>
+                                            <strong>{order.receiverName || '—'}</strong>
                                         </div>
                                         <div className="info-block">
                                             <span>Số điện thoại</span>
-                                            <strong>{order.address?.phone || '—'}</strong>
+                                            <strong>{order.receiverPhone || '—'}</strong>
                                         </div>
                                         <div className="info-block full">
                                             <span>Địa chỉ</span>
-                                            <strong>{formatAddress(order.address)}</strong>
+                                            <strong>{formatAddressText(order.address)}</strong>
+                                        </div>
+                                        <div className="info-block">
+                                            <span>Mã vận đơn</span>
+                                            <strong className="tracking-code">{order.ghnOrderCode || 'Chưa tạo vận đơn'}</strong>
+                                        </div>
+                                        <div className="info-block">
+                                            <span>Trạng thái giao vận</span>
+                                            <strong>{getShipmentLabel(order.shipmentStatus)}</strong>
                                         </div>
                                     </div>
+
+                                    {remainingPaymentMeta && (
+                                        <div className={`remaining-payment-banner ${remainingPaymentMeta.tone}`}>
+                                            <div>
+                                                <strong>{remainingPaymentMeta.title}</strong>
+                                                <p>{remainingPaymentMeta.description}</p>
+                                            </div>
+                                            {canAttemptPayRemaining && (
+                                                <button
+                                                    className="pay-remaining-btn"
+                                                    type="button"
+                                                    onClick={() => handlePayRemaining(order.id)}
+                                                    disabled={payingOrderId === order.id}
+                                                >
+                                                    {payingOrderId === order.id
+                                                        ? 'Đang chuyển thanh toán...'
+                                                        : (isReadyToPayRemaining ? 'Thanh toán phần còn lại' : 'Kiểm tra thanh toán phần còn lại')}
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
 
                                     <div className="order-summary">
                                         <div className="summary-item">
@@ -125,7 +322,19 @@ const OrdersPage = () => {
                                 </div>
                             );
                         })}
-                    </div>
+                        </div>
+                        {orders.length > pageSize && (
+                            <div className="orders-pagination">
+                                <Pagination
+                                    current={currentPage}
+                                    pageSize={pageSize}
+                                    total={orders.length}
+                                    onChange={setCurrentPage}
+                                    showSizeChanger={false}
+                                />
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

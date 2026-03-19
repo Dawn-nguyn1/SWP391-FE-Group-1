@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { getCartAPI } from '../services/api.service';
 import { AuthContext } from './auth.context';
+import { normalizeCart } from '../utils/role-data';
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const CartContext = createContext({});
@@ -14,10 +15,9 @@ export const CartWrapper = ({ children }) => {
         if (!user?.accessKey) { setCartCount(0); setCart(null); return; }
         try {
             const res = await getCartAPI();
-            if (res?.items) {
-                setCart(res);
-                setCartCount(res.items.reduce((sum, i) => sum + i.quantity, 0));
-            }
+            const normalizedCart = normalizeCart(res);
+            setCart(normalizedCart);
+            setCartCount(normalizedCart.items.reduce((sum, item) => sum + item.quantity, 0));
         } catch { setCartCount(0); }
     }, [user?.accessKey]);
 

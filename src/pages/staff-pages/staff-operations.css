@@ -14,7 +14,7 @@
 }
 
 .ops-branding {
-    max-width: 520px;
+    max-width: 640px;
 }
 
 .ops-label {
@@ -64,6 +64,52 @@
 
 .ops-order {
     border: 1px solid #eef2f7;
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.ops-order-rich,
+.ops-return-rich {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.ops-panel .return-card {
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+.ops-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.ops-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.ops-panel .return-actions {
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.ops-order-note {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.5;
+    max-width: 430px;
+}
+
+.ops-order-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.ops-return-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .receive-form {
@@ -92,5 +138,12 @@
     .ops-topbar {
         flex-direction: column;
         align-items: flex-start;
+    }
+    .ops-summary-grid {
+        grid-template-columns: 1fr;
+    }
+    .ops-order-grid,
+    .ops-return-grid {
+        grid-template-columns: 1fr;
     }
 }

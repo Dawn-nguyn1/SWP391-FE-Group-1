@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Empty, Spin, Tag, message, Pagination } from 'antd';
+import { Empty, Spin, Tag, message, Pagination, Select } from 'antd';
 import { getCustomerPaymentsAPI } from '../../services/api.service';
+import { normalizePaymentsResponse } from '../../utils/role-data';
 import './orders.css';
 
 const PAYMENT_STATUS_CONFIG = {
@@ -21,11 +22,18 @@ const PAYMENT_STAGE_CONFIG = {
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : '';
+const getPaymentTimestamp = (payment) => {
+    const rawDate = payment?.paidAt || payment?.createAt;
+    const time = rawDate ? new Date(rawDate).getTime() : 0;
+
+    return Number.isNaN(time) ? 0 : time;
+};
 
 const PaymentsPage = () => {
     const [payments, setPayments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
+    const [dateSort, setDateSort] = useState('desc');
     const pageSize = 6;
 
     useEffect(() => {
@@ -33,7 +41,7 @@ const PaymentsPage = () => {
             try {
                 setLoading(true);
                 const res = await getCustomerPaymentsAPI();
-                setPayments(Array.isArray(res) ? res : res?.content || []);
+                setPayments(normalizePaymentsResponse(res));
             } catch {
                 message.error('Không thể tải lịch sử thanh toán');
             } finally {
@@ -44,15 +52,39 @@ const PaymentsPage = () => {
         loadPayments();
     }, []);
 
+    useEffect(() => {
+        setPage(1);
+    }, [dateSort, payments.length]);
+
     if (loading) return <div className="orders-loading"><Spin size="large" /></div>;
 
-    const total = payments.length;
-    const pageItems = payments.slice((page - 1) * pageSize, page * pageSize);
+    const sortedPayments = [...payments].sort((a, b) => {
+        const timeA = getPaymentTimestamp(a);
+        const timeB = getPaymentTimestamp(b);
+
+        return dateSort === 'asc' ? timeA - timeB : timeB - timeA;
+    });
+    const total = sortedPayments.length;
+    const pageItems = sortedPayments.slice((page - 1) * pageSize, page * pageSize);
 
     return (
         <div className="orders-page">
             <div className="orders-inner">
-                <h1 className="orders-title">Lịch sử thanh toán</h1>
+                <div className="orders-toolbar">
+                    <h1 className="orders-title">Lịch sử thanh toán</h1>
+                    <div className="orders-toolbar-actions">
+                        <span className="orders-toolbar-label">Sắp xếp theo ngày</span>
+                        <Select
+                            value={dateSort}
+                            onChange={setDateSort}
+                            options={[
+                                { value: 'desc', label: 'Mới nhất' },
+                                { value: 'asc', label: 'Cũ nhất' },
+                            ]}
+                            className="orders-sort-select"
+                        />
+                    </div>
+                </div>
                 {payments.length === 0 ? (
                     <div className="orders-empty">
                         <Empty description={<span>Bạn chưa có giao dịch nào. <Link to="/customer/products">Mua sắm ngay!</Link></span>} />
@@ -86,7 +118,7 @@ const PaymentsPage = () => {
                                             <span className="oi-price"><Tag color={stageCfg.color}>{stageCfg.label}</Tag></span>
                                         </div>
                                         <div className="order-item">
-                                            <span className="oi-name">Khởi tạo</span>
+                                            <span className="oi-name">Khởi tạo: </span>
                                             <span className="oi-price">{formatDate(payment.createAt)}</span>
                                         </div>
                                     </div>

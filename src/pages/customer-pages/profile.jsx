@@ -3,6 +3,7 @@ import { Tabs, Form, Input, Button, message, Spin, DatePicker, Radio } from 'ant
 import { UserOutlined, LockOutlined, EnvironmentOutlined } from '@ant-design/icons';
 import { getProfileAPI, updateProfileAPI, changePasswordAPI, getAddressesAPI, createAddressAPI, deleteAddressAPI, setDefaultAddressAPI } from '../../services/api.service';
 import dayjs from 'dayjs';
+import { formatAddressText, normalizeAddressListResponse, normalizeProfile } from '../../utils/role-data';
 import './profile.css';
 
 const ProfilePage = () => {
@@ -18,13 +19,15 @@ const ProfilePage = () => {
         try {
             setLoading(true);
             const [p, addrs] = await Promise.all([getProfileAPI(), getAddressesAPI()]);
-            setProfile(p);
-            setAddresses(Array.isArray(addrs) ? addrs : []);
+            const normalizedProfile = normalizeProfile(p);
+            const normalizedAddresses = normalizeAddressListResponse(addrs);
+            setProfile(normalizedProfile);
+            setAddresses(normalizedAddresses);
             profileForm.setFieldsValue({
-                fullName: p.fullName,
-                phone: p.phone,
-                gender: p.gender,
-                dob: p.dob ? dayjs(p.dob) : undefined,
+                fullName: normalizedProfile.fullName,
+                phone: normalizedProfile.phone,
+                gender: normalizedProfile.gender,
+                dob: normalizedProfile.dob ? dayjs(normalizedProfile.dob) : undefined,
             });
         } catch { message.error('Không thể tải hồ sơ'); }
         finally { setLoading(false); }
@@ -134,8 +137,8 @@ const ProfilePage = () => {
                         {addresses.map(a => (
                             <div key={a.id} className="addr-card">
                                 <div className="addr-info">
-                                    <strong>{a.receiverName || a.recipientName}</strong> — {a.phone}
-                                    <p>{a.addressLine || a.street}, {a.ward}, {a.district}, {a.province || a.city}</p>
+                                    <strong>{a.receiverName}</strong> — {a.phone}
+                                    <p>{formatAddressText(a)}</p>
                                     {a.isDefault && <span className="default-badge">Mặc định</span>}
                                 </div>
                                 <div className="addr-actions">

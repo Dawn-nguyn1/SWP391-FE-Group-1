@@ -38,6 +38,37 @@
     font-size: 14px;
 }
 
+.endpoint-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.endpoint-pill {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid #dbe4ff;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.endpoint-pill strong {
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #475569;
+}
+
+.endpoint-pill code {
+    color: #1e293b;
+    font-size: 12px;
+    font-weight: 700;
+}
+
 .support-metrics {
     display: flex;
     align-items: center;
@@ -167,6 +198,41 @@
     font-size: 13px;
 }
 
+.support-panel-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.queue-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.queue-orders {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.queue-returns {
+    background: #ecfccb;
+    color: #3f6212;
+}
+
+.queue-hint {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 700;
+}
+
 .panel-icon {
     font-size: 22px;
     color: #94a3b8;
@@ -174,6 +240,63 @@
 
 .panel-body {
     flex: 1;
+}
+
+.support-callout {
+    display: grid;
+    gap: 8px;
+    padding: 16px 18px;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+.support-callout strong {
+    color: #111827;
+    font-size: 15px;
+}
+
+.support-callout span {
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.support-callout.error {
+    border-color: #fecaca;
+    background: #fff5f5;
+}
+
+.queue-toolbar {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    border: 1px solid #e5e7eb;
+}
+
+.queue-toolbar-item {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.queue-toolbar-label {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+}
+
+.queue-toolbar-item strong {
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 800;
 }
 
 /* ── Filters ── */
@@ -207,6 +330,8 @@
 
 .support-order {
     border: 1px solid #eef2f7;
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
 }
 
 .order-info {
@@ -272,6 +397,7 @@
     border-radius: 16px;
     padding: 16px 18px;
     background: #f8fafc;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
 }
 
 .return-header {
@@ -529,6 +655,9 @@
         align-items: flex-start;
     }
     .support-filters {
+        flex-direction: column;
+    }
+    .queue-toolbar {
         flex-direction: column;
     }
     .order-info,

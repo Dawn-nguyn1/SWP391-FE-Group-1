@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import './homepage.css';
-import { getManagerDashboardAPI, getAdminDashboardAPI } from '../../services/api.service';
+import { getManagerDashboardAPI } from '../../services/api.service';
 
 const GENDER_MAP = { 0: "Nữ", 1: "Nam", 2: "Khác" };
 const GENDER_COLORS = { 1: "#7c3aed", 0: "#2563eb", 2: "#bfdbfe" };
@@ -206,16 +206,7 @@ export default function AdminHomepage() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        // Try admin API first, fallback to manager API
-        let response;
-        try {
-          response = await getAdminDashboardAPI();
-        } catch (adminError) {
-          console.log('Admin API failed, trying manager API:', adminError);
-          response = await getManagerDashboardAPI();
-        }
-        
-        console.log('Dashboard API response:', response);
+        const response = await getManagerDashboardAPI();
         
         if (response) {
           setData({

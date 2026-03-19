@@ -30,7 +30,12 @@ instance.interceptors.request.use(function (config) {
 instance.interceptors.response.use(function (response) { // noi tra ve respone
   // Any status code that lie within the range of 2xx cause this function to trigger
   // Do something with response data
-  console.log(">>>>> response tu API <<<<<:", response);
+  console.log(">>>>> response tu API <<<<<", {
+    method: response?.config?.method?.toUpperCase?.() || response?.config?.method,
+    url: response?.config?.url,
+    status: response?.status,
+    data: response?.data,
+  });
   if (response && response.data)
     return response.data;
 }, function (error) {
@@ -43,6 +48,12 @@ instance.interceptors.response.use(function (response) { // noi tra ve respone
       window.location.href = '/login';
     }
   }
+  console.error(">>>>> API error <<<<<", {
+    method: error?.config?.method?.toUpperCase?.() || error?.config?.method,
+    url: error?.config?.url,
+    status: error?.response?.status,
+    data: error?.response?.data,
+  });
   if (error.response && error.response.data) return Promise.reject(error.response.data);
   return Promise.reject(error);
 });

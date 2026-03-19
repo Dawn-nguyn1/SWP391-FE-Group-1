@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import {
     Tag,
     Button,
@@ -13,16 +13,15 @@ import {
 import {
     SendOutlined,
     ReloadOutlined,
-    InboxOutlined,
     LogoutOutlined,
     CheckCircleOutlined
 } from '@ant-design/icons';
 import {
+    getOperationOrdersAPI,
     getApprovedOrdersAPI,
     operationsConfirmOrderAPI,
     getOperationReturnRequestsAPI,
     operationReceiveReturnRequestAPI,
-    getOperationOrdersAPI
 } from '../../services/api.service';
 import './staff-operations.css';
 import './staff-orders.css';
@@ -30,68 +29,125 @@ import '../customer-pages/orders.css';
 import dayjs from 'dayjs';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../../context/auth.context.jsx';
+import {
+    formatAddressText,
+    normalizeOrdersResponse,
+    normalizeReturnRequestsResponse,
+    parseEvidenceUrls,
+} from '../../utils/role-data';
 
-const formatVND = n =>
+const formatVND = (n) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 
-const parseMaybeString = (value) => {
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    try { return JSON.parse(trimmed); } catch { /* ignore */ }
-    try {
-        const normalized = trimmed
-            .replace(/\\'/g, '__SQUOTE__')
-            .replace(/'/g, '"')
-            .replace(/__SQUOTE__/g, "'");
-        return JSON.parse(normalized);
-    } catch {
-        try {
-            // eslint-disable-next-line no-new-func
-            return new Function(`return (${trimmed})`)();
-        } catch {
-            return value;
-        }
-    }
+const formatDateTime = (value) => {
+    if (!value) return '—';
+    const parsed = dayjs(value);
+    return parsed.isValid() ? parsed.format('DD/MM/YYYY HH:mm') : '—';
 };
 
-const extractJsonFromString = (value) => {
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    const firstBrace = trimmed.indexOf('{');
-    const lastBrace = trimmed.lastIndexOf('}');
-    if (firstBrace !== -1 && lastBrace > firstBrace) {
-        const sliced = trimmed.slice(firstBrace, lastBrace + 1);
-        const parsed = parseMaybeString(sliced);
-        if (parsed && typeof parsed === 'object') return parsed;
-    }
-    const firstBracket = trimmed.indexOf('[');
-    const lastBracket = trimmed.lastIndexOf(']');
-    if (firstBracket !== -1 && lastBracket > firstBracket) {
-        const sliced = trimmed.slice(firstBracket, lastBracket + 1);
-        const parsed = parseMaybeString(sliced);
-        if (parsed) return parsed;
-    }
-    return value;
+const getFriendlyError = (error, fallback) =>
+    error?.response?.data?.message || error?.message || error?.error || fallback;
+
+const sortByNewest = (items = []) =>
+    [...items].sort((a, b) => {
+        const timeA = dayjs(a?.createdAt).isValid() ? dayjs(a.createdAt).valueOf() : 0;
+        const timeB = dayjs(b?.createdAt).isValid() ? dayjs(b.createdAt).valueOf() : 0;
+        if (timeA !== timeB) return timeB - timeA;
+        return (b?.id || 0) - (a?.id || 0);
+    });
+
+const CAN_SHIP_STATUSES = ['SUPPORT_CONFIRMED', 'CONFIRMED'];
+const OPERATION_READY_QUEUE_SOURCE = 'approved_queue';
+
+const getOrderStatusLabel = (status) => {
+    const labels = {
+        WAITING_CONFIRM: 'Chờ duyệt',
+        SUPPORT_CONFIRMED: 'Sẵn sàng giao GHN',
+        SHIPPING: 'Đang giao',
+        COMPLETED: 'Hoàn tất',
+        CANCELLED: 'Đã hủy',
+        FAILED: 'Thất bại',
+        PENDING_PAYMENT: 'Chờ thanh toán',
+        PAID: 'Đã cọc / chờ hàng về',
+        CONFIRMED: 'Đã xác nhận',
+        OPERATION_CONFIRMED: 'Đã tạo vận đơn',
+    };
+    return labels[status] || status || '—';
 };
 
-const normalizeApprovedOrders = (res) => {
-    let data = parseMaybeString(res);
-    if (typeof data === 'string') data = extractJsonFromString(data);
-    if (data && typeof data === 'object' && 'data' in data) data = data.data;
-    if (Array.isArray(data?.content)) {
-        return { items: data.content, total: data.totalElements ?? data.content.length };
-    }
-    if (Array.isArray(data)) return { items: data, total: data.length };
-    return { items: [], total: 0 };
+const getOrderStatusClass = (status) => {
+    if (CAN_SHIP_STATUSES.includes(status) || status === 'SHIPPING') return 'status-confirmed';
+    if (status === 'COMPLETED') return 'status-completed';
+    if (status === 'CANCELLED' || status === 'FAILED') return 'status-cancelled';
+    return 'status-waiting';
 };
 
-const parseEvidenceUrls = (value) => {
-    if (!value) return [];
-    if (Array.isArray(value)) return value;
-    const parsed = parseMaybeString(value);
-    if (Array.isArray(parsed)) return parsed;
-    if (typeof value === 'string') return value.split(',').map(v => v.trim()).filter(Boolean);
-    return [];
+const getShipmentLabel = (status) => {
+    if (!status) return 'Chưa tạo vận đơn';
+    const labels = {
+        WAITING_CONFIRM: 'Chờ tạo vận đơn',
+        READY_TO_PICK: 'GHN chờ lấy hàng',
+        PICKING: 'GHN đang lấy hàng',
+        DELIVERING: 'GHN đang giao',
+        DELIVERED: 'Đã giao thành công',
+        FAILED: 'Giao thất bại',
+        CANCELLED: 'Đã hủy vận đơn',
+        RETURNED: 'Đơn hoàn về'
+    };
+    return labels[status] || status;
+};
+
+const getPaymentMethodLabel = (method) => {
+    if (!method) return '—';
+    if (method === 'VNPAY') return 'VNPAY';
+    if (method === 'COD') return 'COD';
+    if (method === 'BANKING') return 'Chuyển khoản';
+    return method;
+};
+
+const getPaymentStatusLabel = (status) => {
+    if (!status) return '—';
+    const labels = {
+        SUCCESS: 'Thành công',
+        PAID: 'Đã thanh toán',
+        UNPAID: 'Chưa thanh toán',
+        CANCELLED: 'Đã hủy',
+        FAILED: 'Thất bại',
+        PENDING: 'Đang chờ'
+    };
+    return labels[status] || status;
+};
+
+const getReturnStatusLabel = (status) => {
+    const labels = {
+        WAITING_RETURN: 'Chờ nhận',
+        RECEIVED: 'Đã nhận',
+        REFUND_REQUESTED: 'Đã tạo yêu cầu hoàn tiền',
+        REJECTED: 'Đã từ chối',
+        SUBMITTED: 'Đã gửi',
+    };
+    return labels[status] || status || '—';
+};
+
+const getOrderTypeLabel = (type) => {
+    if (type === 'PRE_ORDER') return 'Đặt trước';
+    if (type === 'IN_STOCK') return 'Có sẵn';
+    return type || '—';
+};
+
+const isOrderReadyForShipment = (order) =>
+    order.queueSource === OPERATION_READY_QUEUE_SOURCE
+    || CAN_SHIP_STATUSES.includes(order.orderStatus);
+
+const getShipReadinessText = (order) => {
+    if (isOrderReadyForShipment(order)) {
+        return 'Đơn đã nằm trong queue approved của BE và sẵn sàng để tạo vận đơn GHN.';
+    }
+    if (order.orderStatus === 'SHIPPING') return 'Đơn đã có vận đơn và đang trong quá trình giao.';
+    if (order.orderStatus === 'PAID') return 'Đơn pre-order đã nhận tiền cọc hoặc thanh toán ban đầu, đang chờ manager cập nhật hàng về.';
+    if (CAN_SHIP_STATUSES.includes(order.orderStatus)) return 'Đơn đã đủ điều kiện để tạo vận đơn GHN.';
+    if (order.orderStatus === 'PENDING_PAYMENT') return 'Đơn đang chờ khách hoàn tất thanh toán trước khi giao.';
+    return 'Đơn chưa sẵn sàng để tạo vận đơn.';
 };
 
 const OperationsOrdersPage = () => {
@@ -100,14 +156,15 @@ const OperationsOrdersPage = () => {
 
     const [orders, setOrders] = useState([]);
     const [ordersLoading, setOrdersLoading] = useState(true);
+    const [ordersError, setOrdersError] = useState('');
     const [ordersPage, setOrdersPage] = useState(1);
-    const [ordersTotal, setOrdersTotal] = useState(0);
-    const ordersPageSize = 8;
+    const ordersPageSize = 6;
 
     const [returnRequests, setReturnRequests] = useState([]);
     const [returnLoading, setReturnLoading] = useState(true);
+    const [returnsError, setReturnsError] = useState('');
     const [returnPage, setReturnPage] = useState(1);
-    const returnPageSize = 6;
+    const returnPageSize = 5;
 
     const [actioning, setActioning] = useState(null);
     const [receiveModalOpen, setReceiveModalOpen] = useState(false);
@@ -115,26 +172,28 @@ const OperationsOrdersPage = () => {
     const [acceptedQuantity, setAcceptedQuantity] = useState(null);
     const [conditionNote, setConditionNote] = useState('');
 
-    const loadApprovedOrders = async (page = ordersPage) => {
+    const loadOrders = async () => {
         setOrdersLoading(true);
+        setOrdersError('');
         try {
-            const res = await getApprovedOrdersAPI(page - 1, ordersPageSize);
-            const { items, total } = normalizeApprovedOrders(res);
-            if (items.length > 0) {
-                setOrders(items);
-                setOrdersTotal(total);
-                return;
-            }
-            // Fallback: backend may return a different shape; try full orders endpoint
-            const fallback = await getOperationOrdersAPI();
-            const fallbackItems = Array.isArray(fallback)
-                ? fallback
-                : (Array.isArray(fallback?.content) ? fallback.content : []);
-            const filtered = fallbackItems.filter(order => order?.orderStatus === 'SUPPORT_CONFIRMED');
-            setOrders(filtered);
-            setOrdersTotal(filtered.length);
-        } catch {
-            message.error('Không thể tải đơn hàng đã duyệt');
+            const [allOrdersRes, approvedOrdersRes] = await Promise.all([
+                getOperationOrdersAPI(),
+                getApprovedOrdersAPI(),
+            ]);
+
+            const { items: allOrders } = normalizeOrdersResponse(allOrdersRes);
+            const { items: approvedOrders } = normalizeOrdersResponse(approvedOrdersRes);
+            const approvedIds = new Set(approvedOrders.map((order) => order.id));
+
+            const mergedOrders = allOrders.map((order) => ({
+                ...order,
+                queueSource: approvedIds.has(order.id) ? OPERATION_READY_QUEUE_SOURCE : 'all_orders',
+            }));
+
+            setOrders(sortByNewest(mergedOrders));
+        } catch (error) {
+            setOrders([]);
+            setOrdersError(getFriendlyError(error, 'Không thể tải danh sách đơn vận hành.'));
         } finally {
             setOrdersLoading(false);
         }
@@ -142,32 +201,48 @@ const OperationsOrdersPage = () => {
 
     const loadReturnRequests = async () => {
         setReturnLoading(true);
+        setReturnsError('');
         try {
             const res = await getOperationReturnRequestsAPI();
-            const data = Array.isArray(res) ? res : parseMaybeString(res);
-            const items = Array.isArray(data) ? data : (Array.isArray(data?.content) ? data.content : []);
-            setReturnRequests(items);
+            const items = normalizeReturnRequestsResponse(res);
+            setReturnRequests(sortByNewest(items));
             setReturnPage(1);
-        } catch {
-            message.error('Không thể tải yêu cầu hoàn trả');
+        } catch (error) {
+            setReturnRequests([]);
+            setReturnsError(getFriendlyError(error, 'Không thể tải queue hoàn trả chờ nhận.'));
         } finally {
             setReturnLoading(false);
         }
     };
 
     useEffect(() => {
-        loadApprovedOrders(1);
+        loadOrders();
         loadReturnRequests();
     }, []);
+
+    useEffect(() => {
+        const maxPage = Math.max(Math.ceil(orders.length / ordersPageSize), 1);
+        if (ordersPage > maxPage) {
+            setOrdersPage(maxPage);
+        }
+    }, [orders.length, ordersPage]);
 
     const handleShip = async (orderId) => {
         setActioning(orderId);
         try {
-            await operationsConfirmOrderAPI(orderId);
-            message.success(`Đã gửi đơn #${orderId} đến GHN`);
-            loadApprovedOrders(ordersPage);
-        } catch {
-            message.error('Không thể gửi đơn hàng');
+            const res = await operationsConfirmOrderAPI(orderId);
+            const ghnCode = res?.ghnOrderCode;
+            message.success(ghnCode ? `Đã tạo vận đơn GHN: ${ghnCode}` : `Đã đẩy đơn #${orderId} sang GHN`);
+            loadOrders();
+        } catch (error) {
+            const rawMessage = getFriendlyError(error, 'Không thể gửi đơn hàng');
+            if (rawMessage.includes('Order not approved by support')) {
+                message.error('Đơn này chưa thể tạo vận đơn từ giao diện hiện tại. Vui lòng tải lại danh sách đơn và thử lại.');
+            } else if (rawMessage.includes('Online payment not completed')) {
+                message.error('Đơn chưa hoàn tất thanh toán nên chưa thể tạo vận đơn.');
+            } else {
+                message.error('Không thể tạo vận đơn GHN lúc này.');
+            }
         } finally {
             setActioning(null);
         }
@@ -191,8 +266,8 @@ const OperationsOrdersPage = () => {
             message.success(`Đã nhận hoàn trả #${receiveTarget.id}`);
             setReceiveModalOpen(false);
             loadReturnRequests();
-        } catch {
-            message.error('Xác nhận nhận hàng thất bại');
+        } catch (error) {
+            message.error(getFriendlyError(error, 'Xác nhận nhận hàng thất bại'));
         } finally {
             setActioning(null);
         }
@@ -205,48 +280,17 @@ const OperationsOrdersPage = () => {
         navigate('/login');
     };
 
-    const formatAddress = (address) => {
-        if (!address) return '—';
-        const parts = [address.addressLine, address.ward, address.district, address.province].filter(Boolean);
-        return parts.join(', ');
-    };
-
-    const getCustomerEmail = (order) => {
-        return (
-            order?.email ||
-            order?.userEmail ||
-            order?.customerEmail ||
-            order?.user?.email ||
-            order?.customer?.email ||
-            order?.address?.user?.email ||
-            order?.address?.email ||
-            order?.address?.userEmail ||
-            '—'
-        );
-    };
-
-    const normalizePaymentLabel = (method) => {
-        if (!method) return null;
-        if (method === 'VNPAY') return 'VNPAY';
-        if (method === 'COD') return 'COD';
-        if (method === 'BANKING') return 'Chuyển khoản';
-        return method;
-    };
-
-    const getPaymentMethod = (order) => {
-        const method = normalizePaymentLabel(order?.remainingPaymentMethod || order?.paymentMethod);
-        if (order?.remainingAmount && Number(order.remainingAmount) > 0) {
-            return method ? `Còn lại: ${method}` : 'Còn lại: COD';
-        }
-        if (order?.deposit && Number(order.deposit) > 0) {
-            return method ? `Đặt cọc: ${method}` : 'Đặt cọc';
-        }
-        return method || 'Đã thanh toán';
-    };
+    const readyOrders = orders.filter((order) => isOrderReadyForShipment(order));
+    const shippingOrders = orders.filter((order) => order.orderStatus === 'SHIPPING');
+    const completedOrders = orders.filter((order) => order.orderStatus === 'COMPLETED');
+    const orderStart = (ordersPage - 1) * ordersPageSize;
+    const orderItems = orders.slice(orderStart, orderStart + ordersPageSize);
+    const orderPageCount = Math.max(Math.ceil(orders.length / ordersPageSize), 1);
 
     const totalReturns = returnRequests.length;
     const returnStart = (returnPage - 1) * returnPageSize;
     const returnItems = returnRequests.slice(returnStart, returnStart + returnPageSize);
+    const returnPageCount = Math.max(Math.ceil(totalReturns / returnPageSize), 1);
 
     return (
         <div className="ops-shell">
@@ -254,12 +298,24 @@ const OperationsOrdersPage = () => {
                 <div className="ops-branding">
                     <p className="ops-label">Operations Desk</p>
                     <h1>Genetix Logistics Control</h1>
-                    <span>Quản lý giao hàng và nhận hoàn trả theo quy trình vận hành.</span>
+                    <span>Theo dõi đơn cần tạo vận đơn, tiến độ giao hàng và các yêu cầu hoàn trả đang chờ xử lý trong cùng một màn hình.</span>
                 </div>
                 <div className="ops-metrics">
                     <div className="metric-card">
-                        <span>Đơn chờ giao</span>
-                        <strong>{ordersTotal}</strong>
+                        <span>Tổng đơn</span>
+                        <strong>{orders.length}</strong>
+                    </div>
+                    <div className="metric-card">
+                        <span>Sẵn sàng giao</span>
+                        <strong>{readyOrders.length}</strong>
+                    </div>
+                    <div className="metric-card">
+                        <span>Đang giao</span>
+                        <strong>{shippingOrders.length}</strong>
+                    </div>
+                    <div className="metric-card">
+                        <span>Hoàn tất</span>
+                        <strong>{completedOrders.length}</strong>
                     </div>
                     <div className="metric-card">
                         <span>Hoàn trả chờ nhận</span>
@@ -279,7 +335,7 @@ const OperationsOrdersPage = () => {
                             type="text"
                             icon={<ReloadOutlined />}
                             onClick={() => {
-                                loadApprovedOrders(ordersPage);
+                                loadOrders();
                                 loadReturnRequests();
                             }}
                             style={{ color: '#6b7280' }}
@@ -301,107 +357,155 @@ const OperationsOrdersPage = () => {
                 <section className="ops-panel">
                     <div className="panel-header">
                         <div>
-                            <h2>Đơn hàng cần giao GHN</h2>
-                            <p>Danh sách đơn đã được Support duyệt.</p>
+                            <h2>Đơn hàng vận hành</h2>
+                            <p>Danh sách này hiển thị toàn bộ đơn từ operations, đồng thời đánh dấu những đơn đã nằm trong queue `/approved` để bật thao tác tạo vận đơn.</p>
                         </div>
-                        <div className="panel-icon">
-                            <SendOutlined />
+                        <div className="support-panel-meta">
+                            <span className="queue-badge queue-orders">Đơn hàng</span>
+                            <span className="queue-hint">Trang {ordersPage}/{orderPageCount}</span>
+                        </div>
+                    </div>
+
+                    <div className="queue-toolbar ops-summary-grid">
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Sẵn sàng tạo vận đơn</span>
+                            <strong>{readyOrders.length} đơn</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Đang giao</span>
+                            <strong>{shippingOrders.length} đơn</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Hoàn tất</span>
+                            <strong>{completedOrders.length} đơn</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Đang hiển thị</span>
+                            <strong>{orderItems.length} / {orders.length} đơn</strong>
                         </div>
                     </div>
 
                     <div className="panel-body">
                         {ordersLoading ? (
                             <div className="orders-loading" style={{ minHeight: 240 }} />
-                        ) : orders.length === 0 ? (
+                        ) : ordersError ? (
+                            <div className="support-callout error">
+                                <strong>Không tải được danh sách đơn vận hành</strong>
+                                <span>{ordersError}</span>
+                                <Button size="small" icon={<ReloadOutlined />} onClick={loadOrders}>
+                                    Thử lại
+                                </Button>
+                            </div>
+                        ) : orderItems.length === 0 ? (
                             <div className="orders-empty">
-                                <Empty description={<span>Chưa có đơn cần giao.</span>} />
+                                <Empty description={<span>Hiện chưa có đơn hàng nào cần theo dõi.</span>} />
                             </div>
                         ) : (
                             <div className="orders-list">
-                                {orders.map(order => (
-                                    <div key={order.id || order.orderCode} className="order-card ops-order">
-                                        <div className="order-header">
-                                            <div>
-                                                <span className="order-id">{order.orderCode || `Đơn #${order.id}`}</span>
-                                                <span className="order-date">{order.createdAt ? dayjs(order.createdAt).format('DD/MM/YYYY HH:mm') : '—'}</span>
+                                {orderItems.map((order) => {
+                                    const canShip = isOrderReadyForShipment(order);
+                                    return (
+                                        <div key={order.id || order.orderCode} className="order-card ops-order ops-order-rich">
+                                            <div className="order-header">
+                                                <div>
+                                                    <span className="order-id">{order.orderCode || `Đơn #${order.id}`}</span>
+                                                    <span className="order-date">{formatDateTime(order.createdAt)}</span>
+                                                </div>
+                                                <div className="order-header-right">
+                                                    <Tag className={getOrderStatusClass(order.orderStatus)} icon={<CheckCircleOutlined />}>
+                                                        {getOrderStatusLabel(order.orderStatus)}
+                                                    </Tag>
+                                                    <span className="order-pay-method">{getOrderTypeLabel(order.orderType)}</span>
+                                                </div>
                                             </div>
-                                            <div className="order-header-right">
-                                                <Tag className="status-confirmed" icon={<CheckCircleOutlined />}>
-                                                    {order.orderStatus || 'SUPPORT_CONFIRMED'}
-                                                </Tag>
-                                                <span className="order-pay-method">{order.orderType || '—'}</span>
-                                            </div>
-                                        </div>
 
-                                        <div className="order-info">
-                                            <div className="info-row">
-                                                <span className="info-label">Người nhận</span>
-                                                <span className="info-value">{order.address?.receiverName || order.address?.recipientName || '—'}</span>
+                                            <div className="order-info ops-order-grid">
+                                                <div className="info-row">
+                                                    <span className="info-label">Mã đơn nội bộ</span>
+                                                    <span className="info-value">#{order.id || '—'}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Người nhận</span>
+                                                    <span className="info-value">{order.receiverName || '—'}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">SĐT</span>
+                                                    <span className="info-value">{order.receiverPhone || '—'}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Phương thức thanh toán</span>
+                                                    <span className="info-value">{getPaymentMethodLabel(order.paymentMethod)}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Trạng thái thanh toán</span>
+                                                    <span className="info-value">{getPaymentStatusLabel(order.paymentStatus)}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Trạng thái GHN</span>
+                                                    <span className="info-value">{getShipmentLabel(order.shipmentStatus)}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Mã vận đơn</span>
+                                                    <span className="info-value tracking-code">{order.ghnOrderCode || 'Chưa tạo vận đơn'}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Tổng tiền</span>
+                                                    <span className="info-value">{formatVND(order.totalAmount)}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Đặt cọc</span>
+                                                    <span className="info-value">{formatVND(order.deposit)}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Còn lại</span>
+                                                    <span className="info-value">{formatVND(order.remainingAmount)}</span>
+                                                </div>
+                                                <div className="info-row full">
+                                                    <span className="info-label">Địa chỉ giao</span>
+                                                    <span className="info-value">{formatAddressText(order.address)}</span>
+                                                </div>
                                             </div>
-                                            <div className="info-row">
-                                                <span className="info-label">SĐT</span>
-                                                <span className="info-value">{order.address?.phone || '—'}</span>
-                                            </div>
-                                            <div className="info-row">
-                                                <span className="info-label">Email</span>
-                                                <span className="info-value">{getCustomerEmail(order)}</span>
-                                            </div>
-                                            <div className="info-row">
-                                                <span className="info-label">Thanh toán</span>
-                                                <span className="info-value">{getPaymentMethod(order)}</span>
-                                            </div>
-                                            <div className="info-row full">
-                                                <span className="info-label">Địa chỉ</span>
-                                                <span className="info-value">{formatAddress(order.address)}</span>
-                                            </div>
-                                        </div>
 
-                                        <div className="order-footer">
-                                            <div className="order-totals">
-                                                <span className="order-total">
-                                                    Tổng: <strong>{formatVND(order.totalAmount)}</strong>
-                                                </span>
-                                                <span className="order-subtotal">
-                                                    Đặt cọc: {formatVND(order.deposit)}
-                                                </span>
-                                                <span className="order-subtotal">
-                                                    Còn lại: {formatVND(order.remainingAmount)}
-                                                </span>
+                                            <div className="order-footer">
+                                                <div className="ops-actions">
+                                                    <span className="ops-order-note">{getShipReadinessText(order)}</span>
+                                                    {canShip ? (
+                                                        <Popconfirm
+                                                            title="Xác nhận giao qua GHN?"
+                                                            description="Hệ thống sẽ tạo vận đơn và chuyển đơn sang trạng thái đang giao."
+                                                            onConfirm={() => handleShip(order.id)}
+                                                            okText="Giao GHN"
+                                                            cancelText="Huỷ"
+                                                        >
+                                                            <Button
+                                                                type="primary"
+                                                                size="small"
+                                                                icon={<SendOutlined />}
+                                                                loading={actioning === order.id}
+                                                                className="btn-confirm"
+                                                            >
+                                                                Giao GHN
+                                                            </Button>
+                                                        </Popconfirm>
+                                                    ) : (
+                                                        <span className="order-action-muted">Chưa thể tạo vận đơn</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <Popconfirm
-                                                title="Xác nhận giao qua GHN?"
-                                                description="Đơn hàng sẽ được tạo trên hệ thống GHN."
-                                                onConfirm={() => handleShip(order.id)}
-                                                okText="Giao GHN"
-                                                cancelText="Huỷ"
-                                            >
-                                                <Button
-                                                    type="primary"
-                                                    size="small"
-                                                    icon={<SendOutlined />}
-                                                    loading={actioning === order.id}
-                                                    className="btn-confirm"
-                                                >
-                                                    Giao GHN
-                                                </Button>
-                                            </Popconfirm>
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         )}
                     </div>
 
-                    {!ordersLoading && ordersTotal > ordersPageSize && (
+                    {!ordersLoading && orders.length > ordersPageSize && (
                         <div className="support-pagination">
                             <Pagination
                                 current={ordersPage}
                                 pageSize={ordersPageSize}
-                                total={ordersTotal}
-                                onChange={(page) => {
-                                    setOrdersPage(page);
-                                    loadApprovedOrders(page);
-                                }}
+                                total={orders.length}
+                                onChange={(page) => setOrdersPage(page)}
                                 showSizeChanger={false}
                             />
                         </div>
@@ -412,42 +516,91 @@ const OperationsOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Hoàn trả chờ nhận</h2>
-                            <p>Ghi nhận tình trạng và số lượng hàng trả.</p>
+                            <p>Theo dõi các yêu cầu hoàn trả đã được duyệt và xác nhận tình trạng hàng khi kho tiếp nhận.</p>
                         </div>
-                        <div className="panel-icon">
-                            <InboxOutlined />
+                        <div className="support-panel-meta">
+                            <span className="queue-badge queue-returns">Hoàn trả</span>
+                            <span className="queue-hint">Trang {returnPage}/{returnPageCount}</span>
+                        </div>
+                    </div>
+
+                    <div className="queue-toolbar ops-summary-grid">
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Chờ tiếp nhận</span>
+                            <strong>{totalReturns} yêu cầu</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Đang hiển thị</span>
+                            <strong>{returnItems.length} yêu cầu</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Đã duyệt bởi</span>
+                            <strong>Support staff</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Hành động</span>
+                            <strong>Xác nhận đã nhận hàng</strong>
                         </div>
                     </div>
 
                     <div className="panel-body">
                         {returnLoading ? (
                             <div className="orders-loading" style={{ minHeight: 240 }} />
-                        ) : totalReturns === 0 ? (
+                        ) : returnsError ? (
+                            <div className="support-callout error">
+                                <strong>Không tải được queue hoàn trả</strong>
+                                <span>{returnsError}</span>
+                                <Button size="small" icon={<ReloadOutlined />} onClick={loadReturnRequests}>
+                                    Thử lại
+                                </Button>
+                            </div>
+                        ) : returnItems.length === 0 ? (
                             <div className="orders-empty">
-                                <Empty description={<span>Chưa có hoàn trả.</span>} />
+                                <Empty description={<span>Hiện chưa có yêu cầu hoàn trả chờ nhận.</span>} />
                             </div>
                         ) : (
                             <div className="returns-list">
-                                {returnItems.map(req => {
+                                {returnItems.map((req) => {
                                     const evidences = parseEvidenceUrls(req.evidenceUrls);
+                                    const canReceive = req.status === 'WAITING_RETURN' && !req.receivedByUserId;
                                     return (
-                                        <div key={req.id} className="return-card">
+                                        <div key={req.id} className="return-card ops-return-rich">
                                             <div className="return-header">
                                                 <div>
                                                     <span className="return-id">RR-{req.id}</span>
-                                                    <span className="return-date">{req.createdAt ? dayjs(req.createdAt).format('DD/MM/YYYY HH:mm') : '—'}</span>
+                                                    <span className="return-date">{formatDateTime(req.createdAt)}</span>
                                                 </div>
-                                                <Tag className="status-waiting">Chờ nhận</Tag>
+                                                <Tag className="status-waiting">{getReturnStatusLabel(req.status)}</Tag>
                                             </div>
 
-                                            <div className="return-meta">
+                                            <div className="return-meta ops-return-grid">
                                                 <div className="meta-item">
-                                                    <span className="meta-label">Số lượng</span>
+                                                    <span className="meta-label">Số lượng yêu cầu</span>
                                                     <span className="meta-value">{req.requestedQuantity ?? '—'}</span>
                                                 </div>
                                                 <div className="meta-item">
                                                     <span className="meta-label">Lý do</span>
                                                     <span className="meta-value">{req.reason || '—'}</span>
+                                                </div>
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Duyệt bởi</span>
+                                                    <span className="meta-value">{req.approvedByUserId ?? '—'}</span>
+                                                </div>
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Duyệt lúc</span>
+                                                    <span className="meta-value">{formatDateTime(req.approvedAt)}</span>
+                                                </div>
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Nhận bởi</span>
+                                                    <span className="meta-value">{req.receivedByUserId ?? '—'}</span>
+                                                </div>
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Nhận lúc</span>
+                                                    <span className="meta-value">{formatDateTime(req.receivedAt)}</span>
+                                                </div>
+                                                <div className="meta-item full">
+                                                    <span className="meta-label">Cập nhật gần nhất</span>
+                                                    <span className="meta-value">{formatDateTime(req.updatedAt)}</span>
                                                 </div>
                                             </div>
 
@@ -462,7 +615,7 @@ const OperationsOrdersPage = () => {
                                                 <div className="return-evidence">
                                                     <span>Minh chứng:</span>
                                                     <ul>
-                                                        {evidences.slice(0, 3).map((url, idx) => (
+                                                        {evidences.slice(0, 4).map((url, idx) => (
                                                             <li key={`${req.id}-ev-${idx}`}>{url}</li>
                                                         ))}
                                                     </ul>
@@ -470,16 +623,21 @@ const OperationsOrdersPage = () => {
                                             )}
 
                                             <div className="return-actions">
-                                                <Button
-                                                    type="primary"
-                                                    size="small"
-                                                    icon={<CheckCircleOutlined />}
-                                                    className="btn-confirm"
-                                                    loading={actioning === req.id}
-                                                    onClick={() => openReceiveModal(req)}
-                                                >
-                                                    Đã nhận
-                                                </Button>
+                                                <span className="ops-order-note">Kiểm tra tình trạng thực tế của sản phẩm trước khi xác nhận nhập kho hoàn trả.</span>
+                                                {canReceive ? (
+                                                    <Button
+                                                        type="primary"
+                                                        size="small"
+                                                        icon={<CheckCircleOutlined />}
+                                                        className="btn-confirm"
+                                                        loading={actioning === req.id}
+                                                        onClick={() => openReceiveModal(req)}
+                                                    >
+                                                        Đã nhận
+                                                    </Button>
+                                                ) : (
+                                                    <span className="order-action-muted">Yêu cầu này đã được xử lý</span>
+                                                )}
                                             </div>
                                         </div>
                                     );
