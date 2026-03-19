@@ -49,7 +49,7 @@ const ResetPasswordPage = () => {
                 <Col xs={0} md={12} className="image-col">
                     <div className="image-overlay">
                         <div className="brand-content">
-                            <h1>SWP Glasses</h1>
+                            <h1>GENETIX</h1>
                             <p>Mua kính mắt chất lượng cao trực tuyến</p>
                         </div>
                     </div>

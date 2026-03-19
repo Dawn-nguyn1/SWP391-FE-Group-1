@@ -9,6 +9,8 @@ import './cart.css';
 
 const formatVND = n => n ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n) : '0 ₫';
 
+const getDistinctSaleTypes = (items = []) => [...new Set(items.map((item) => item?.saleType).filter(Boolean))];
+
 const CartPage = () => {
     const [loading, setLoading] = useState(true);
     const [items, setItems] = useState([]);
@@ -45,13 +47,15 @@ const CartPage = () => {
     };
 
     const total = items.reduce((sum, it) => sum + (it.lineTotal || (it.unitPrice || 0) * (it.quantity || 1)), 0);
+    const saleTypes = getDistinctSaleTypes(items);
+    const isMixedCart = saleTypes.length > 1;
 
     if (loading) return <div className="cart-loading"><Spin size="large" /></div>;
 
     return (
         <div className="cart-page">
             <div className="cart-inner">
-                <h1 className="cart-title">🛒 Giỏ hàng của bạn</h1>
+                <h1 className="cart-title">Giỏ hàng của bạn</h1>
                 {items.length === 0 ? (
                     <div className="cart-empty">
                         <Empty
@@ -93,6 +97,11 @@ const CartPage = () => {
                                 Backend hiện chưa trả `itemId` trong cart response, nên FE chưa thể cập nhật hoặc xoá item này chính xác.
                             </div>
                         )}
+                        {isMixedCart && (
+                            <div style={{ marginTop: 12, color: '#b91c1c', fontSize: 13, lineHeight: 1.6 }}>
+                                Giỏ hàng đang chứa cả sản phẩm có sẵn và sản phẩm pre-order. Backend hiện không cho checkout mixed cart, vui lòng tách giỏ hàng trước khi thanh toán.
+                            </div>
+                        )}
 
                         <div className="cart-summary">
                             <h3>Tóm tắt đơn hàng</h3>
@@ -103,9 +112,16 @@ const CartPage = () => {
                                 type="primary"
                                 size="large"
                                 icon={<ArrowRightOutlined />}
-                                onClick={() => navigate('/customer/checkout')}
+                                onClick={() => {
+                                    if (isMixedCart) {
+                                        message.warning('Backend chưa hỗ trợ checkout cùng lúc sản phẩm có sẵn và pre-order.');
+                                        return;
+                                    }
+                                    navigate('/customer/checkout');
+                                }}
                                 className="checkout-btn"
                                 block
+                                disabled={isMixedCart}
                             >
                                 Tiến hành đặt hàng
                             </Button>

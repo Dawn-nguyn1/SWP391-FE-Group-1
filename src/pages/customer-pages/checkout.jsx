@@ -11,6 +11,7 @@ import './checkout.css';
 
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 const getMinDeposit = (amount) => Math.ceil((Number(amount) || 0) * 0.3);
+const getDistinctSaleTypes = (items = []) => [...new Set(items.map((item) => item?.saleType).filter(Boolean))];
 
 const CheckoutPage = () => {
     const navigate = useNavigate();
@@ -64,6 +65,11 @@ const CheckoutPage = () => {
 
     const handleCheckout = async () => {
         if (!selectedAddressId) { message.warning('Vui lòng chọn địa chỉ giao hàng'); return; }
+        if (isMixedCart) {
+            message.warning('Giỏ hàng đang trộn sản phẩm có sẵn và pre-order. Vui lòng tách giỏ hàng trước khi thanh toán.');
+            navigate('/customer/cart');
+            return;
+        }
         setSubmitting(true);
         try {
             const payload = { addressId: selectedAddressId, paymentMethod };
@@ -96,10 +102,29 @@ const CheckoutPage = () => {
 
     if (loading) return <div className="checkout-loading"><Spin size="large" /></div>;
     const total = cart?.finalTotal || 0;
+    const saleTypes = getDistinctSaleTypes(cart?.items || []);
+    const isMixedCart = saleTypes.length > 1;
     const isPreOrderCart = cart?.items?.some(item => item.saleType === 'PRE_ORDER');
     const minDeposit = getMinDeposit(total);
     const depositAmount = depositOption === '100' ? total : minDeposit;
     const remainingAmount = Math.max(total - depositAmount, 0);
+
+    if (!loading && isMixedCart) {
+        return (
+            <div className="checkout-loading">
+                <div style={{ textAlign: 'center', maxWidth: 560 }}>
+                    <h2 style={{ marginBottom: 12 }}>Không thể checkout giỏ hàng mixed</h2>
+                    <p style={{ color: '#64748b', marginBottom: 20 }}>
+                        Backend hiện chỉ hỗ trợ checkout riêng cho sản phẩm có sẵn hoặc riêng cho pre-order.
+                        Vui lòng quay lại giỏ hàng và tách sản phẩm trước khi thanh toán.
+                    </p>
+                    <Button type="primary" onClick={() => navigate('/customer/cart')}>
+                        Quay lại giỏ hàng
+                    </Button>
+                </div>
+            </div>
+        );
+    }
 
     const steps = [
         { title: 'Địa chỉ', icon: <EnvironmentOutlined /> },

@@ -36,6 +36,11 @@ const getVariantLabel = (variant) => {
     return values.length > 0 ? values.join(' / ') : variant?.sku || `Variant ${variant?.id}`;
 };
 
+const getCartSaleType = (items = []) => {
+    const saleTypes = [...new Set(items.map((item) => item?.saleType).filter(Boolean))];
+    return saleTypes.length === 1 ? saleTypes[0] : null;
+};
+
 const getPreorderWindowState = (variant) => {
     const now = new Date();
     const start = variant?.preorderStartDate ? new Date(variant.preorderStartDate) : null;
@@ -91,7 +96,7 @@ const getAvailabilityMeta = (variant) => {
             label: 'Pre-order',
             tone: 'preorder',
             copy: variant?.preorderFulfillmentDate
-                ? `Dự kiến hoàn tất: ${variant.preorderFulfillmentDate}`
+                ? `Ngày nhận hàng dự kiến: ${variant.preorderFulfillmentDate}`
                 : 'Biến thể đang mở đặt trước.',
             canAddToCart: true,
         };
@@ -227,7 +232,7 @@ const ProductDetailPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { user } = useContext(AuthContext);
-    const { fetchCart } = useContext(CartContext);
+    const { fetchCart, cart } = useContext(CartContext);
 
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -294,6 +299,16 @@ const ProductDetailPage = () => {
 
         if (!availabilityMeta.canAddToCart) {
             message.warning('Biến thể này hiện chưa thể thêm vào giỏ hàng');
+            return;
+        }
+
+        const currentCartSaleType = getCartSaleType(cart?.items || []);
+        if (currentCartSaleType && currentCartSaleType !== selectedVariant?.saleType) {
+            message.warning(
+                currentCartSaleType === 'PRE_ORDER'
+                    ? 'Giỏ hàng hiện có sản phẩm pre-order. Vui lòng thanh toán hoặc xóa giỏ hiện tại trước khi thêm sản phẩm có sẵn.'
+                    : 'Giỏ hàng hiện có sản phẩm có sẵn. Vui lòng thanh toán hoặc xóa giỏ hiện tại trước khi thêm sản phẩm pre-order.'
+            );
             return;
         }
 
@@ -427,7 +442,6 @@ const ProductDetailPage = () => {
                             <div className="preorder-zone">
                                 <div className="preorder-zone-head">
                                     <strong>Thông tin pre-order</strong>
-                                    <span>Hiển thị theo dữ liệu variant từ BE</span>
                                 </div>
 
                                 {preorderMetrics && (

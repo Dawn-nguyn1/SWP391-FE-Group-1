@@ -200,10 +200,9 @@ const ProductListPage = () => {
                 <div className="catalog-hero-inner">
                     <div className="catalog-hero-copy">
                         <span className="catalog-pill">{viewConfig[view]?.icon || <AppstoreOutlined />} Danh mục sản phẩm</span>
-                        <h1>Phân biệt rõ Pre-order và In-stock ngay từ lúc duyệt catalog</h1>
+                        <h1>Mua ngay để được nhận ưu đãi</h1>
                         <p>
-                            Mỗi sản phẩm được gắn đúng luồng bán. Khi để chế độ xem tất cả, danh mục sẽ tách riêng hàng đặt trước,
-                            hàng sẵn và nhóm sản phẩm có hai hình thức mua.
+                            Chúng tôi có đơn pre-oders và cho phép bạn cọc trước chỉ 30%.
                         </p>
                     </div>
                     <div className="catalog-stats">
