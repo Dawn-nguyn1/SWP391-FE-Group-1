@@ -27,13 +27,18 @@ const getVariantImages = (variant, productImage) => {
         .flatMap((attribute) => Array.isArray(attribute.images) ? attribute.images.map(normalizeImage) : [])
         .filter(Boolean);
 
-    if (attributeImages.length > 0) return attributeImages;
-    return productImage ? [productImage] : [];
+    // Trả về object có cả ảnh product và ảnh variant
+    return {
+        productImage: productImage ? normalizeImage(productImage) : null,
+        variantImages: attributeImages.length > 0 ? attributeImages : []
+    };
 };
 
 const getVariantLabel = (variant) => {
-    const values = (variant?.attributes || []).map((attribute) => attribute?.attributeValue).filter(Boolean);
-    return values.length > 0 ? values.join(' / ') : variant?.sku || `Variant ${variant?.id}`;
+    const uniqueValues = [...new Set((variant?.attributes || [])
+        .map((attribute) => attribute?.attributeValue)
+        .filter(Boolean))];
+    return uniqueValues.length > 0 ? uniqueValues.join(' / ') : variant?.sku || `Variant ${variant?.id}`;
 };
 
 const getCartSaleType = (items = []) => {
@@ -176,25 +181,25 @@ const getAvailabilityMeta = (variant) => {
 };
 
 const getPreorderMetrics = (variant) => {
-    const preorderLimit = Number(variant?.preorderLimit);
     const currentPreorders = Number(variant?.currentPreorders);
-    const hasLimit = Number.isFinite(preorderLimit) && preorderLimit > 0;
     const hasCurrent = Number.isFinite(currentPreorders) && currentPreorders >= 0;
 
-    if (!hasLimit && !hasCurrent) return null;
-
-    const safeLimit = hasLimit ? preorderLimit : 0;
+    // Giới hạn mặc định là 2
+    const defaultLimit = 2;
+    const safeLimit = defaultLimit;
     const safeCurrent = hasCurrent ? currentPreorders : 0;
-    const remaining = hasLimit ? Math.max(safeLimit - safeCurrent, 0) : null;
-    const percent = hasLimit && safeLimit > 0
-        ? Math.min((safeCurrent / safeLimit) * 100, 100)
-        : null;
+    
+    // Còn lại = 2 - số lượng đã đặt trước
+    const remaining = Math.max(defaultLimit - safeCurrent, 0);
+    const percent = (safeCurrent / defaultLimit) * 100;
 
     return {
         preorderLimit: safeLimit,
         currentPreorders: safeCurrent,
         remaining,
         percent,
+        hasLimit: true,
+        hasCurrent,
     };
 };
 
@@ -259,7 +264,7 @@ const ProductDetailPage = () => {
         [product, selectedVariantId]
     );
 
-    const variantImages = useMemo(
+    const variantImageData = useMemo(
         () => getVariantImages(selectedVariant, product?.productImage),
         [selectedVariant, product?.productImage]
     );
@@ -354,8 +359,8 @@ const ProductDetailPage = () => {
 
                         <div className="gallery-shell">
                             <div className="main-img-wrap">
-                                {variantImages[activeImg] ? (
-                                    <img src={variantImages[activeImg]} alt={product.name} className="main-img" />
+                                {variantImageData.productImage ? (
+                                    <img src={variantImageData.productImage} alt={product.name} className="main-img" />
                                 ) : (
                                     <div className="main-img-placeholder">👓</div>
                                 )}
@@ -368,11 +373,11 @@ const ProductDetailPage = () => {
                                     <span className="gallery-panel-kicker">Variant gallery</span>
                                     <strong>Ảnh theo biến thể đang chọn</strong>
                                 </div>
-                                <span className="gallery-panel-count">{variantImages.length} ảnh</span>
+                                <span className="gallery-panel-count">{variantImageData.variantImages.length} ảnh</span>
                             </div>
 
                             <div className="thumb-list">
-                                {variantImages.map((image, index) => (
+                                {variantImageData.variantImages.map((image, index) => (
                                     <button
                                         key={`${selectedVariant?.id || 'variant'}-${index}`}
                                         className={`thumb ${activeImg === index ? 'active' : ''}`}
@@ -438,7 +443,7 @@ const ProductDetailPage = () => {
                             </div>
                         )}
 
-                        {(preorderMetrics || hasPreorderWindow) && (
+                        {(selectedVariant?.saleType === 'PRE_ORDER' && (preorderMetrics || hasPreorderWindow)) && (
                             <div className="preorder-zone">
                                 <div className="preorder-zone-head">
                                     <strong>Thông tin pre-order</strong>
@@ -501,12 +506,25 @@ const ProductDetailPage = () => {
                             <div className="select-group">
                                 <label>Thông tin biến thể đã chọn</label>
                                 <div className="attribute-grid">
-                                    {selectedVariant.attributes.map((attribute) => (
-                                        <div key={attribute.id} className="attribute-card">
-                                            <span className="attribute-name">{attribute.attributeName}</span>
-                                            <strong className="attribute-value">{attribute.attributeValue}</strong>
-                                        </div>
-                                    ))}
+                                    {(() => {
+                                        const uniqueAttributes = [];
+                                        const seen = new Set();
+                                        
+                                        selectedVariant.attributes.forEach((attribute) => {
+                                            const key = `${attribute.attributeName}-${attribute.attributeValue}`;
+                                            if (!seen.has(key)) {
+                                                seen.add(key);
+                                                uniqueAttributes.push(attribute);
+                                            }
+                                        });
+                                        
+                                        return uniqueAttributes.map((attribute) => (
+                                            <div key={attribute.id} className="attribute-card">
+                                                <span className="attribute-name">{attribute.attributeName}</span>
+                                                <strong className="attribute-value">{attribute.attributeValue}</strong>
+                                            </div>
+                                        ));
+                                    })()}
                                 </div>
                             </div>
                         )}
