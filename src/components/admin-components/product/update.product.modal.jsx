@@ -508,7 +508,6 @@ const UpdateProductModal = (props) => {
                                                                         {...restField}
                                                                         name={[name, 'arrivedQuantity']}
                                                                         label="Stock Arrived"
-                                                                        extra="Dùng API stock-arrived để cộng thêm hàng về cho pre-order."
                                                                     >
                                                                         <InputNumber
                                                                             style={{ width: '100%' }}

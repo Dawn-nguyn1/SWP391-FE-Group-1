@@ -221,6 +221,8 @@ export const normalizeOrder = (input) => {
         id: firstDefined(order.id, order.orderId),
         orderCode: firstDefined(order.orderCode, order.code),
         orderStatus: firstDefined(order.orderStatus, order.status, order.order_state),
+        supportApprovedAt: firstDefined(order.supportApprovedAt, order.support_approved_at),
+        operationConfirmedAt: firstDefined(order.operationConfirmedAt, order.operation_confirmed_at),
         orderType,
         paymentMethod: firstDefined(order.paymentMethod, order.paymentType),
         paymentStatus: firstDefined(order.paymentStatus, order.payment_state),

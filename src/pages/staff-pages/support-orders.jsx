@@ -78,6 +78,14 @@ const sortByNewest = (items = []) =>
 const canSupportConfirm = (status) =>
     status === 'WAITING_CONFIRM' || status === 'PAID' || status === 'PENDING_PAYMENT';
 
+const getOrderId = (order) => order?.orderId ?? order?.id;
+const shouldListSupportOrder = (order) =>
+    !order?.supportApprovedAt &&
+    !order?.operationConfirmedAt &&
+    canSupportConfirm(order?.orderStatus);
+const hasSupportApproved = (order) => Boolean(order?.supportApprovedAt);
+const hasOperationConfirmed = (order) => Boolean(order?.operationConfirmedAt);
+
 const SupportOrdersPage = () => {
     const navigate = useNavigate();
     const { user, setUser } = useContext(AuthContext);
@@ -88,8 +96,6 @@ const SupportOrdersPage = () => {
     const [actioning, setActioning] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 6;
-    const [processedOrderIds, setProcessedOrderIds] = useState([]);
-
     const [returnRequests, setReturnRequests] = useState([]);
     const [returnLoading, setReturnLoading] = useState(true);
     const [returnsError, setReturnsError] = useState('');
@@ -155,30 +161,22 @@ const SupportOrdersPage = () => {
     }, []);
 
     useEffect(() => {
-        const maxPage = Math.max(Math.ceil(orders.filter(order => canSupportConfirm(order.orderStatus)).length / pageSize), 1);
+        const maxPage = Math.max(Math.ceil(orders.filter(shouldListSupportOrder).length / pageSize), 1);
         if (currentPage > maxPage) {
             setCurrentPage(maxPage);
         }
     }, [currentPage, orders]);
 
     const handleAction = async (orderId, actionAPI, successMsg) => {
+        if (!orderId) {
+            message.error('Không tìm thấy orderId để thực hiện thao tác.');
+            return;
+        }
         setActioning(orderId);
         try {
             await actionAPI(orderId);
-            if (actionAPI === supportConfirmOrderAPI) {
-                setProcessedOrderIds((prev) => Array.from(new Set([...prev, orderId])));
-                setOrders((prev) =>
-                    prev.map((order) =>
-                        order.id === orderId
-                            ? { ...order, orderStatus: 'SUPPORT_CONFIRMED' }
-                            : order
-                    )
-                );
-            }
             message.success(successMsg);
-            if (actionAPI !== supportConfirmOrderAPI) {
-                loadOrders();
-            }
+            loadOrders();
         } catch (err) {
             message.error(getFriendlyError(err, 'Thao tác thất bại'));
         } finally {
@@ -212,14 +210,18 @@ const SupportOrdersPage = () => {
     };
 
     const submitCancel = async () => {
-        if (!cancelTarget) return;
-        setActioning(cancelTarget.id);
+        const orderId = getOrderId(cancelTarget);
+        if (!orderId) {
+            message.error('Không tìm thấy orderId để hủy đơn.');
+            return;
+        }
+        setActioning(orderId);
         try {
-            await supportCancelOrderAPI(cancelTarget.id, {
+            await supportCancelOrderAPI(orderId, {
                 reason: cancelReason,
                 note: cancelNote.trim() || null,
             });
-            message.success(`Đã hủy đơn #${cancelTarget.id}`);
+            message.success(`Đã hủy đơn #${orderId}`);
             setIsCancelModalOpen(false);
             loadOrders();
         } catch {
@@ -292,9 +294,9 @@ const SupportOrdersPage = () => {
         return type || '—';
     };
 
-    const actionableOrders = orders.filter(
-        (order) => canSupportConfirm(order.orderStatus) && !processedOrderIds.includes(order.id)
-    );
+    const actionableOrders = orders.filter(shouldListSupportOrder);
+    const supportApprovedCount = orders.filter(hasSupportApproved).length;
+    const operationConfirmedCount = orders.filter(hasOperationConfirmed).length;
     const waitingCount = actionableOrders.length;
     const orderStart = (currentPage - 1) * pageSize;
     const pageOrders = actionableOrders.slice(orderStart, orderStart + pageSize);
@@ -312,8 +314,9 @@ const SupportOrdersPage = () => {
     const returnPageCount = Math.max(Math.ceil(returnTotal / returnPageSize), 1);
 
     const renderOrderActions = (record) => {
-        const isLoading = actioning === record.id;
-        const canAction = canSupportConfirm(record.orderStatus);
+        const orderId = getOrderId(record);
+        const isLoading = actioning === orderId;
+        const canAction = shouldListSupportOrder(record) && canSupportConfirm(record.orderStatus);
         return (
             <Space size={8}>
                 {canAction ? (
@@ -321,7 +324,7 @@ const SupportOrdersPage = () => {
                         <Popconfirm
                             title="Xác nhận duyệt đơn hàng này?"
                             description="Đơn hàng sẽ được chuyển sang trạng thái đã xác nhận."
-                            onConfirm={() => handleAction(record.id, supportConfirmOrderAPI, `Đã duyệt đơn #${record.id}`)}
+                            onConfirm={() => handleAction(orderId, supportConfirmOrderAPI, `Đã duyệt đơn #${orderId}`)}
                             okText="Duyệt"
                             cancelText="Không"
                         >
@@ -377,16 +380,24 @@ const SupportOrdersPage = () => {
                         ))}
                     </div>
                 </div>
-                <div className="support-metrics">
-                    <div className="metric-card">
-                        <span>Đơn chờ duyệt</span>
-                        <strong>{waitingCount}</strong>
-                    </div>
-                    <div className="metric-card">
-                        <span>Đơn đang hiển thị</span>
-                        <strong>{loadedOrderCount}</strong>
-                    </div>
-                    <div className="metric-card">
+                    <div className="support-metrics">
+                        <div className="metric-card">
+                            <span>Đơn trong queue</span>
+                            <strong>{waitingCount}</strong>
+                        </div>
+                        <div className="metric-card">
+                            <span>Đơn đã support duyệt</span>
+                            <strong>{supportApprovedCount}</strong>
+                        </div>
+                        <div className="metric-card">
+                            <span>Đơn đã operations xác nhận</span>
+                            <strong>{operationConfirmedCount}</strong>
+                        </div>
+                        <div className="metric-card">
+                            <span>Đơn đang hiển thị</span>
+                            <strong>{loadedOrderCount}</strong>
+                        </div>
+                        <div className="metric-card">
                         <span>Yêu cầu trả</span>
                         <strong>{returnTotal}</strong>
                     </div>
@@ -427,7 +438,7 @@ const SupportOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Đơn hàng cần duyệt</h2>
-                            <p>BE hiện trả full `List&lt;OrderResponseDTO&gt;`, nên trang này sắp xếp mới nhất trước và phân trang phía FE.</p>
+                            <p>Queue này lấy từ `GET /api/support_staff/orders`, sau đó FE chỉ giữ các đơn có `support_approved_at = null` và `operation_confirmed_at = null`.</p>
                         </div>
                         <div className="support-panel-meta">
                             <span className="queue-badge queue-orders">Orders Queue</span>
@@ -447,6 +458,10 @@ const SupportOrdersPage = () => {
                         <div className="queue-toolbar-item">
                             <span className="queue-toolbar-label">Từ backend</span>
                             <strong>{ordersTotal} đơn</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Loại khỏi queue</span>
+                            <strong>{ordersTotal - waitingCount} đơn</strong>
                         </div>
                     </div>
 
@@ -725,6 +740,12 @@ const SupportOrdersPage = () => {
                                 <Tag className={getStatusMeta(selectedOrder.orderStatus).className} icon={<ClockCircleOutlined />}>
                                     {getStatusMeta(selectedOrder.orderStatus).label}
                                 </Tag>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Support approved at">
+                                {formatDateTime(selectedOrder.supportApprovedAt)}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Operation confirmed at">
+                                {formatDateTime(selectedOrder.operationConfirmedAt)}
                             </Descriptions.Item>
                             <Descriptions.Item label="Người nhận">
                                 {selectedOrder.receiverName || '—'}
