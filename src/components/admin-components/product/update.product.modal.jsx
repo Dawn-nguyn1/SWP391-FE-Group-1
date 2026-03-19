@@ -367,24 +367,19 @@ const UpdateProductModal = (props) => {
                                             >
                                                 {({ getFieldValue }) => {
                                                     const currentSaleType = getFieldValue(['variants', name, 'saleType']);
-                                                    const isPreOrder = currentSaleType === 'PRE_ORDER';
-
-                                                    // Tự động set về 0 khi chọn PRE_ORDER
-                                                    if (isPreOrder) {
-                                                        form.setFieldValue(['variants', name, 'stockQuantity'], 0);
-                                                    }
+                                                    const stockLabel = currentSaleType === 'PRE_ORDER' ? 'Upcoming stock' : 'Stock';
 
                                                     return (
                                                         <Form.Item
                                                             {...restField}
                                                             name={[name, 'stockQuantity']}
-                                                            label="Stock"
+                                                            label={stockLabel}
                                                             rules={[
                                                                 { required: true, message: 'Missing stock' },
                                                                 {
                                                                     validator(_, value) {
-                                                                        if (!isPreOrder && (value === undefined || value === null || value < 0)) {
-                                                                            return Promise.reject('Stock must be a non-negative number!');
+                                                                        if (value === undefined || value === null || value <= 0) {
+                                                                            return Promise.reject('Stock must be greater than 0!');
                                                                         }
                                                                         return Promise.resolve();
                                                                     }
@@ -393,9 +388,8 @@ const UpdateProductModal = (props) => {
                                                         >
                                                             <InputNumber
                                                                 style={{ width: '100%' }}
-                                                                disabled={isPreOrder}
                                                                 min={0}
-                                                                placeholder={isPreOrder ? '0 (auto)' : 'Enter stock'}
+                                                                placeholder="Enter stock"
                                                             />
                                                         </Form.Item>
                                                     );
