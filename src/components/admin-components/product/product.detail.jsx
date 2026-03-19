@@ -25,7 +25,7 @@ const ProductDetail = (props) => {
         if (isDetailOpen && productId) {
             loadProductDetail();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isDetailOpen, productId]);
 
     const handleClose = () => {
@@ -78,7 +78,12 @@ const ProductDetail = (props) => {
                                         <Descriptions.Item label="Variant ID">{variant.id}</Descriptions.Item>
                                         <Descriptions.Item label="SKU">{variant.sku}</Descriptions.Item>
                                         <Descriptions.Item label="Price">${variant.price}</Descriptions.Item>
-                                        <Descriptions.Item label="Stock">{variant.stockQuantity}</Descriptions.Item>
+                                        <Descriptions.Item label="Stock">
+                                            {variant.currentPreorders > 0
+                                                ? `${variant.stockQuantity - variant.currentPreorders}`
+                                                : variant.stockQuantity
+                                            }
+                                        </Descriptions.Item>
                                         <Descriptions.Item label="Sale Type">
                                             <Tag color={variant.saleType === 'IN_STOCK' ? 'green' : 'orange'}>
                                                 {variant.saleType}
@@ -94,7 +99,13 @@ const ProductDetail = (props) => {
                                                 <Descriptions.Item label="Allow Preorder">
                                                     <Tag color="blue">Yes</Tag>
                                                 </Descriptions.Item>
-                                                <Descriptions.Item label="Preorder Limit">{variant.preorderLimit}</Descriptions.Item>
+                                                <Descriptions.Item label="Preorder Limit">
+                                                    {/* {variant.preorderLimit} */}
+                                                    {variant.currentPreorders > 0
+                                                        ? `${variant.preorderLimit - variant.currentPreorders}`
+                                                        : variant.preorderLimit
+                                                    }
+                                                </Descriptions.Item>
                                                 <Descriptions.Item label="Current Preorders">{variant.currentPreorders}</Descriptions.Item>
                                                 <Descriptions.Item label="Preorder Period">
                                                     {variant.preorderStartDate} to {variant.preorderEndDate}
