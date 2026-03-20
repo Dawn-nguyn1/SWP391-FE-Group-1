@@ -387,7 +387,7 @@ const UpdateProductModal = (props) => {
                                             >
                                                 {({ getFieldValue }) => {
                                                     const currentSaleType = getFieldValue(['variants', name, 'saleType']);
-                                                    const stockLabel = currentSaleType === 'PRE_ORDER' ? 'Upcoming stock' : 'Stock';
+                                                    const stockLabel = currentSaleType === 'PRE_ORDER' ? 'Stock' : 'Stock';
 
                                                     return (
                                                         <Form.Item
