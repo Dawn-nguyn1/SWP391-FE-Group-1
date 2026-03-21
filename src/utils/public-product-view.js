@@ -21,9 +21,8 @@ const computeVariantSummary = (variants = []) => {
     const hasInStock = saleTypes.includes(SALE_TYPE.IN_STOCK) || stockValues.some((stock) => stock > 0);
 
     let mode = 'UNKNOWN';
-    if (hasPreOrder && hasInStock) mode = 'MIXED';
+    if (hasInStock) mode = 'IN_STOCK';
     else if (hasPreOrder) mode = 'PRE_ORDER';
-    else if (hasInStock) mode = 'IN_STOCK';
 
     return {
         mode,

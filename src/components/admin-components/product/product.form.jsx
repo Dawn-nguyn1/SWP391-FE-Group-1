@@ -309,8 +309,8 @@ const ProductForm = (props) => {
                                                                 {
                                                                     validator(_, value) {
                                                                         if (currentSaleType === 'PRE_ORDER') {
-                                                                            if (value === undefined || value === null || value <= 0) {
-                                                                                return Promise.reject('Pre-order stock must be greater than 0!');
+                                                                            if (value === undefined || value === null || value < 0) {
+                                                                                return Promise.reject('Stock must be a non-negative number!');
                                                                             }
                                                                         } else {
                                                                             if (value === undefined || value === null || value < 0) {
@@ -439,7 +439,6 @@ const ProductForm = (props) => {
                                                                     <Input
                                                                         type="date"
                                                                         style={{ width: '100%' }}
-                                                                        min={new Date().toISOString().split('T')[0]}
                                                                         onChange={(e) => {
                                                                             const startDate = e.target.value;
                                                                             if (startDate) {

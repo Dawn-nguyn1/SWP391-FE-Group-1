@@ -10,6 +10,39 @@ import {
     markPreorderStockArrivedAPI
 } from '../../../services/api.service';
 
+const formatVariantForForm = (variant = {}) => ({
+    id: variant.id,
+    sku: variant.sku,
+    price: variant.price,
+    stockQuantity: variant.currentPreorders > 0 ? variant.stockQuantity - variant.currentPreorders : variant.stockQuantity,
+    originalStockQuantity: variant.stockQuantity,
+    arrivedQuantity: 0,
+    saleType: variant.saleType || 'IN_STOCK',
+    allowPreorder: variant.allowPreorder || false,
+    preorderLimit: variant.currentPreorders > 0 ? variant.preorderLimit - variant.currentPreorders : variant.preorderLimit,
+    preorderFulfillmentDate: variant.preorderFulfillmentDate || null,
+    preorderStartDate: variant.preorderStartDate || null,
+    preorderEndDate: variant.preorderEndDate || null,
+    attributes: variant.attributes?.map((attribute) => ({
+        id: attribute.id,
+        attributeName: attribute.attributeName,
+        attributeValue: attribute.attributeValue,
+        images: attribute.images?.map((img) => ({
+            id: img.id || null,
+            imageUrl: img.imageUrl || img,
+            sortOrder: img.sortOrder
+        })) || []
+    })) || []
+});
+
+const buildFormValues = (product = {}) => ({
+    name: product.name,
+    brandName: product.brandName,
+    productImage: product.productImage,
+    description: product.description,
+    variants: Array.isArray(product.variants) ? product.variants.map(formatVariantForForm) : []
+});
+
 const UpdateProductModal = (props) => {
     const { isUpdateOpen, setIsUpdateOpen, dataUpdate, setDataUpdate, loadProducts } = props;
     const [form] = Form.useForm();
@@ -45,41 +78,9 @@ const UpdateProductModal = (props) => {
 
             if (productData && productData.id) {
                 setProductData(productData);
-
-                const formattedVariants = productData.variants?.map(v => ({
-                    id: v.id,
-                    sku: v.sku,
-                    price: v.price,
-                    stockQuantity: v.currentPreorders > 0 ? v.stockQuantity - v.currentPreorders : v.stockQuantity,
-                    originalStockQuantity: v.stockQuantity,
-                    arrivedQuantity: 0,
-                    saleType: v.saleType || 'IN_STOCK',
-                    allowPreorder: v.allowPreorder || false,
-                    preorderLimit: v.currentPreorders > 0 ? v.preorderLimit - v.currentPreorders : v.preorderLimit,
-                    preorderFulfillmentDate: v.preorderFulfillmentDate || null,
-                    preorderStartDate: v.preorderStartDate || null,
-                    preorderEndDate: v.preorderEndDate || null,
-                    attributes: v.attributes?.map(a => ({
-                        id: a.id,
-                        attributeName: a.attributeName,
-                        attributeValue: a.attributeValue,
-                        images: a.images?.map(img => ({
-                            id: img.id || null,
-                            imageUrl: img.imageUrl || img,
-                            sortOrder: img.sortOrder
-                        })) || []
-                    })) || []
-                })) || [];
-
-                console.log("Formatted variants:", formattedVariants);
-
-                form.setFieldsValue({
-                    name: productData.name,
-                    brandName: productData.brandName,
-                    productImage: productData.productImage,
-                    description: productData.description,
-                    variants: formattedVariants
-                });
+                const formValues = buildFormValues(productData);
+                console.log("Formatted variants:", formValues.variants);
+                form.setFieldsValue(formValues);
             } else {
                 console.error("Invalid response structure:", res);
                 notification.error({
@@ -89,9 +90,13 @@ const UpdateProductModal = (props) => {
             }
         } catch (error) {
             console.error("Error loading product detail:", error);
+            if (dataUpdate) {
+                setProductData(dataUpdate);
+                form.setFieldsValue(buildFormValues(dataUpdate));
+            }
             notification.error({
                 message: "Error loading product detail",
-                description: error.message || "Unknown error occurred"
+                description: error?.message || error?.description || "Unknown error occurred"
             });
         }
     };
@@ -116,15 +121,20 @@ const UpdateProductModal = (props) => {
             if (values.variants && values.variants.length > 0) {
                 for (const variant of values.variants) {
                     if (variant.id) {
+                        const originalVariant = productData?.variants?.find((item) => item.id === variant.id);
+                        const currentPreorders = Number(originalVariant?.currentPreorders) || 0;
+                        const submittedStock = Number(variant.stockQuantity) || 0;
+                        const stockQuantityToUpdate = variant.saleType === 'PRE_ORDER'
+                            ? submittedStock + currentPreorders
+                            : submittedStock;
+
                         // Update existing variant
                         console.log("Updating variant:", variant.id);
                         await updateVariantAPI(
                             variant.id,
                             variant.sku,
                             variant.price,
-                            variant.saleType === 'PRE_ORDER'
-                                ? (variant.originalStockQuantity ?? variant.stockQuantity ?? 0)
-                                : variant.stockQuantity,
+                            stockQuantityToUpdate,
                             variant.saleType,
                             variant.allowPreorder || false,
                             variant.preorderLimit || 0,
@@ -396,14 +406,28 @@ const UpdateProductModal = (props) => {
                                                             label={stockLabel}
                                                             rules={[
                                                                 { required: true, message: 'Missing stock' },
-                                                                {
+                                                                ({ getFieldValue }) => ({
                                                                     validator(_, value) {
-                                                                        if (value === undefined || value === null || value <= 0) {
-                                                                            return Promise.reject('Stock must be greater than 0!');
+                                                                        const saleType = getFieldValue(['variants', name, 'saleType']);
+
+                                                                        if (value === undefined || value === null) {
+                                                                            return Promise.reject(new Error('Missing stock'));
                                                                         }
+
+                                                                        if (saleType === 'PRE_ORDER') {
+                                                                            if (value < 0) {
+                                                                                return Promise.reject(new Error('Stock must be greater than or equal to 0!'));
+                                                                            }
+                                                                            return Promise.resolve();
+                                                                        }
+
+                                                                        if (value <= 0) {
+                                                                            return Promise.reject(new Error('Stock must be greater than 0!'));
+                                                                        }
+
                                                                         return Promise.resolve();
                                                                     }
-                                                                }
+                                                                }),
                                                             ]}
                                                         >
                                                             <InputNumber
@@ -548,7 +572,6 @@ const UpdateProductModal = (props) => {
                                                                     <Input
                                                                         type="date"
                                                                         style={{ width: '100%' }}
-                                                                        min={new Date().toISOString().split('T')[0]}
                                                                         onChange={(e) => {
                                                                             const startDate = e.target.value;
                                                                             if (startDate) {

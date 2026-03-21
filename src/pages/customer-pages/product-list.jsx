@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Slider, Checkbox, Pagination, Spin, Empty } from 'antd';
-import { FilterOutlined, ThunderboltOutlined, RocketOutlined, AppstoreOutlined, TagOutlined } from '@ant-design/icons';
+import { FilterOutlined, ThunderboltOutlined, RocketOutlined, AppstoreOutlined } from '@ant-design/icons';
 import { searchProductsAPI, getBrandsAPI, getPublicProductDetailAPI } from '../../services/api.service';
 import { enrichPublicProducts } from '../../utils/public-product-view';
 import './product-list.css';
@@ -92,7 +92,6 @@ const ProductListPage = () => {
 
     const groups = {
         preorder: products.filter((product) => product.productMode === 'PRE_ORDER'),
-        mixed: products.filter((product) => product.productMode === 'MIXED'),
         ready: products.filter((product) => product.productMode === 'IN_STOCK'),
     };
 
@@ -100,20 +99,17 @@ const ProductListPage = () => {
         all: { label: 'Tất cả', icon: <AppstoreOutlined /> },
         ready: { label: 'In-stock', icon: <RocketOutlined /> },
         'pre-order': { label: 'Pre-order', icon: <ThunderboltOutlined /> },
-        mixed: { label: 'Mixed', icon: <TagOutlined /> },
     };
 
     const filteredProducts = (() => {
         if (view === 'pre-order') return groups.preorder;
         if (view === 'ready') return groups.ready;
-        if (view === 'mixed') return groups.mixed;
         return products;
     })();
 
     const listStats = {
         total: products.length,
         preorder: groups.preorder.length,
-        mixed: groups.mixed.length,
         ready: groups.ready.length,
     };
 
@@ -129,18 +125,10 @@ const ProductListPage = () => {
             };
         }
 
-        if (product.productMode === 'MIXED') {
-            return {
-                className: 'badge-mixed',
-                label: 'Hai hình thức',
-                sublabel: 'Có cả biến thể hàng sẵn và biến thể đặt trước trong cùng một mẫu.',
-            };
-        }
-
         return {
             className: 'badge-ready',
-                label: 'Hàng sẵn',
-                sublabel: `Chỉ còn lại ${product.totalStock ?? 0} sản phẩm.`,
+            label: 'Hàng sẵn',
+            sublabel: `Chỉ còn lại ${product.totalStock ?? 0} sản phẩm.`,
         };
     };
 
@@ -175,7 +163,7 @@ const ProductListPage = () => {
             <div className="catalog-section-head">
                 <div>
                     <span className={`catalog-kicker ${sectionKey}`}>{title}</span>
-                    <h2>{title === 'Hai hình thức' ? 'Mẫu có cả biến thể hàng sẵn và đặt trước' : title === 'Đặt trước' ? 'Mẫu chỉ bán theo luồng pre-order' : 'Mẫu đang có hàng sẵn để chốt đơn nhanh'}</h2>
+                    <h2>{title === 'Đặt trước' ? 'Mẫu chỉ bán theo luồng pre-order' : 'Mẫu đang có hàng sẵn để chốt đơn nhanh'}</h2>
                     <p>{description}</p>
                 </div>
                 <span className="catalog-section-count">{sectionItems.length} mẫu</span>
@@ -279,9 +267,6 @@ const ProductListPage = () => {
                             <button type="button" className={view === 'pre-order' ? 'active preorder' : ''} onClick={() => updateParam('view', 'pre-order')}>
                                 <ThunderboltOutlined /> Pre-order
                             </button>
-                            <button type="button" className={view === 'mixed' ? 'active mixed' : ''} onClick={() => updateParam('view', 'mixed')}>
-                                <TagOutlined /> Mixed
-                            </button>
                         </div>
                     </div>
                 </aside>
@@ -302,19 +287,6 @@ const ProductListPage = () => {
                         </div>
                         <span className="result-count">{total} sản phẩm</span>
                     </div>
-
-                    {groups.mixed.length > 0 && view !== 'mixed' && (
-                        <div className="mixed-notice">
-                            <div>
-                                <span className="mixed-notice-label">Sản phẩm có hai hình thức</span>
-                                <strong>{groups.mixed.length} mẫu đang mở đồng thời pre-order và in-stock</strong>
-                                <p>Danh mục chính vẫn ưu tiên hai nhóm riêng để dễ chọn. Bạn có thể mở nhóm này riêng khi cần.</p>
-                            </div>
-                            <button type="button" onClick={() => updateParam('view', 'mixed')}>
-                                Xem nhóm mixed
-                            </button>
-                        </div>
-                    )}
 
                     {loading ? (
                         <div className="grid-loading"><Spin size="large" /></div>

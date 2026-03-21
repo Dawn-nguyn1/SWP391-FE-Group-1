@@ -328,7 +328,7 @@ const ProductDetailPage = () => {
                 typeof backendMessage === 'string'
                 && (backendMessage.includes('Pre-order is not available') || backendMessage.includes('Variant is not available for preorder'))
             ) {
-                message.error('Biến thể này chưa được backend mở cho preorder. Hãy chọn biến thể khác hoặc cập nhật cấu hình BE.');
+                message.error('Sản phẩm này chưa được mở cho preorder. Hãy chọn sản phẩm khác.');
             } else {
                 message.error(backendMessage);
             }

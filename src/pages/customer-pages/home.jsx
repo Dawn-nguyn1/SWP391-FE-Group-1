@@ -35,7 +35,6 @@ const HomePage = () => {
     if (loading) return <div className="home-loading"><Spin size="large" /></div>;
 
     const preOrderProducts = featured.filter((product) => product.productMode === 'PRE_ORDER').slice(0, 3);
-    const mixedProducts = featured.filter((product) => product.productMode === 'MIXED').slice(0, 3);
     const readyProducts = featured.filter((product) => product.productMode === 'IN_STOCK').slice(0, 3);
 
     const getModeMeta = (product) => {
@@ -47,14 +46,6 @@ const HomePage = () => {
                 copy: fulfillmentDate
                     ? `Dự kiến có hàng từ ${formatDate(fulfillmentDate)}`
                     : 'Thanh toán theo luồng pre-order và chờ hàng về.',
-            };
-        }
-
-        if (product.productMode === 'MIXED') {
-            return {
-                className: 'mode-mixed',
-                label: 'Hai hình thức',
-                copy: 'Cùng một mẫu nhưng có cả biến thể giao ngay và biến thể đặt trước.',
             };
         }
 
@@ -98,7 +89,7 @@ const HomePage = () => {
                         <span className="hero-pill"><FireOutlined /> Genetix 2026 Collection</span>
                         <h1 className="hero-title">
                             Mua kính dễ hơn khi
-                            <span>pre-order và hàng sẵn được tách rõ</span>
+                            <span>pre-order và hàng sẵn ngay bên dưới</span>
                         </h1>
                         <p className="hero-desc">
                             GENETIX là cửa hàng bán mắt kính uy tín, đảm bảo tối đa quyền lợi cho khách hàng.          
@@ -145,12 +136,6 @@ const HomePage = () => {
                                 </div>
                             </div>
                         </div>
-                        {mixedProducts.length > 0 && (
-                            <div className="hero-note">
-                                <TagOutlined />
-                                <span>{mixedProducts.length} mẫu đang có cả pre-order và in-stock.</span>
-                            </div>
-                        )}
                     </div>
                 </div>
             </section>
@@ -190,19 +175,6 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {mixedProducts.length > 0 && (
-                <section className="mixed-brief">
-                    <div className="mixed-brief-copy">
-                        <span className="section-kicker mixed">Mixed</span>
-                        <h2>Một số mẫu đang mở đồng thời hai cách mua</h2>
-                        <p>Những sản phẩm có cả biến thể đặt trước và biến thể hàng sẵn được gom riêng trong trang catalog để tránh làm rối trang chủ.</p>
-                    </div>
-                    <Link to="/customer/products?view=mixed" className="section-link">
-                        Xem mẫu có hai hình thức <RightOutlined />
-                    </Link>
-                </section>
-            )}
-
             <section className="showcase-section ready-block">
                 <div className="showcase-header">
                     <div>
@@ -227,7 +199,7 @@ const HomePage = () => {
             <section className="cta-strip">
                 <div>
                     <h2>Bắt đầu với một catalog rõ ràng hơn</h2>
-                    <p>Đi tới trang sản phẩm để duyệt riêng pre-order, hàng sẵn hoặc xem nhóm sản phẩm có hai hình thức mua.</p>
+                    <p>Đi tới trang sản phẩm để duyệt riêng pre-order và hàng sẵn.</p>
                 </div>
                 <Link to="/customer/products" className="btn-primary">Mở catalog</Link>
             </section>
