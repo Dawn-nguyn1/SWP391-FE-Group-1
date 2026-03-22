@@ -18,7 +18,7 @@ const computeVariantSummary = (variants = []) => {
     const stockValues = variants.map((variant) => firstNumber(variant?.stockQuantity));
     const totalStock = stockValues.reduce((sum, stock) => sum + stock, 0);
     const hasPreOrder = saleTypes.includes(SALE_TYPE.PRE_ORDER);
-    const hasInStock = saleTypes.includes(SALE_TYPE.IN_STOCK) || stockValues.some((stock) => stock > 0);
+    const hasInStock = saleTypes.includes(SALE_TYPE.IN_STOCK);
 
     let mode = 'UNKNOWN';
     if (hasPreOrder && hasInStock) mode = 'MIXED';

@@ -35,6 +35,14 @@ import {
     normalizeReturnRequestsResponse,
     parseEvidenceUrls,
 } from '../../utils/role-data';
+import {
+    hasPreOrderRemainingBalance,
+    isPreOrderFullyPaidAfterSupport,
+    isPreOrderReadyForOperation,
+    isPreOrderRemainingOpen,
+    isPreOrderRemainingPaid,
+    isPreOrderWaitingSupport,
+} from '../../utils/preorder-flow';
 
 const formatVND = (n) =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
@@ -56,8 +64,30 @@ const sortByNewest = (items = []) =>
         return (b?.id || 0) - (a?.id || 0);
     });
 
-const CAN_SHIP_STATUSES = ['SUPPORT_CONFIRMED', 'CONFIRMED'];
+const CAN_SHIP_STATUSES = ['SUPPORT_CONFIRMED'];
 const OPERATION_READY_QUEUE_SOURCE = 'approved_queue';
+const ACTIVE_SHIPMENT_STATUSES = ['READY_TO_PICK', 'PICKING', 'PICKED', 'DELIVERING'];
+
+const hasOutstandingPreorderBalance = (order) =>
+    hasPreOrderRemainingBalance(order) && !isPreOrderRemainingPaid(order);
+
+const hasSupportApproval = (order) =>
+    order?.approvalStatus === 'SUPPORT_APPROVED'
+    || order?.approvalStatus === 'OPERATION_CONFIRMED'
+    || Boolean(order?.supportApprovedAt)
+    || order?.queueSource === OPERATION_READY_QUEUE_SOURCE;
+
+const hasCompletedInStockPayment = (order) =>
+    order?.orderType === 'IN_STOCK'
+    && Number(order?.remainingAmount || 0) <= 0
+    && ['SUCCESS', 'PAID'].includes(order?.paymentStatus)
+    && order?.paymentMethod !== 'COD';
+
+const normalizeShipmentStatus = (status) =>
+    typeof status === 'string' ? status.trim().toUpperCase() : status;
+
+const hasShipmentCreated = (order) =>
+    Boolean(order?.ghnOrderCode) || ACTIVE_SHIPMENT_STATUSES.includes(normalizeShipmentStatus(order?.shipmentStatus));
 
 const getOrderStatusLabel = (status) => {
     const labels = {
@@ -68,11 +98,30 @@ const getOrderStatusLabel = (status) => {
         CANCELLED: 'Đã hủy',
         FAILED: 'Thất bại',
         PENDING_PAYMENT: 'Chờ thanh toán',
-        PAID: 'Đã cọc / chờ hàng về',
+        PAID: 'Đã cọc / chờ bước tiếp theo',
         CONFIRMED: 'Đã xác nhận',
         OPERATION_CONFIRMED: 'Đã tạo vận đơn',
     };
     return labels[status] || status || '—';
+};
+
+const getOrderStatusMeta = (order) => {
+    if (hasShipmentCreated(order)) {
+        return { label: 'Đã giao GHN', className: 'status-confirmed' };
+    }
+    if (order?.orderType !== 'PRE_ORDER' && (hasSupportApproval(order) || hasCompletedInStockPayment(order))) {
+        return { label: 'Sẵn sàng giao GHN', className: 'status-confirmed' };
+    }
+    if (isPreOrderFullyPaidAfterSupport(order)) {
+        return { label: 'Đã thanh toán đủ - sẵn sàng giao GHN', className: 'status-confirmed' };
+    }
+    if (isPreOrderRemainingOpen(order)) {
+        return { label: 'Đã mở thanh toán còn lại', className: 'status-pending' };
+    }
+    return {
+        label: getOrderStatusLabel(order?.orderStatus),
+        className: getOrderStatusClass(order?.orderStatus),
+    };
 };
 
 const getOrderStatusClass = (status) => {
@@ -83,18 +132,20 @@ const getOrderStatusClass = (status) => {
 };
 
 const getShipmentLabel = (status) => {
-    if (!status) return 'Chưa tạo vận đơn';
+    const normalizedStatus = normalizeShipmentStatus(status);
+    if (!normalizedStatus) return 'Chưa tạo vận đơn';
     const labels = {
         WAITING_CONFIRM: 'Chờ tạo vận đơn',
-        READY_TO_PICK: 'GHN chờ lấy hàng',
-        PICKING: 'GHN đang lấy hàng',
-        DELIVERING: 'GHN đang giao',
-        DELIVERED: 'Đã giao thành công',
+        READY_TO_PICK: 'Chờ GHN lấy hàng',
+        PICKING: 'Đang lấy hàng',
+        PICKED: 'Đã nhận hàng',
+        DELIVERING: 'Đang giao hàng',
+        DELIVERED: 'Hoàn thành',
         FAILED: 'Giao thất bại',
         CANCELLED: 'Đã hủy vận đơn',
         RETURNED: 'Đơn hoàn về'
     };
-    return labels[status] || status;
+    return labels[normalizedStatus] || normalizedStatus;
 };
 
 const getPaymentMethodLabel = (method) => {
@@ -136,18 +187,49 @@ const getOrderTypeLabel = (type) => {
 };
 
 const isOrderReadyForShipment = (order) =>
-    order.queueSource === OPERATION_READY_QUEUE_SOURCE
-    || CAN_SHIP_STATUSES.includes(order.orderStatus);
+    !hasShipmentCreated(order)
+    && ((order?.orderType !== 'PRE_ORDER' && ((hasSupportApproval(order) || hasCompletedInStockPayment(order))
+        || order.queueSource === OPERATION_READY_QUEUE_SOURCE
+        || CAN_SHIP_STATUSES.includes(order.orderStatus)))
+    || isPreOrderReadyForOperation(order));
 
 const getShipReadinessText = (order) => {
+    if (hasShipmentCreated(order)) {
+        return `Đơn đã có mã vận đơn ${order.ghnOrderCode || ''}. Theo dõi tiếp trạng thái GHN ở màn hình này.`;
+    }
+    if (order?.orderType !== 'PRE_ORDER' && (hasSupportApproval(order) || hasCompletedInStockPayment(order))) {
+        return 'Đơn in-stock đã được support duyệt và có thể tạo vận đơn GHN ngay từ màn hình này.';
+    }
+    if (hasOutstandingPreorderBalance(order)) {
+        if (isPreOrderWaitingSupport(order)) {
+            return 'Đơn pre-order mới dừng ở bước thanh toán ban đầu. Support cần duyệt trước khi customer thanh toán phần còn lại.';
+        }
+        if (isPreOrderRemainingOpen(order)) {
+            return 'Đơn đã mở bước thanh toán phần còn lại và đang chờ customer hoàn tất trước khi giao GHN.';
+        }
+        if (order.orderStatus === 'CONFIRMED') {
+            return 'Đơn đã đủ điều kiện xử lý nhưng vẫn chưa hoàn tất bước support trước khi giao GHN.';
+        }
+    }
+
     if (isOrderReadyForShipment(order)) {
-        return 'Đơn đã nằm trong queue approved của BE và sẵn sàng để tạo vận đơn GHN.';
+        return 'Đơn đã đủ điều kiện ở BE và có thể tạo vận đơn GHN từ màn hình này.';
     }
     if (order.orderStatus === 'SHIPPING') return 'Đơn đã có vận đơn và đang trong quá trình giao.';
-    if (order.orderStatus === 'PAID') return 'Đơn pre-order đã nhận tiền cọc hoặc thanh toán ban đầu, đang chờ manager cập nhật hàng về.';
     if (CAN_SHIP_STATUSES.includes(order.orderStatus)) return 'Đơn đã đủ điều kiện để tạo vận đơn GHN.';
     if (order.orderStatus === 'PENDING_PAYMENT') return 'Đơn đang chờ khách hoàn tất thanh toán trước khi giao.';
     return 'Đơn chưa sẵn sàng để tạo vận đơn.';
+};
+
+const getOperationsStageLabel = (order) => {
+    if (hasShipmentCreated(order)) return getShipmentLabel(order?.shipmentStatus);
+    if (order?.orderType !== 'PRE_ORDER' && (hasSupportApproval(order) || hasCompletedInStockPayment(order))) return 'Sẵn sàng giao GHN';
+    if (isPreOrderWaitingSupport(order)) return 'Chờ support duyệt';
+    if (isPreOrderRemainingOpen(order)) return 'Chờ thanh toán còn lại';
+    if (isOrderReadyForShipment(order)) return 'Sẵn sàng giao GHN';
+    if (order?.orderStatus === 'SHIPPING' || order?.orderStatus === 'OPERATION_CONFIRMED') return 'Đang giao vận';
+    if (order?.orderStatus === 'COMPLETED') return 'Hoàn tất';
+    return 'Chờ xử lý';
 };
 
 const OperationsOrdersPage = () => {
@@ -178,7 +260,7 @@ const OperationsOrdersPage = () => {
         try {
             const [allOrdersRes, approvedOrdersRes] = await Promise.all([
                 getOperationOrdersAPI(),
-                getApprovedOrdersAPI(),
+                getApprovedOrdersAPI(0, 500),
             ]);
 
             const { items: allOrders } = normalizeOrdersResponse(allOrdersRes);
@@ -358,7 +440,7 @@ const OperationsOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Đơn hàng vận hành</h2>
-                            <p>Danh sách này hiển thị toàn bộ đơn từ operations, đồng thời đánh dấu những đơn đã nằm trong queue `/approved` để bật thao tác tạo vận đơn.</p>
+                            <p>Luồng mới: operations chỉ giao GHN sau khi đơn pre-order đã qua support và khách hoàn tất phần thanh toán còn lại.</p>
                         </div>
                         <div className="support-panel-meta">
                             <span className="queue-badge queue-orders">Đơn hàng</span>
@@ -412,8 +494,8 @@ const OperationsOrdersPage = () => {
                                                     <span className="order-date">{formatDateTime(order.createdAt)}</span>
                                                 </div>
                                                 <div className="order-header-right">
-                                                    <Tag className={getOrderStatusClass(order.orderStatus)} icon={<CheckCircleOutlined />}>
-                                                        {getOrderStatusLabel(order.orderStatus)}
+                                                    <Tag className={getOrderStatusMeta(order).className} icon={<CheckCircleOutlined />}>
+                                                        {getOrderStatusMeta(order).label}
                                                     </Tag>
                                                     <span className="order-pay-method">{getOrderTypeLabel(order.orderType)}</span>
                                                 </div>
@@ -454,11 +536,15 @@ const OperationsOrdersPage = () => {
                                                 </div>
                                                 <div className="info-row">
                                                     <span className="info-label">Đặt cọc</span>
-                                                    <span className="info-value">{formatVND(order.deposit)}</span>
+                                                    <span className="info-value">{formatVND(order.displayDeposit ?? order.deposit)}</span>
                                                 </div>
                                                 <div className="info-row">
                                                     <span className="info-label">Còn lại</span>
-                                                    <span className="info-value">{formatVND(order.remainingAmount)}</span>
+                                                    <span className="info-value">{formatVND(order.displayRemaining ?? order.remainingAmount)}</span>
+                                                </div>
+                                                <div className="info-row">
+                                                    <span className="info-label">Chặng xử lý</span>
+                                                    <span className="info-value">{getOperationsStageLabel(order)}</span>
                                                 </div>
                                                 <div className="info-row full">
                                                     <span className="info-label">Địa chỉ giao</span>

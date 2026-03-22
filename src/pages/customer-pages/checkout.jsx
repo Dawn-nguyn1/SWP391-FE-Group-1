@@ -12,6 +12,30 @@ import './checkout.css';
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 const getMinDeposit = (amount) => Math.ceil((Number(amount) || 0) * 0.3);
 
+const getPreOrderPlanMeta = ({ depositOption, total, minDeposit, remainingAmount }) => {
+    if (depositOption === '100') {
+        return {
+            title: 'Thanh toán 100% ngay',
+            step: 'Thanh toán một lần',
+            description: `Bạn thanh toán toàn bộ ${formatVND(total)} qua VNPay ngay khi đặt đơn. Đơn sẽ không có bước thanh toán phần còn lại sau này.`,
+            nowLabel: 'Thanh toán ngay',
+            laterLabel: 'Thanh toán còn lại',
+            laterValue: formatVND(0),
+            submitLabel: 'Thanh toán toàn bộ qua VNPay',
+        };
+    }
+
+        return {
+            title: 'Đặt cọc 30%',
+            step: 'Bước 1/2 của pre-order',
+            description: `Bạn thanh toán trước ${formatVND(minDeposit)}. Sau khi support duyệt, backend sẽ mở bước thanh toán phần còn lại là ${formatVND(remainingAmount)} khi đơn chuyển sang trạng thái chờ thanh toán.`,
+            nowLabel: 'Thanh toán ngay',
+            laterLabel: 'Thanh toán phần còn lại',
+            laterValue: formatVND(remainingAmount),
+            submitLabel: 'Thanh toán tiền cọc qua VNPay',
+        };
+};
+
 const CheckoutPage = () => {
     const navigate = useNavigate();
     const { fetchCart } = useContext(CartContext);
@@ -100,6 +124,7 @@ const CheckoutPage = () => {
     const minDeposit = getMinDeposit(total);
     const depositAmount = depositOption === '100' ? total : minDeposit;
     const remainingAmount = Math.max(total - depositAmount, 0);
+    const preOrderPlanMeta = getPreOrderPlanMeta({ depositOption, total, minDeposit, remainingAmount });
 
     const steps = [
         { title: 'Địa chỉ', icon: <EnvironmentOutlined /> },
@@ -151,15 +176,15 @@ const CheckoutPage = () => {
                                     <>
                                         <div className="preorder-payment-note">
                                             <strong>Đơn pre-order thanh toán online qua VNPay.</strong>
-                                            <p>Bạn chọn một trong hai mức cọc theo nghiệp vụ: `30%` hoặc `100%`.</p>
+                                            <p>Timeline mới: thanh toán cọc hoặc thanh toán toàn bộ khi đặt đơn. Nếu chọn cọc 30%, bước thanh toán phần còn lại chỉ xuất hiện khi backend chuyển đơn sang trạng thái chờ thanh toán.</p>
                                         </div>
                                         <Radio.Group value={depositOption} onChange={e => setDepositOption(e.target.value)} className="payment-group">
                                             <Radio value="30" className="payment-radio">
                                                 <div className="payment-option">
                                                     <span className="pay-icon">💳</span>
                                                     <div>
-                                                        <strong>Cọc 30%</strong>
-                                                        <p>Thanh toán trước {formatVND(minDeposit)}, còn lại {formatVND(remainingAmount)} khi hàng về.</p>
+                                                        <strong>Đặt cọc 30%</strong>
+                                                        <p>Bước 1/2 của pre-order. Thanh toán trước {formatVND(minDeposit)}, phần còn lại {formatVND(remainingAmount)} sẽ được mở sau khi support duyệt và đơn chuyển sang chờ thanh toán.</p>
                                                     </div>
                                                 </div>
                                             </Radio>
@@ -168,11 +193,15 @@ const CheckoutPage = () => {
                                                     <span className="pay-icon">💳</span>
                                                     <div>
                                                         <strong>Thanh toán 100%</strong>
-                                                        <p>Thanh toán toàn bộ {formatVND(total)} ngay trong lần đặt đơn.</p>
+                                                        <p>Thanh toán toàn bộ {formatVND(total)} ngay trong lần đặt đơn. Đơn sẽ không có bước thanh toán còn lại.</p>
                                                     </div>
                                                 </div>
                                             </Radio>
                                         </Radio.Group>
+                                        <div className="preorder-payment-note" style={{ marginTop: 16 }}>
+                                            <strong>{preOrderPlanMeta.title}</strong>
+                                            <p>{preOrderPlanMeta.description}</p>
+                                        </div>
                                     </>
                                 ) : (
                                     <Radio.Group value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} className="payment-group">
@@ -212,15 +241,16 @@ const CheckoutPage = () => {
                                     <h4>Thanh toán:</h4>
                                     <p>
                                         {isPreOrderCart
-                                            ? `💳 VNPay - ${depositOption === '100' ? 'Thanh toán 100%' : 'Cọc 30%'}`
+                                            ? `💳 VNPay - ${preOrderPlanMeta.title}`
                                             : paymentMethod === 'VNPAY'
                                                 ? '💳 VNPay'
                                                 : '🚚 COD – Thanh toán khi nhận'}
                                     </p>
                                     {isPreOrderCart && (
                                         <div className="preorder-payment-breakdown">
-                                            <span>Thanh toán ngay: <strong>{formatVND(depositAmount)}</strong></span>
-                                            <span>Còn lại: <strong>{formatVND(remainingAmount)}</strong></span>
+                                            <span>Tiến độ: <strong>{preOrderPlanMeta.step}</strong></span>
+                                            <span>{preOrderPlanMeta.nowLabel}: <strong>{formatVND(depositAmount)}</strong></span>
+                                            <span>{preOrderPlanMeta.laterLabel}: <strong>{preOrderPlanMeta.laterValue}</strong></span>
                                         </div>
                                     )}
                                 </div>
@@ -237,7 +267,7 @@ const CheckoutPage = () => {
                                     <Button onClick={() => setStep(1)}>Quay lại</Button>
                                     <Button type="primary" className="next-btn order-btn" loading={submitting} onClick={handleCheckout}>
                                         {isPreOrderCart
-                                            ? `💳 Thanh toán ${depositOption === '100' ? '100%' : 'tiền cọc'}`
+                                            ? `💳 ${preOrderPlanMeta.submitLabel}`
                                             : paymentMethod === 'VNPAY'
                                                 ? '💳 Thanh toán VNPay'
                                                 : '✅ Đặt hàng COD'}
@@ -260,12 +290,16 @@ const CheckoutPage = () => {
                         {isPreOrderCart && (
                             <>
                                 <div className="summary-item">
-                                    <span className="summary-item-name">Thanh toán ngay</span>
+                                    <span className="summary-item-name">{preOrderPlanMeta.nowLabel}</span>
                                     <span>{formatVND(depositAmount)}</span>
                                 </div>
                                 <div className="summary-item">
-                                    <span className="summary-item-name">Thanh toán còn lại</span>
-                                    <span>{formatVND(remainingAmount)}</span>
+                                    <span className="summary-item-name">{preOrderPlanMeta.laterLabel}</span>
+                                    <span>{preOrderPlanMeta.laterValue}</span>
+                                </div>
+                                <div className="summary-item">
+                                    <span className="summary-item-name">Tiến độ pre-order</span>
+                                    <span>{preOrderPlanMeta.step}</span>
                                 </div>
                                 <div className="summary-divider" />
                             </>

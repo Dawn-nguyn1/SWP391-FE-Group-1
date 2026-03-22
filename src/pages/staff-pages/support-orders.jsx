@@ -21,6 +21,7 @@ import {
     LogoutOutlined
 } from '@ant-design/icons';
 import {
+    getSupportWaitingOrdersAPI,
     getSupportOrdersAPI,
     supportConfirmOrderAPI,
     supportCancelOrderAPI,
@@ -39,6 +40,13 @@ import {
     normalizeReturnRequestsResponse,
     parseEvidenceUrls,
 } from '../../utils/role-data';
+import {
+    canSupportConfirmPreOrder,
+    hasPreOrderRemainingBalance,
+    isPreOrderRemainingOpen,
+    isPreOrderRemainingPaid,
+    isPreOrderSupportApproved,
+} from '../../utils/preorder-flow';
 
 const formatVND = n =>
     new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
@@ -75,8 +83,54 @@ const sortByNewest = (items = []) =>
         return (b?.id || 0) - (a?.id || 0);
     });
 
-const canSupportConfirm = (status) =>
-    status === 'WAITING_CONFIRM' || status === 'PAID' || status === 'PENDING_PAYMENT';
+const canSupportConfirm = (orderOrStatus, approvalStatus) => {
+    if (typeof orderOrStatus === 'object' && orderOrStatus !== null) {
+        if (orderOrStatus?.orderType === 'PRE_ORDER') return canSupportConfirmPreOrder(orderOrStatus);
+        return ['WAITING_CONFIRM', 'PAID', 'PENDING_PAYMENT', 'CONFIRMED'].includes(orderOrStatus?.orderStatus)
+            && orderOrStatus?.approvalStatus !== 'SUPPORT_APPROVED'
+            && orderOrStatus?.approvalStatus !== 'OPERATION_CONFIRMED';
+    }
+
+    return ['WAITING_CONFIRM', 'PAID', 'PENDING_PAYMENT', 'CONFIRMED'].includes(orderOrStatus)
+        && approvalStatus !== 'SUPPORT_APPROVED'
+        && approvalStatus !== 'OPERATION_CONFIRMED';
+};
+
+const canSupportCancel = (orderOrStatus) => {
+    const status = typeof orderOrStatus === 'object' && orderOrStatus !== null
+        ? orderOrStatus?.orderStatus
+        : orderOrStatus;
+
+    return !['CANCELLED', 'COMPLETED', 'SHIPPING', 'OPERATION_CONFIRMED'].includes(status);
+};
+
+const isPreOrderAwaitingFinalPayment = (order) =>
+    hasPreOrderRemainingBalance(order)
+    && !isPreOrderRemainingPaid(order)
+    && isPreOrderRemainingOpen(order);
+
+const getSupportNextStep = (order) => {
+    if (order?.orderType === 'PRE_ORDER') {
+        if (canSupportConfirm(order)) {
+            if (order?.orderStatus === 'PENDING_PAYMENT') {
+                return 'Khi support duyệt xong, đơn tiếp tục chờ khách thanh toán phần còn lại trước khi chuyển cho operations.';
+            }
+            if (order?.orderStatus === 'CONFIRMED') {
+                return 'Đơn đã đủ điều kiện xử lý nhưng vẫn cần support duyệt trước khi chuyển cho operations.';
+            }
+            return 'Sau khi support duyệt, customer có thể thanh toán phần còn lại trước khi đơn chuyển cho operations.';
+        }
+        if (isPreOrderAwaitingFinalPayment(order)) {
+            return 'Đơn đã mở bước thanh toán phần còn lại và đang chờ khách hoàn tất.';
+        }
+    }
+
+    if (order?.orderStatus === 'SUPPORT_CONFIRMED' || order?.orderStatus === 'CONFIRMED') {
+        return 'Đơn đã qua support và sẽ được operations xử lý giao GHN ở bước tiếp theo.';
+    }
+
+    return 'Support chỉ xử lý bước duyệt và hủy đơn trong queue hiện tại.';
+};
 
 const SupportOrdersPage = () => {
     const navigate = useNavigate();
@@ -88,8 +142,6 @@ const SupportOrdersPage = () => {
     const [actioning, setActioning] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 6;
-    const [processedOrderIds, setProcessedOrderIds] = useState([]);
-
     const [returnRequests, setReturnRequests] = useState([]);
     const [returnLoading, setReturnLoading] = useState(true);
     const [returnsError, setReturnsError] = useState('');
@@ -118,9 +170,17 @@ const SupportOrdersPage = () => {
         setLoading(true);
         setOrdersError('');
         try {
-            const res = await getSupportOrdersAPI();
-            const { items } = normalizeOrdersResponse(res);
-            const sortedItems = sortByNewest(items);
+            let normalizedItems = [];
+            try {
+                const waitingRes = await getSupportWaitingOrdersAPI();
+                normalizedItems = normalizeOrdersResponse(waitingRes).items;
+            } catch {
+                const fallbackRes = await getSupportOrdersAPI();
+                normalizedItems = normalizeOrdersResponse(fallbackRes).items
+                    .filter((order) => canSupportConfirm(order) || canSupportCancel(order));
+            }
+
+            const sortedItems = sortByNewest(normalizedItems);
             setOrders(sortedItems);
             setOrdersTotal(sortedItems.length);
         } catch (err) {
@@ -149,13 +209,15 @@ const SupportOrdersPage = () => {
         }
     };
 
+    // Load both support queues once on mount; reloads are handled by explicit actions.
     useEffect(() => {
         loadOrders();
         loadReturnRequests();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     useEffect(() => {
-        const maxPage = Math.max(Math.ceil(orders.filter(order => canSupportConfirm(order.orderStatus)).length / pageSize), 1);
+        const maxPage = Math.max(Math.ceil(orders.length / pageSize), 1);
         if (currentPage > maxPage) {
             setCurrentPage(maxPage);
         }
@@ -166,15 +228,11 @@ const SupportOrdersPage = () => {
         try {
             await actionAPI(orderId);
             if (actionAPI === supportConfirmOrderAPI) {
-                setProcessedOrderIds((prev) => Array.from(new Set([...prev, orderId])));
-                setOrders((prev) =>
-                    prev.map((order) =>
-                        order.id === orderId
-                            ? { ...order, orderStatus: 'SUPPORT_CONFIRMED' }
-                            : order
-                    )
-                );
+                message.success(successMsg);
+                await loadOrders();
+                return;
             }
+
             message.success(successMsg);
             if (actionAPI !== supportConfirmOrderAPI) {
                 loadOrders();
@@ -222,8 +280,8 @@ const SupportOrdersPage = () => {
             message.success(`Đã hủy đơn #${cancelTarget.id}`);
             setIsCancelModalOpen(false);
             loadOrders();
-        } catch {
-            message.error('Hủy đơn thất bại');
+        } catch (err) {
+            message.error(getFriendlyError(err, 'Hủy đơn thất bại'));
         } finally {
             setActioning(null);
         }
@@ -265,6 +323,7 @@ const SupportOrdersPage = () => {
     const statusConfig = {
         WAITING_CONFIRM: { label: 'Chờ duyệt', className: 'status-waiting' },
         SUPPORT_CONFIRMED: { label: 'Đã duyệt', className: 'status-confirmed' },
+        READY_FOR_REMAINING_PAYMENT: { label: 'Chờ khách thanh toán', className: 'status-pending' },
         OPERATION_CONFIRMED: { label: 'Đã xác nhận', className: 'status-confirmed' },
         CONFIRMED: { label: 'Đã xác nhận', className: 'status-confirmed' },
         COMPLETED: { label: 'Hoàn tất', className: 'status-completed' },
@@ -283,7 +342,20 @@ const SupportOrdersPage = () => {
         RECEIVED: { label: 'Đã nhận', className: 'status-completed' }
     };
 
-    const getStatusMeta = (status) => statusConfig[status] || { label: status || '—', className: 'status-pending' };
+    const getStatusMeta = (orderOrStatus) => {
+        if (typeof orderOrStatus === 'object' && orderOrStatus !== null) {
+            if (isPreOrderRemainingOpen(orderOrStatus)) {
+                return { label: 'Đã mở thanh toán còn lại', className: 'status-pending' };
+            }
+            if (orderOrStatus.orderType === 'PRE_ORDER' && isPreOrderSupportApproved(orderOrStatus) && isPreOrderRemainingPaid(orderOrStatus)) {
+                return { label: 'Đã qua support', className: 'status-confirmed' };
+            }
+
+            return statusConfig[orderOrStatus.orderStatus] || { label: orderOrStatus.orderStatus || '—', className: 'status-pending' };
+        }
+
+        return statusConfig[orderOrStatus] || { label: orderOrStatus || '—', className: 'status-pending' };
+    };
     const getReturnStatusMeta = (status) => returnStatusConfig[status] || { label: status || '—', className: 'status-pending' };
 
     const getOrderTypeLabel = (type) => {
@@ -292,9 +364,7 @@ const SupportOrdersPage = () => {
         return type || '—';
     };
 
-    const actionableOrders = orders.filter(
-        (order) => canSupportConfirm(order.orderStatus) && !processedOrderIds.includes(order.id)
-    );
+    const actionableOrders = orders.filter((order) => canSupportConfirm(order) || canSupportCancel(order));
     const waitingCount = actionableOrders.length;
     const orderStart = (currentPage - 1) * pageSize;
     const pageOrders = actionableOrders.slice(orderStart, orderStart + pageSize);
@@ -305,7 +375,7 @@ const SupportOrdersPage = () => {
     const loadedOrderCount = pageOrders.length;
 
     const endpointPills = [
-        { label: 'Orders Queue', value: '/api/support_staff/orders' },
+        { label: 'Orders Queue', value: '/api/support_staff/orders/waiting' },
         { label: 'Returns Queue', value: '/api/support_staff/return-requests/submitted' },
     ];
     const orderPageCount = Math.max(Math.ceil(waitingCount / pageSize), 1);
@@ -313,37 +383,42 @@ const SupportOrdersPage = () => {
 
     const renderOrderActions = (record) => {
         const isLoading = actioning === record.id;
-        const canAction = canSupportConfirm(record.orderStatus);
+        const canApprove = canSupportConfirm(record);
+        const canCancel = canSupportCancel(record);
         return (
             <Space size={8}>
-                {canAction ? (
+                {(canApprove || canCancel) ? (
                     <>
-                        <Popconfirm
-                            title="Xác nhận duyệt đơn hàng này?"
-                            description="Đơn hàng sẽ được chuyển sang trạng thái đã xác nhận."
-                            onConfirm={() => handleAction(record.id, supportConfirmOrderAPI, `Đã duyệt đơn #${record.id}`)}
-                            okText="Duyệt"
-                            cancelText="Không"
-                        >
-                            <Button
-                                type="primary"
-                                size="small"
-                                icon={<CheckCircleOutlined />}
-                                loading={isLoading}
-                                className="btn-confirm"
+                        {canApprove && (
+                            <Popconfirm
+                                title="Xác nhận duyệt đơn hàng này?"
+                                description="Với pre-order, support duyệt xong thì customer sẽ bước sang thanh toán phần còn lại nếu đơn vẫn còn số dư."
+                                onConfirm={() => handleAction(record.id, supportConfirmOrderAPI, `Đã duyệt đơn #${record.id} và chuyển sang bước tiếp theo`)}
+                                okText="Duyệt"
+                                cancelText="Không"
                             >
-                                Duyệt
+                                <Button
+                                    type="primary"
+                                    size="small"
+                                    icon={<CheckCircleOutlined />}
+                                    loading={isLoading}
+                                    className="btn-confirm"
+                                >
+                                    Duyệt
+                                </Button>
+                            </Popconfirm>
+                        )}
+                        {canCancel && (
+                            <Button
+                                size="small"
+                                icon={<CloseCircleOutlined />}
+                                loading={isLoading}
+                                className="btn-cancel"
+                                onClick={() => openCancelModal(record)}
+                            >
+                                Hủy
                             </Button>
-                        </Popconfirm>
-                        <Button
-                            size="small"
-                            icon={<CloseCircleOutlined />}
-                            loading={isLoading}
-                            className="btn-cancel"
-                            onClick={() => openCancelModal(record)}
-                        >
-                            Hủy
-                        </Button>
+                        )}
                     </>
                 ) : (
                     <span className="order-action-muted">Đã xử lý</span>
@@ -383,7 +458,7 @@ const SupportOrdersPage = () => {
                         <strong>{waitingCount}</strong>
                     </div>
                     <div className="metric-card">
-                        <span>Đơn đang hiển thị</span>
+                        <span>Queue support</span>
                         <strong>{loadedOrderCount}</strong>
                     </div>
                     <div className="metric-card">
@@ -427,7 +502,7 @@ const SupportOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Đơn hàng cần duyệt</h2>
-                            <p>BE hiện trả full `List&lt;OrderResponseDTO&gt;`, nên trang này sắp xếp mới nhất trước và phân trang phía FE.</p>
+                            <p>Luồng mới: support duyệt đơn pre-order xong thì customer sẽ thanh toán phần còn lại. Operations chỉ xử lý sau khi khách hoàn tất bước này.</p>
                         </div>
                         <div className="support-panel-meta">
                             <span className="queue-badge queue-orders">Orders Queue</span>
@@ -445,7 +520,7 @@ const SupportOrdersPage = () => {
                             <strong>{pageOrders.length} / {waitingCount} đơn</strong>
                         </div>
                         <div className="queue-toolbar-item">
-                            <span className="queue-toolbar-label">Từ backend</span>
+                            <span className="queue-toolbar-label">Từ queue BE</span>
                             <strong>{ordersTotal} đơn</strong>
                         </div>
                     </div>
@@ -472,7 +547,7 @@ const SupportOrdersPage = () => {
                         ) : (
                             <div className="orders-list">
                                 {pageOrders.map(order => {
-                                    const statusMeta = getStatusMeta(order.orderStatus);
+                                    const statusMeta = getStatusMeta(order);
                                     return (
                                         <div key={order.id || order.orderCode} className="order-card support-order">
                                             <div className="order-header">
@@ -509,6 +584,10 @@ const SupportOrdersPage = () => {
                                                     <span className="info-label">Trạng thái GHN</span>
                                                     <span className="info-value">{getShipmentLabel(order.shipmentStatus)}</span>
                                                 </div>
+                                                <div className="info-row full">
+                                                    <span className="info-label">Bước tiếp theo</span>
+                                                    <span className="info-value">{getSupportNextStep(order)}</span>
+                                                </div>
                                             </div>
 
                                             <div className="order-footer">
@@ -517,10 +596,10 @@ const SupportOrdersPage = () => {
                                                         Tổng: <strong>{formatVND(order.totalAmount || order.total)}</strong>
                                                     </span>
                                                     <span className="order-subtotal">
-                                                        Đặt cọc: {formatVND(order.deposit)}
+                                                        Đặt cọc: {formatVND(order.displayDeposit ?? order.deposit)}
                                                     </span>
                                                     <span className="order-subtotal">
-                                                        Còn lại: {formatVND(order.remainingAmount)}
+                                                        Còn lại: {formatVND(order.displayRemaining ?? order.remainingAmount)}
                                                     </span>
                                                 </div>
                                                 {renderOrderActions(order)}
@@ -716,14 +795,14 @@ const SupportOrdersPage = () => {
                                 </strong>
                             </Descriptions.Item>
                             <Descriptions.Item label="Đặt cọc">
-                                {formatVND(selectedOrder.deposit)}
+                                {formatVND(selectedOrder.displayDeposit ?? selectedOrder.deposit)}
                             </Descriptions.Item>
                             <Descriptions.Item label="Còn lại">
-                                {formatVND(selectedOrder.remainingAmount)}
+                                {formatVND(selectedOrder.displayRemaining ?? selectedOrder.remainingAmount)}
                             </Descriptions.Item>
                             <Descriptions.Item label="Trạng thái">
-                                <Tag className={getStatusMeta(selectedOrder.orderStatus).className} icon={<ClockCircleOutlined />}>
-                                    {getStatusMeta(selectedOrder.orderStatus).label}
+                                <Tag className={getStatusMeta(selectedOrder).className} icon={<ClockCircleOutlined />}>
+                                    {getStatusMeta(selectedOrder).label}
                                 </Tag>
                             </Descriptions.Item>
                             <Descriptions.Item label="Người nhận">
@@ -740,6 +819,9 @@ const SupportOrdersPage = () => {
                             </Descriptions.Item>
                             <Descriptions.Item label="Trạng thái GHN">
                                 {getShipmentLabel(selectedOrder.shipmentStatus)}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Bước tiếp theo" span={2}>
+                                {getSupportNextStep(selectedOrder)}
                             </Descriptions.Item>
                         </Descriptions>
                     </div>

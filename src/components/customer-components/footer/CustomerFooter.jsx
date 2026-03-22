@@ -19,7 +19,8 @@ const CustomerFooter = () => (
             <div className="footer-col">
                 <h4>Sản phẩm</h4>
                 <Link to="/customer/products">Tất cả kính</Link>
-                <Link to="/customer/products?inStock=true">Còn hàng</Link>
+                <Link to="/customer/products?view=pre-order">Đặt trước</Link>
+                <Link to="/customer/products?view=ready">Hàng sẵn</Link>
                 <Link to="/customer/products?brand=Ray-Ban">Ray-Ban</Link>
                 <Link to="/customer/products?brand=Oakley">Oakley</Link>
             </div>
@@ -38,7 +39,7 @@ const CustomerFooter = () => (
             </div>
         </div>
         <div className="footer-bottom">
-            © 2026 GENETIX. Bảo lưu mọi quyền. | Được thanh toán bảo mật qua VNPay
+            © 2026 GENETIX. Bảo lưu mọi quyền. | Pre-order thanh toán bảo mật qua VNPay theo tiến độ đơn hàng
         </div>
     </footer>
 );

@@ -315,6 +315,8 @@ const getCustomerReturnRequestsAPI = () => axios.get('/api/customer/return-reque
 const getCustomerReturnRequestDetailAPI = (id) => axios.get(`/api/customer/return-requests/${id}`);
 
 // ===== SUPPORT STAFF APIs =====
+const getSupportWaitingOrdersAPI = (page = 0, size = 20, sort = ['createdAt,desc', 'id,desc']) =>
+    axios.get('/api/support_staff/orders/waiting', { params: { page, size, sort } });
 const getSupportOrdersAPI = () => axios.get('/api/support_staff/orders');
 const getSupportOrderDetailAPI = (orderId) => axios.get(`/api/support_staff/orders/${orderId}`);
 const supportConfirmOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/confirm`);
@@ -374,7 +376,7 @@ export {
     cancelOrderByCustomerAPI, getCustomerOrdersAPI, getCustomerOrderDetailAPI, getCustomerPaymentsAPI, payRemainingOrderAPI,
     createCustomerReturnRequestAPI, getCustomerReturnRequestsAPI, getCustomerReturnRequestDetailAPI,
     // Support Staff APIs
-    getSupportOrdersAPI, getSupportOrderDetailAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
+    getSupportWaitingOrdersAPI, getSupportOrdersAPI, getSupportOrderDetailAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
     getSupportReturnRequestsAPI, supportApproveReturnRequestAPI, supportRejectReturnRequestAPI,
     // Operations Staff APIs
     getOperationOrdersAPI, getApprovedOrdersAPI, getOperationOrderDetailAPI, operationsConfirmOrderAPI,
