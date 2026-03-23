@@ -352,14 +352,44 @@ export const normalizeReturnRequest = (input) => {
     return {
         ...request,
         id: firstDefined(request.id, request.returnRequestId),
+        orderId: firstDefined(request.orderId, request.order?.id),
+        orderItemId: firstDefined(request.orderItemId, request.orderItem?.id),
         status: firstDefined(request.status, request.returnStatus),
         createdAt: firstDefined(request.createdAt, request.createdDate),
         requestedQuantity: toNumber(firstDefined(request.requestedQuantity, request.quantity), 0),
+        acceptedQuantity: firstDefined(request.acceptedQuantity, request.returnRecord?.acceptedQuantity),
         reason: firstDefined(request.reason, request.returnReason),
         note: firstDefined(request.note, request.description, request.customerNote),
         evidenceUrls: parseEvidenceUrls(firstDefined(request.evidenceUrls, request.images, request.evidences)),
+        approvedByUserId: firstDefined(request.approvedByUserId, request.approvedBy),
+        approvedAt: firstDefined(request.approvedAt, request.approvedDate),
+        receivedByUserId: firstDefined(request.receivedByUserId, request.receivedBy),
+        receivedAt: firstDefined(request.receivedAt, request.receivedDate),
+        updatedAt: firstDefined(request.updatedAt, request.updatedDate),
     };
 };
 
 export const normalizeReturnRequestsResponse = (input) =>
     normalizeCollectionResponse(input).items.map(normalizeReturnRequest);
+
+export const normalizeRefundRequest = (input) => {
+    const request = unwrapData(input) || {};
+
+    return {
+        ...request,
+        id: firstDefined(request.id, request.refundRequestId),
+        orderId: firstDefined(request.orderId, request.order?.id),
+        reason: firstDefined(request.reason, request.refundReason),
+        policy: firstDefined(request.policy, request.refundPolicy),
+        status: firstDefined(request.status, request.refundStatus),
+        refundAmount: toNumber(firstDefined(request.refundAmount, request.amount), 0),
+        note: firstDefined(request.note, request.description),
+        createdByUserId: firstDefined(request.createdByUserId, request.createdBy),
+        createdByRole: firstDefined(request.createdByRole, request.role),
+        createdAt: firstDefined(request.createdAt, request.createdDate),
+        updatedAt: firstDefined(request.updatedAt, request.updatedDate),
+    };
+};
+
+export const normalizeRefundRequestsResponse = (input) =>
+    normalizeCollectionResponse(input).items.map(normalizeRefundRequest);

@@ -27,7 +27,10 @@ import {
     supportCancelOrderAPI,
     getSupportReturnRequestsAPI,
     supportApproveReturnRequestAPI,
-    supportRejectReturnRequestAPI
+    supportRejectReturnRequestAPI,
+    getSupportRefundRequestsAPI,
+    supportDoneRefundRequestAPI,
+    supportRejectRefundRequestAPI,
 } from '../../services/api.service';
 import './staff-orders.css';
 import '../customer-pages/orders.css';
@@ -37,6 +40,7 @@ import { AuthContext } from '../../context/auth.context.jsx';
 import {
     formatAddressText,
     normalizeOrdersResponse,
+    normalizeRefundRequestsResponse,
     normalizeReturnRequestsResponse,
     parseEvidenceUrls,
 } from '../../utils/role-data';
@@ -148,6 +152,12 @@ const SupportOrdersPage = () => {
     const [returnActioning, setReturnActioning] = useState(null);
     const [returnPage, setReturnPage] = useState(1);
     const returnPageSize = 6;
+    const [refundRequests, setRefundRequests] = useState([]);
+    const [refundLoading, setRefundLoading] = useState(true);
+    const [refundsError, setRefundsError] = useState('');
+    const [refundActioning, setRefundActioning] = useState(null);
+    const [refundPage, setRefundPage] = useState(1);
+    const refundPageSize = 6;
 
     // Modal state
     const [isModalVisible, setIsModalVisible] = useState(false);
@@ -160,10 +170,19 @@ const SupportOrdersPage = () => {
     const [cancelTarget, setCancelTarget] = useState(null);
     const [cancelReason, setCancelReason] = useState('SHOP_CANNOT_SUPPLY');
     const [cancelNote, setCancelNote] = useState('');
+    const [refundTarget, setRefundTarget] = useState(null);
+    const [refundModalMode, setRefundModalMode] = useState('done');
+    const [refundNote, setRefundNote] = useState('');
+    const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
 
     const applyReturnRequests = (items) => {
         setReturnRequests(items);
         setReturnPage(1);
+    };
+
+    const applyRefundRequests = (items) => {
+        setRefundRequests(items);
+        setRefundPage(1);
     };
 
     const loadOrders = async () => {
@@ -209,10 +228,26 @@ const SupportOrdersPage = () => {
         }
     };
 
+    const loadRefundRequests = async () => {
+        setRefundLoading(true);
+        setRefundsError('');
+        try {
+            const res = await getSupportRefundRequestsAPI();
+            applyRefundRequests(sortByNewest(normalizeRefundRequestsResponse(res)));
+        } catch (err) {
+            console.error('[Genetix] loadRefundRequests error:', err);
+            applyRefundRequests([]);
+            setRefundsError(getFriendlyError(err, 'Khong the tai danh sach yeu cau hoan tien tu backend.'));
+        } finally {
+            setRefundLoading(false);
+        }
+    };
+
     // Load both support queues once on mount; reloads are handled by explicit actions.
     useEffect(() => {
         loadOrders();
         loadReturnRequests();
+        loadRefundRequests();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -222,6 +257,13 @@ const SupportOrdersPage = () => {
             setCurrentPage(maxPage);
         }
     }, [currentPage, orders]);
+
+    useEffect(() => {
+        const maxPage = Math.max(Math.ceil(refundRequests.length / refundPageSize), 1);
+        if (refundPage > maxPage) {
+            setRefundPage(maxPage);
+        }
+    }, [refundPage, refundRequests, refundPageSize]);
 
     const handleAction = async (orderId, actionAPI, successMsg) => {
         setActioning(orderId);
@@ -308,6 +350,34 @@ const SupportOrdersPage = () => {
         }
     };
 
+    const openRefundModal = (record, mode) => {
+        setRefundTarget(record);
+        setRefundModalMode(mode);
+        setRefundNote('');
+        setIsRefundModalOpen(true);
+    };
+
+    const submitRefundAction = async () => {
+        if (!refundTarget) return;
+        setRefundActioning(refundTarget.id);
+        try {
+            const note = refundNote.trim() || undefined;
+            if (refundModalMode === 'done') {
+                await supportDoneRefundRequestAPI(refundTarget.id, note);
+                message.success(`Da hoan tat yeu cau hoan tien #${refundTarget.id}`);
+            } else {
+                await supportRejectRefundRequestAPI(refundTarget.id, note);
+                message.success(`Da tu choi yeu cau hoan tien #${refundTarget.id}`);
+            }
+            setIsRefundModalOpen(false);
+            loadRefundRequests();
+        } catch (err) {
+            message.error(getFriendlyError(err, 'Xu ly hoan tien that bai'));
+        } finally {
+            setRefundActioning(null);
+        }
+    };
+
     const handleLogout = async () => {
         localStorage.removeItem('access_token');
         localStorage.removeItem('user_info');
@@ -342,6 +412,13 @@ const SupportOrdersPage = () => {
         RECEIVED: { label: 'Đã nhận', className: 'status-completed' }
     };
 
+    const refundStatusConfig = {
+        REQUESTED: { label: 'Cho hoan tien', className: 'status-waiting' },
+        APPROVED: { label: 'Da duyet', className: 'status-confirmed' },
+        DONE: { label: 'Da hoan tat', className: 'status-completed' },
+        REJECTED: { label: 'Tu choi', className: 'status-cancelled' }
+    };
+
     const getStatusMeta = (orderOrStatus) => {
         if (typeof orderOrStatus === 'object' && orderOrStatus !== null) {
             if (isPreOrderRemainingOpen(orderOrStatus)) {
@@ -357,6 +434,7 @@ const SupportOrdersPage = () => {
         return statusConfig[orderOrStatus] || { label: orderOrStatus || '—', className: 'status-pending' };
     };
     const getReturnStatusMeta = (status) => returnStatusConfig[status] || { label: status || '—', className: 'status-pending' };
+    const getRefundStatusMeta = (status) => refundStatusConfig[status] || { label: status || '—', className: 'status-pending' };
 
     const getOrderTypeLabel = (type) => {
         if (type === 'IN_STOCK') return 'Có sẵn';
@@ -372,14 +450,19 @@ const SupportOrdersPage = () => {
     const returnTotal = returnRequests.length;
     const returnStart = (returnPage - 1) * returnPageSize;
     const returnPageItems = returnRequests.slice(returnStart, returnStart + returnPageSize);
+    const refundTotal = refundRequests.length;
+    const refundStart = (refundPage - 1) * refundPageSize;
+    const refundPageItems = refundRequests.slice(refundStart, refundStart + refundPageSize);
     const loadedOrderCount = pageOrders.length;
 
     const endpointPills = [
         { label: 'Orders Queue', value: '/api/support_staff/orders/waiting' },
         { label: 'Returns Queue', value: '/api/support_staff/return-requests/submitted' },
+        { label: 'Refund Queue', value: '/api/support_staff/refund-requests/requested' },
     ];
     const orderPageCount = Math.max(Math.ceil(waitingCount / pageSize), 1);
     const returnPageCount = Math.max(Math.ceil(returnTotal / returnPageSize), 1);
+    const refundPageCount = Math.max(Math.ceil(refundTotal / refundPageSize), 1);
 
     const renderOrderActions = (record) => {
         const isLoading = actioning === record.id;
@@ -465,6 +548,10 @@ const SupportOrdersPage = () => {
                         <span>Yêu cầu trả</span>
                         <strong>{returnTotal}</strong>
                     </div>
+                    <div className="metric-card">
+                        <span>Yeu cau hoan tien</span>
+                        <strong>{refundTotal}</strong>
+                    </div>
                     <div className="topbar-actions">
                         <div className="user-chip">
                             <div className="user-avatar">
@@ -481,9 +568,10 @@ const SupportOrdersPage = () => {
                             onClick={() => {
                                 loadOrders(currentPage);
                                 loadReturnRequests();
+                                loadRefundRequests();
                             }}
                             style={{ color: '#6b7280' }}
-                            loading={loading || returnLoading}
+                            loading={loading || returnLoading || refundLoading}
                         />
                         <Button
                             type="default"
@@ -759,6 +847,132 @@ const SupportOrdersPage = () => {
                         </div>
                     )}
                 </section>
+
+                <section className="support-panel support-panel-full">
+                    <div className="panel-header">
+                        <div>
+                            <h2>Yeu cau hoan tien</h2>
+                            <p>Queue nay duoc tao sau khi operations nhan hang hoan tra. Support danh dau hoan tat hoac tu choi yeu cau hoan tien tai day.</p>
+                        </div>
+                        <div className="support-panel-meta">
+                            <span className="queue-badge queue-returns">Refund Queue</span>
+                            <span className="queue-hint">Trang {refundPage}/{refundPageCount}</span>
+                        </div>
+                    </div>
+
+                    <div className="queue-toolbar">
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Sap xep</span>
+                            <strong>Moi nhat truoc</strong>
+                        </div>
+                        <div className="queue-toolbar-item">
+                            <span className="queue-toolbar-label">Dang hien thi</span>
+                            <strong>{refundPageItems.length} / {refundTotal} yeu cau</strong>
+                        </div>
+                    </div>
+
+                    <div className="panel-body">
+                        {refundLoading ? (
+                            <div className="orders-loading" style={{ minHeight: 240 }} />
+                        ) : refundsError ? (
+                            <div className="support-callout error">
+                                <strong>Khong tai duoc queue hoan tien</strong>
+                                <span>{refundsError}</span>
+                                <Button size="small" icon={<ReloadOutlined />} onClick={loadRefundRequests}>Thu lai</Button>
+                            </div>
+                        ) : refundTotal === 0 ? (
+                            <div className="orders-empty">
+                                <Empty description={<span>Chua co yeu cau hoan tien nao.</span>} />
+                            </div>
+                        ) : (
+                            <div className="returns-list">
+                                {refundPageItems.map((req) => {
+                                    const statusMeta = getRefundStatusMeta(req.status);
+                                    return (
+                                        <div key={req.id} className="return-card">
+                                            <div className="return-header">
+                                                <div>
+                                                    <span className="return-id">RF-{req.id}</span>
+                                                    <span className="return-date">{formatDateTime(req.createdAt)}</span>
+                                                </div>
+                                                <Tag className={statusMeta.className} icon={<ClockCircleOutlined />}>
+                                                    {statusMeta.label}
+                                                </Tag>
+                                            </div>
+
+                                            <div className="return-meta">
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Order ID</span>
+                                                    <span className="meta-value">{req.orderId ?? '—'}</span>
+                                                </div>
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Refund amount</span>
+                                                    <span className="meta-value">{formatVND(req.refundAmount)}</span>
+                                                </div>
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Reason</span>
+                                                    <span className="meta-value">{req.reason || '—'}</span>
+                                                </div>
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Policy</span>
+                                                    <span className="meta-value">{req.policy || '—'}</span>
+                                                </div>
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Created by</span>
+                                                    <span className="meta-value">{req.createdByRole || '-'} #{req.createdByUserId ?? '-'}</span>
+                                                </div>
+                                                <div className="meta-item">
+                                                    <span className="meta-label">Updated</span>
+                                                    <span className="meta-value">{formatDateTime(req.updatedAt)}</span>
+                                                </div>
+                                                {req.note && (
+                                                    <div className="meta-item full">
+                                                        <span className="meta-label">Note</span>
+                                                        <span className="meta-value refund-note-pre">{req.note}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            <div className="return-actions">
+                                                <Button
+                                                    type="primary"
+                                                    size="small"
+                                                    icon={<CheckCircleOutlined />}
+                                                    loading={refundActioning === req.id}
+                                                    className="btn-confirm"
+                                                    onClick={() => openRefundModal(req, 'done')}
+                                                >
+                                                    Hoan tat
+                                                </Button>
+                                                <Button
+                                                    size="small"
+                                                    icon={<CloseCircleOutlined />}
+                                                    loading={refundActioning === req.id}
+                                                    className="btn-cancel"
+                                                    onClick={() => openRefundModal(req, 'reject')}
+                                                >
+                                                    Tu choi
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+
+                    {!refundLoading && refundTotal > refundPageSize && (
+                        <div className="support-pagination">
+                            <Pagination
+                                current={refundPage}
+                                pageSize={refundPageSize}
+                                total={refundTotal}
+                                onChange={(page) => setRefundPage(page)}
+                                showSizeChanger={false}
+                            />
+                        </div>
+                    )}
+                </section>
             </div>
 
             {/* ── Order Detail Modal ── */}
@@ -877,6 +1091,24 @@ const SupportOrdersPage = () => {
                         placeholder="Ghi chú thêm cho khách hàng"
                     />
                 </div>
+            </Modal>
+
+            <Modal
+                title={refundTarget ? `${refundModalMode === 'done' ? 'Hoan tat' : 'Tu choi'} refund #${refundTarget.id}` : 'Xu ly refund'}
+                open={isRefundModalOpen}
+                onCancel={() => setIsRefundModalOpen(false)}
+                onOk={submitRefundAction}
+                okText={refundModalMode === 'done' ? 'Xac nhan hoan tat' : 'Xac nhan tu choi'}
+                cancelText="Dong"
+                okButtonProps={{ danger: refundModalMode !== 'done', loading: refundActioning === refundTarget?.id }}
+            >
+                <p>Nhap ghi chu de cap nhat ket qua xu ly hoan tien cho yeu cau nay.</p>
+                <Input.TextArea
+                    rows={4}
+                    value={refundNote}
+                    onChange={(e) => setRefundNote(e.target.value)}
+                    placeholder={refundModalMode === 'done' ? 'Vi du: da chuyen khoan thanh cong cho khach.' : 'Vi du: khong du dieu kien hoan tien.'}
+                />
             </Modal>
         </div>
     );
