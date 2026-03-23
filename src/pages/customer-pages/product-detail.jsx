@@ -447,10 +447,7 @@ const ProductDetailPage = () => {
                         <h1 className="detail-title">{product.name}</h1>
                         <div className="purchase-strip">
                             <div className="detail-price">{formatVND(selectedVariant?.price)}</div>
-                            <div className="purchase-strip-note">
-                                <span>Loại bán</span>
-                                <strong>{selectedVariant?.saleType === 'PRE_ORDER' ? 'Pre-order' : 'In-stock'}</strong>
-                            </div>
+                            
                         </div>
 
                         <div className={`status-panel ${availabilityMeta.tone}`}>
@@ -459,14 +456,6 @@ const ProductDetailPage = () => {
                                 <span className="status-sku">{selectedVariant?.sku || `SKU-${selectedVariant?.id}`}</span>
                             </div>
                             <p>{availabilityMeta.copy}</p>
-                            {selectedVariant?.saleType === 'PRE_ORDER' && (
-                                <div className="status-meta-row">
-                                    <span><ThunderboltOutlined /> Loại bán: Pre-order</span>
-                                    {selectedVariant?.preorderFulfillmentDate && (
-                                        <span><InboxOutlined /> Giao dự kiến: {selectedVariant.preorderFulfillmentDate}</span>
-                                    )}
-                                </div>
-                            )}
                         </div>
 
                         {product.variants?.length > 0 && (
@@ -539,12 +528,6 @@ const ProductDetailPage = () => {
                                                 <strong>{formatDate(selectedVariant.preorderEndDate)}</strong>
                                             </div>
                                         )}
-                                        {selectedVariant?.preorderFulfillmentDate && (
-                                            <div className="preorder-timeline-item">
-                                                <span>Mốc xử lý dự kiến</span>
-                                                <strong>{formatDate(selectedVariant.preorderFulfillmentDate)}</strong>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
                             </div>
@@ -576,12 +559,6 @@ const ProductDetailPage = () => {
                                 disabled={!availabilityMeta.canAddToCart}
                             />
                         </div>
-
-                        {!availabilityMeta.canAddToCart && selectedVariant?.saleType === 'PRE_ORDER' && (
-                            <div className="preorder-block-note">
-                                {availabilityMeta.copy}
-                            </div>
-                        )}
 
                         <Button
                             type="primary"
