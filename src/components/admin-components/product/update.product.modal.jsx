@@ -14,15 +14,17 @@ const formatVariantForForm = (variant = {}) => ({
     id: variant.id,
     sku: variant.sku,
     price: variant.price,
-    stockQuantity: variant.currentPreorders > 0 ? variant.stockQuantity - variant.currentPreorders : variant.stockQuantity,
+    stockQuantity: variant.stockQuantity,
     originalStockQuantity: variant.stockQuantity,
     arrivedQuantity: 0,
     saleType: variant.saleType || 'IN_STOCK',
     allowPreorder: variant.allowPreorder || false,
-    preorderLimit: variant.currentPreorders > 0 ? variant.preorderLimit - variant.currentPreorders : variant.preorderLimit,
+    preorderLimit: variant.preorderLimit,
     preorderFulfillmentDate: variant.preorderFulfillmentDate || null,
     preorderStartDate: variant.preorderStartDate || null,
     preorderEndDate: variant.preorderEndDate || null,
+    currentPreorders: variant.currentPreorders || 0,
+    availabilityStatus: variant.availabilityStatus || 'IN_STOCK',
     attributes: variant.attributes?.map((attribute) => ({
         id: attribute.id,
         attributeName: attribute.attributeName,
@@ -121,20 +123,13 @@ const UpdateProductModal = (props) => {
             if (values.variants && values.variants.length > 0) {
                 for (const variant of values.variants) {
                     if (variant.id) {
-                        const originalVariant = productData?.variants?.find((item) => item.id === variant.id);
-                        const currentPreorders = Number(originalVariant?.currentPreorders) || 0;
-                        const submittedStock = Number(variant.stockQuantity) || 0;
-                        const stockQuantityToUpdate = variant.saleType === 'PRE_ORDER'
-                            ? submittedStock + currentPreorders
-                            : submittedStock;
-
                         // Update existing variant
                         console.log("Updating variant:", variant.id);
                         await updateVariantAPI(
                             variant.id,
                             variant.sku,
                             variant.price,
-                            stockQuantityToUpdate,
+                            variant.stockQuantity,
                             variant.saleType,
                             variant.allowPreorder || false,
                             variant.preorderLimit || 0,
