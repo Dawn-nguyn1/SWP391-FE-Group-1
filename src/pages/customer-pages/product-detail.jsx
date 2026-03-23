@@ -27,8 +27,10 @@ const getVariantImages = (variant, productImage) => {
         .flatMap((attribute) => Array.isArray(attribute.images) ? attribute.images.map(normalizeImage) : [])
         .filter(Boolean);
 
-    if (attributeImages.length > 0) return attributeImages;
-    return productImage ? [productImage] : [];
+    return {
+        productImage: productImage ? normalizeImage(productImage) : null,
+        variantImages: attributeImages.length > 0 ? attributeImages : []
+    };
 };
 
 const getVariantLabel = (variant) => {
@@ -314,7 +316,7 @@ const ProductDetailPage = () => {
         [product, selectedVariantId]
     );
 
-    const variantImages = useMemo(
+    const variantImageData = useMemo(
         () => getVariantImages(selectedVariant, product?.productImage),
         [selectedVariant, product?.productImage]
     );
@@ -404,8 +406,8 @@ const ProductDetailPage = () => {
 
                         <div className="gallery-shell">
                             <div className="main-img-wrap">
-                                {variantImages[activeImg] ? (
-                                    <img src={variantImages[activeImg]} alt={product.name} className="main-img" />
+                                {variantImageData.productImage ? (
+                                    <img src={variantImageData.productImage} alt={product.name} className="main-img" />
                                 ) : (
                                     <div className="main-img-placeholder">👓</div>
                                 )}
@@ -418,11 +420,11 @@ const ProductDetailPage = () => {
                                     <span className="gallery-panel-kicker">Variant gallery</span>
                                     <strong>Ảnh theo biến thể đang chọn</strong>
                                 </div>
-                                <span className="gallery-panel-count">{variantImages.length} ảnh</span>
+                                <span className="gallery-panel-count">{variantImageData.variantImages.length} ảnh</span>
                             </div>
 
                             <div className="thumb-list">
-                                {variantImages.map((image, index) => (
+                                {variantImageData.variantImages.map((image, index) => (
                                     <button
                                         key={`${selectedVariant?.id || 'variant'}-${index}`}
                                         className={`thumb ${activeImg === index ? 'active' : ''}`}
