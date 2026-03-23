@@ -6,8 +6,36 @@ import {
     updateProductAPI, updateVariantAPI, updateAttributeAPI,
     deleteVariantAPI, deleteAttributeAPI,
     createVariantAPI, createAttributeAPI,
-    addImagesToAttributeAPI, updateAttributeImageAPI, deleteAttributeImageAPI
+    addImagesToAttributeAPI, updateAttributeImageAPI, deleteAttributeImageAPI,
+    markPreorderStockArrivedAPI
 } from '../../../services/api.service';
+
+const formatVariantForForm = (variant = {}) => ({
+    id: variant.id,
+    sku: variant.sku,
+    price: variant.price,
+    stockQuantity: variant.stockQuantity,
+    originalStockQuantity: variant.stockQuantity,
+    arrivedQuantity: 0,
+    saleType: variant.saleType || 'IN_STOCK',
+    allowPreorder: variant.allowPreorder || false,
+    preorderLimit: variant.preorderLimit,
+    preorderFulfillmentDate: variant.preorderFulfillmentDate || null,
+    preorderStartDate: variant.preorderStartDate || null,
+    preorderEndDate: variant.preorderEndDate || null,
+    currentPreorders: variant.currentPreorders || 0,
+    availabilityStatus: variant.availabilityStatus || 'IN_STOCK',
+    attributes: variant.attributes?.map((attribute) => ({
+        id: attribute.id,
+        attributeName: attribute.attributeName,
+        attributeValue: attribute.attributeValue,
+        images: attribute.images?.map((img) => ({
+            id: img.id || null,
+            imageUrl: img.imageUrl || img,
+            sortOrder: img.sortOrder
+        })) || []
+    })) || []
+});
 
 const UpdateProductModal = (props) => {
     const { isUpdateOpen, setIsUpdateOpen, dataUpdate, setDataUpdate, loadProducts } = props;
@@ -45,28 +73,7 @@ const UpdateProductModal = (props) => {
             if (productData && productData.id) {
                 setProductData(productData);
 
-                const formattedVariants = productData.variants?.map(v => ({
-                    id: v.id,
-                    sku: v.sku,
-                    price: v.price,
-                    stockQuantity: v.currentPreorders > 0 ? v.stockQuantity - v.currentPreorders : v.stockQuantity,
-                    saleType: v.saleType || 'IN_STOCK',
-                    allowPreorder: v.allowPreorder || false,
-                    preorderLimit: v.currentPreorders > 0 ? v.preorderLimit - v.currentPreorders : v.preorderLimit,
-                    preorderFulfillmentDate: v.preorderFulfillmentDate || null,
-                    preorderStartDate: v.preorderStartDate || null,
-                    preorderEndDate: v.preorderEndDate || null,
-                    attributes: v.attributes?.map(a => ({
-                        id: a.id,
-                        attributeName: a.attributeName,
-                        attributeValue: a.attributeValue,
-                        images: a.images?.map(img => ({
-                            id: img.id || null,
-                            imageUrl: img.imageUrl || img,
-                            sortOrder: img.sortOrder
-                        })) || []
-                    })) || []
-                })) || [];
+                const formattedVariants = productData.variants?.map(formatVariantForForm);
 
                 console.log("Formatted variants:", formattedVariants);
 
@@ -127,6 +134,10 @@ const UpdateProductModal = (props) => {
                             variant.preorderStartDate || null,
                             variant.preorderEndDate || null
                         );
+
+                        if (variant.saleType === 'PRE_ORDER' && Number(variant.arrivedQuantity) > 0) {
+                            await markPreorderStockArrivedAPI(variant.id, Number(variant.arrivedQuantity));
+                        }
 
                         // Update attributes
                         if (variant.attributes) {

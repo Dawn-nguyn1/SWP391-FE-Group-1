@@ -224,7 +224,7 @@ const getAvailabilityMeta = (variant) => {
     return {
         label: 'Có hàng',
         tone: 'in',
-        copy: `Tồn kho hiện tại: ${variant?.stockQuantity ?? 0}`,
+        copy: `Tồn kho hiện tại: ${Math.max((variant?.stockQuantity ?? 0) - (variant?.currentPreorders ?? 0), 0)}`,
         canAddToCart: true,
     };
 };
@@ -245,10 +245,12 @@ const getPreorderMetrics = (variant) => {
         : null;
 
     return {
-        preorderLimit: safeLimit,
+        preorderLimit: hasLimit ? Math.max(safeLimit - safeCurrent, 0) : 0, // Available limit
         currentPreorders: safeCurrent,
         remaining,
         percent,
+        hasLimit,
+        hasCurrent,
     };
 };
 
@@ -334,7 +336,7 @@ const ProductDetailPage = () => {
             1,
             selectedVariant?.saleType === 'PRE_ORDER'
                 ? preorderEligibility.remainingSlots || 1
-                : selectedVariant?.stockQuantity || 1
+                : Math.max((selectedVariant?.stockQuantity ?? 0) - (selectedVariant?.currentPreorders ?? 0), 0) || 1
         )
         : 1;
 
