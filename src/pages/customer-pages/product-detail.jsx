@@ -21,6 +21,7 @@ const formatDate = (value) => {
 };
 
 const normalizeImage = (image) => image?.imageUrl || image?.url || image || null;
+const DEFAULT_PREORDER_LIMIT = 2;
 
 const getVariantImages = (variant, productImage) => {
     const attributeImages = (variant?.attributes || [])
@@ -58,13 +59,11 @@ const getPreorderEligibility = (variant) => {
 
     const hasAllowFlag = Object.prototype.hasOwnProperty.call(variant || {}, 'allowPreorder');
     const allowPreorder = hasAllowFlag ? variant?.allowPreorder === true : true;
-    const preorderLimit = Number(variant?.preorderLimit);
     const currentPreorders = Number(variant?.currentPreorders);
-    const hasLimit = Number.isFinite(preorderLimit) && preorderLimit > 0;
     const hasCurrent = Number.isFinite(currentPreorders) && currentPreorders >= 0;
-    const remainingSlots = hasLimit
-        ? Math.max(preorderLimit - (hasCurrent ? currentPreorders : 0), 0)
-        : null;
+    const preorderLimit = DEFAULT_PREORDER_LIMIT;
+    const hasLimit = true;
+    const remainingSlots = Math.max(preorderLimit - (hasCurrent ? currentPreorders : 0), 0);
     const hasFulfillmentDate = !Object.prototype.hasOwnProperty.call(variant || {}, 'preorderFulfillmentDate')
         || Boolean(variant?.preorderFulfillmentDate);
     const windowState = getPreorderWindowState(variant);
@@ -230,26 +229,21 @@ const getAvailabilityMeta = (variant) => {
 };
 
 const getPreorderMetrics = (variant) => {
-    const preorderLimit = Number(variant?.preorderLimit);
     const currentPreorders = Number(variant?.currentPreorders);
-    const hasLimit = Number.isFinite(preorderLimit) && preorderLimit > 0;
     const hasCurrent = Number.isFinite(currentPreorders) && currentPreorders >= 0;
-
-    if (!hasLimit && !hasCurrent) return null;
-
-    const safeLimit = hasLimit ? preorderLimit : 0;
+    const safeLimit = DEFAULT_PREORDER_LIMIT;
     const safeCurrent = hasCurrent ? currentPreorders : 0;
-    const remaining = hasLimit ? Math.max(safeLimit - safeCurrent, 0) : null;
-    const percent = hasLimit && safeLimit > 0
+    const remaining = Math.max(safeLimit - safeCurrent, 0);
+    const percent = safeLimit > 0
         ? Math.min((safeCurrent / safeLimit) * 100, 100)
         : null;
 
     return {
-        preorderLimit: hasLimit ? Math.max(safeLimit - safeCurrent, 0) : 0, // Available limit
+        preorderLimit: safeLimit,
         currentPreorders: safeCurrent,
         remaining,
         percent,
-        hasLimit,
+        hasLimit: true,
         hasCurrent,
     };
 };
@@ -318,6 +312,7 @@ const ProductDetailPage = () => {
         () => getVariantImages(selectedVariant, product?.productImage),
         [selectedVariant, product?.productImage]
     );
+    const productImage = useMemo(() => normalizeImage(product?.productImage), [product?.productImage]);
 
     useEffect(() => {
         setActiveImg(0);
@@ -327,8 +322,9 @@ const ProductDetailPage = () => {
     const availabilityMeta = getAvailabilityMeta(selectedVariant);
     const preorderMetrics = getPreorderMetrics(selectedVariant);
     const preorderEligibility = getPreorderEligibility(selectedVariant);
+    const isPreorderVariant = selectedVariant?.saleType === 'PRE_ORDER';
     const hasPreorderWindow = Boolean(
-        selectedVariant?.preorderStartDate || selectedVariant?.preorderEndDate || selectedVariant?.preorderFulfillmentDate
+        isPreorderVariant && (selectedVariant?.preorderStartDate || selectedVariant?.preorderEndDate || selectedVariant?.preorderFulfillmentDate)
     );
     const actionLabel = getActionLabel(selectedVariant, availabilityMeta);
     const maxQuantity = availabilityMeta.canAddToCart
@@ -404,8 +400,8 @@ const ProductDetailPage = () => {
 
                         <div className="gallery-shell">
                             <div className="main-img-wrap">
-                                {variantImages[activeImg] ? (
-                                    <img src={variantImages[activeImg]} alt={product.name} className="main-img" />
+                                {productImage ? (
+                                    <img src={productImage} alt={product.name} className="main-img" />
                                 ) : (
                                     <div className="main-img-placeholder">👓</div>
                                 )}
@@ -445,10 +441,7 @@ const ProductDetailPage = () => {
                         <h1 className="detail-title">{product.name}</h1>
                         <div className="purchase-strip">
                             <div className="detail-price">{formatVND(selectedVariant?.price)}</div>
-                            <div className="purchase-strip-note">
-                                <span>Loại bán</span>
-                                <strong>{selectedVariant?.saleType === 'PRE_ORDER' ? 'Pre-order' : 'In-stock'}</strong>
-                            </div>
+                            
                         </div>
 
                         <div className={`status-panel ${availabilityMeta.tone}`}>
@@ -488,7 +481,7 @@ const ProductDetailPage = () => {
                             </div>
                         )}
 
-                        {(preorderMetrics || hasPreorderWindow) && (
+                        {isPreorderVariant && (preorderMetrics || hasPreorderWindow) && (
                             <div className="preorder-zone">
                                 <div className="preorder-zone-head">
                                     <strong>Thông tin pre-order</strong>
@@ -613,3 +606,4 @@ const ProductDetailPage = () => {
 };
 
 export default ProductDetailPage;
+
