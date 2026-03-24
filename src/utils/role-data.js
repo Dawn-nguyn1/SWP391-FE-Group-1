@@ -56,6 +56,20 @@ const toNumber = (value, fallback = 0) => {
     return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const toBoolean = (value, fallback = null) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') {
+        if (value === 1) return true;
+        if (value === 0) return false;
+    }
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (['true', '1', 'yes'].includes(normalized)) return true;
+        if (['false', '0', 'no'].includes(normalized)) return false;
+    }
+    return fallback;
+};
+
 const firstDefined = (...values) => values.find(value => value !== undefined && value !== null && value !== '');
 
 const unwrapData = (input) => {
@@ -209,28 +223,78 @@ export const normalizeOrder = (input) => {
     const orderType = firstDefined(order.orderType, order.saleType, order.type);
     const totalAmount = toNumber(firstDefined(order.totalAmount, order.total, order.grandTotal));
     const deposit = toNumber(firstDefined(order.deposit, order.depositAmount));
+    const paymentMethod = firstDefined(order.paymentMethod, order.paymentType);
+    const paymentStatus = firstDefined(order.paymentStatus, order.payment_state);
     const remainingAmount = toNumber(
         firstDefined(order.remainingAmount, order.balanceAmount),
         orderType === 'PRE_ORDER'
             ? Math.max(totalAmount - deposit, 0)
             : 0
     );
+    const displayDeposit = orderType === 'IN_STOCK'
+        ? ((paymentMethod === 'COD' || !['SUCCESS', 'PAID'].includes(paymentStatus))
+            ? 0
+            : totalAmount)
+        : deposit;
+    const displayRemaining = orderType === 'IN_STOCK'
+        ? Math.max(totalAmount - displayDeposit, 0)
+        : remainingAmount;
 
     return {
         ...order,
         id: firstDefined(order.id, order.orderId),
         orderCode: firstDefined(order.orderCode, order.code),
         orderStatus: firstDefined(order.orderStatus, order.status, order.order_state),
+        approvalStatus: firstDefined(
+            order.approvalStatus,
+            order.approval_status,
+            order.supportApprovalStatus,
+            order.approvalState
+        ),
         orderType,
-        paymentMethod: firstDefined(order.paymentMethod, order.paymentType),
-        paymentStatus: firstDefined(order.paymentStatus, order.payment_state),
+        paymentMethod,
+        paymentStatus,
         remainingPaymentMethod: firstDefined(order.remainingPaymentMethod, order.balancePaymentMethod),
+        remainingPaymentStatus: firstDefined(
+            order.remainingPaymentStatus,
+            order.balancePaymentStatus,
+            order.finalPaymentStatus
+        ),
+        remainingPaymentOpen: toBoolean(
+            firstDefined(
+                order.remainingPaymentOpen,
+                order.isRemainingPaymentOpen,
+                order.canPayRemaining,
+                order.canPayRemainingAmount,
+                order.finalPaymentOpen,
+                order.openRemainingPayment
+            ),
+            null
+        ),
         ghnOrderCode: firstDefined(order.ghnOrderCode, order.shipment?.ghnOrderCode, order.trackingCode),
         shipmentStatus: firstDefined(order.shipmentStatus, order.shipment?.status, order.deliveryStatus),
         createdAt: firstDefined(order.createdAt, order.createdDate, order.created_time),
+        supportApprovedAt: firstDefined(
+            order.supportApprovedAt,
+            order.support_approved_at,
+            order.supportApprovedDate,
+            order.approvedAt
+        ),
+        operationConfirmedAt: firstDefined(
+            order.operationConfirmedAt,
+            order.operation_confirmed_at,
+            order.operationConfirmedDate
+        ),
+        remainingPaymentOpenedAt: firstDefined(
+            order.remainingPaymentOpenedAt,
+            order.remaining_payment_opened_at,
+            order.finalPaymentOpenedAt
+        ),
         totalAmount,
         deposit,
         remainingAmount,
+        displayDeposit,
+        displayRemaining,
         address: normalizedAddress,
         receiverName: firstDefined(order.receiverName, normalizedAddress.receiverName, order.customerName),
         receiverPhone: firstDefined(order.phone, normalizedAddress.phone),
@@ -288,14 +352,44 @@ export const normalizeReturnRequest = (input) => {
     return {
         ...request,
         id: firstDefined(request.id, request.returnRequestId),
+        orderId: firstDefined(request.orderId, request.order?.id),
+        orderItemId: firstDefined(request.orderItemId, request.orderItem?.id),
         status: firstDefined(request.status, request.returnStatus),
         createdAt: firstDefined(request.createdAt, request.createdDate),
         requestedQuantity: toNumber(firstDefined(request.requestedQuantity, request.quantity), 0),
+        acceptedQuantity: firstDefined(request.acceptedQuantity, request.returnRecord?.acceptedQuantity),
         reason: firstDefined(request.reason, request.returnReason),
         note: firstDefined(request.note, request.description, request.customerNote),
         evidenceUrls: parseEvidenceUrls(firstDefined(request.evidenceUrls, request.images, request.evidences)),
+        approvedByUserId: firstDefined(request.approvedByUserId, request.approvedBy),
+        approvedAt: firstDefined(request.approvedAt, request.approvedDate),
+        receivedByUserId: firstDefined(request.receivedByUserId, request.receivedBy),
+        receivedAt: firstDefined(request.receivedAt, request.receivedDate),
+        updatedAt: firstDefined(request.updatedAt, request.updatedDate),
     };
 };
 
 export const normalizeReturnRequestsResponse = (input) =>
     normalizeCollectionResponse(input).items.map(normalizeReturnRequest);
+
+export const normalizeRefundRequest = (input) => {
+    const request = unwrapData(input) || {};
+
+    return {
+        ...request,
+        id: firstDefined(request.id, request.refundRequestId),
+        orderId: firstDefined(request.orderId, request.order?.id),
+        reason: firstDefined(request.reason, request.refundReason),
+        policy: firstDefined(request.policy, request.refundPolicy),
+        status: firstDefined(request.status, request.refundStatus),
+        refundAmount: toNumber(firstDefined(request.refundAmount, request.amount), 0),
+        note: firstDefined(request.note, request.description),
+        createdByUserId: firstDefined(request.createdByUserId, request.createdBy),
+        createdByRole: firstDefined(request.createdByRole, request.role),
+        createdAt: firstDefined(request.createdAt, request.createdDate),
+        updatedAt: firstDefined(request.updatedAt, request.updatedDate),
+    };
+};
+
+export const normalizeRefundRequestsResponse = (input) =>
+    normalizeCollectionResponse(input).items.map(normalizeRefundRequest);

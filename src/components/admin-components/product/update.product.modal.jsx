@@ -10,6 +10,33 @@ import {
     markPreorderStockArrivedAPI
 } from '../../../services/api.service';
 
+const formatVariantForForm = (variant = {}) => ({
+    id: variant.id,
+    sku: variant.sku,
+    price: variant.price,
+    stockQuantity: variant.stockQuantity,
+    originalStockQuantity: variant.stockQuantity,
+    arrivedQuantity: 0,
+    saleType: variant.saleType || 'IN_STOCK',
+    allowPreorder: variant.allowPreorder || false,
+    preorderLimit: variant.preorderLimit,
+    preorderFulfillmentDate: variant.preorderFulfillmentDate || null,
+    preorderStartDate: variant.preorderStartDate || null,
+    preorderEndDate: variant.preorderEndDate || null,
+    currentPreorders: variant.currentPreorders || 0,
+    availabilityStatus: variant.availabilityStatus || 'IN_STOCK',
+    attributes: variant.attributes?.map((attribute) => ({
+        id: attribute.id,
+        attributeName: attribute.attributeName,
+        attributeValue: attribute.attributeValue,
+        images: attribute.images?.map((img) => ({
+            id: img.id || null,
+            imageUrl: img.imageUrl || img,
+            sortOrder: img.sortOrder
+        })) || []
+    })) || []
+});
+
 const UpdateProductModal = (props) => {
     const { isUpdateOpen, setIsUpdateOpen, dataUpdate, setDataUpdate, loadProducts } = props;
     const [form] = Form.useForm();
@@ -46,30 +73,7 @@ const UpdateProductModal = (props) => {
             if (productData && productData.id) {
                 setProductData(productData);
 
-                const formattedVariants = productData.variants?.map(v => ({
-                    id: v.id,
-                    sku: v.sku,
-                    price: v.price,
-                    stockQuantity: v.stockQuantity,
-                    originalStockQuantity: v.stockQuantity,
-                    arrivedQuantity: 0,
-                    saleType: v.saleType || 'IN_STOCK',
-                    allowPreorder: v.allowPreorder || false,
-                    preorderLimit: v.preorderLimit || 0,
-                    preorderFulfillmentDate: v.preorderFulfillmentDate || null,
-                    preorderStartDate: v.preorderStartDate || null,
-                    preorderEndDate: v.preorderEndDate || null,
-                    attributes: v.attributes?.map(a => ({
-                        id: a.id,
-                        attributeName: a.attributeName,
-                        attributeValue: a.attributeValue,
-                        images: a.images?.map(img => ({
-                            id: img.id || null,
-                            imageUrl: img.imageUrl || img,
-                            sortOrder: img.sortOrder
-                        })) || []
-                    })) || []
-                })) || [];
+                const formattedVariants = productData.variants?.map(formatVariantForForm);
 
                 console.log("Formatted variants:", formattedVariants);
 
@@ -122,9 +126,7 @@ const UpdateProductModal = (props) => {
                             variant.id,
                             variant.sku,
                             variant.price,
-                            variant.saleType === 'PRE_ORDER'
-                                ? (variant.originalStockQuantity ?? variant.stockQuantity ?? 0)
-                                : variant.stockQuantity,
+                            variant.stockQuantity,
                             variant.saleType,
                             variant.allowPreorder || false,
                             variant.preorderLimit || 0,
@@ -387,24 +389,19 @@ const UpdateProductModal = (props) => {
                                             >
                                                 {({ getFieldValue }) => {
                                                     const currentSaleType = getFieldValue(['variants', name, 'saleType']);
-                                                    const isPreOrder = currentSaleType === 'PRE_ORDER';
-
-                                                    // Tự động set về 0 khi chọn PRE_ORDER
-                                                    if (isPreOrder) {
-                                                        form.setFieldValue(['variants', name, 'stockQuantity'], 0);
-                                                    }
+                                                    const stockLabel = currentSaleType === 'PRE_ORDER' ? 'Upcoming stock' : 'Stock';
 
                                                     return (
                                                         <Form.Item
                                                             {...restField}
                                                             name={[name, 'stockQuantity']}
-                                                            label="Stock"
+                                                            label={stockLabel}
                                                             rules={[
                                                                 { required: true, message: 'Missing stock' },
                                                                 {
                                                                     validator(_, value) {
-                                                                        if (!isPreOrder && (value === undefined || value === null || value < 0)) {
-                                                                            return Promise.reject('Stock must be a non-negative number!');
+                                                                        if (value === undefined || value === null || value <= 0) {
+                                                                            return Promise.reject('Stock must be greater than 0!');
                                                                         }
                                                                         return Promise.resolve();
                                                                     }
@@ -413,9 +410,8 @@ const UpdateProductModal = (props) => {
                                                         >
                                                             <InputNumber
                                                                 style={{ width: '100%' }}
-                                                                disabled={isPreOrder}
                                                                 min={0}
-                                                                placeholder={isPreOrder ? '0 (auto)' : 'Enter stock'}
+                                                                placeholder="Enter stock"
                                                             />
                                                         </Form.Item>
                                                     );
@@ -507,33 +503,6 @@ const UpdateProductModal = (props) => {
                                                                 </Form.Item>
                                                             </Col>
                                                         </Row>
-                                                        {getFieldValue(['variants', name, 'id']) && (
-                                                            <Row gutter={16}>
-                                                                <Col span={8}>
-                                                                    <Form.Item
-                                                                        {...restField}
-                                                                        name={[name, 'arrivedQuantity']}
-                                                                        label="Stock Arrived"
-                                                                        extra="Dùng API stock-arrived để cộng thêm hàng về cho pre-order."
-                                                                    >
-                                                                        <InputNumber
-                                                                            style={{ width: '100%' }}
-                                                                            min={0}
-                                                                            placeholder="Nhập số lượng hàng mới về"
-                                                                        />
-                                                                    </Form.Item>
-                                                                </Col>
-                                                                <Col span={8}>
-                                                                    <Form.Item
-                                                                        {...restField}
-                                                                        name={[name, 'originalStockQuantity']}
-                                                                        label="Current Stock"
-                                                                    >
-                                                                        <InputNumber style={{ width: '100%' }} disabled />
-                                                                    </Form.Item>
-                                                                </Col>
-                                                            </Row>
-                                                        )}
                                                         <Row gutter={16}>
                                                             <Col span={12}>
                                                                 <Form.Item

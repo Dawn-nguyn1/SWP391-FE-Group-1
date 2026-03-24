@@ -72,7 +72,7 @@ const ProductListPage = () => {
         setLoading(true);
         fetchProducts();
         return () => { cancelled = true; };
-    }, [keyword, brand, inStock, page, priceRange]);
+    }, [keyword, brand, inStock, page, priceRange, size]);
 
     const updateParam = (key, value) => {
         const params = new URLSearchParams(searchParams);
@@ -98,9 +98,9 @@ const ProductListPage = () => {
 
     const viewConfig = {
         all: { label: 'Tất cả', icon: <AppstoreOutlined /> },
-        ready: { label: 'In-stock', icon: <RocketOutlined /> },
-        'pre-order': { label: 'Pre-order', icon: <ThunderboltOutlined /> },
-        mixed: { label: 'Mixed', icon: <TagOutlined /> },
+        ready: { label: 'Hàng sẵn', icon: <RocketOutlined /> },
+        'pre-order': { label: 'Đặt trước', icon: <ThunderboltOutlined /> },
+        mixed: { label: 'Hai hình thức', icon: <TagOutlined /> },
     };
 
     const filteredProducts = (() => {
@@ -124,8 +124,8 @@ const ProductListPage = () => {
                 className: 'badge-preorder',
                 label: 'Đặt trước',
                 sublabel: fulfillmentDate
-                    ? `Dự kiến có hàng từ ${formatDate(fulfillmentDate)}`
-                    : 'Đi theo luồng cọc và chờ hàng về.',
+                    ? `Đặt cọc hoặc thanh toán 100%, hàng dự kiến về từ ${formatDate(fulfillmentDate)}.`
+                    : 'Đặt cọc hoặc thanh toán 100%, rồi chuyển sang bước thanh toán còn lại nếu vẫn còn số dư.',
             };
         }
 
@@ -203,7 +203,7 @@ const ProductListPage = () => {
                         <h1>Phân biệt rõ Pre-order và In-stock ngay từ lúc duyệt catalog</h1>
                         <p>
                             Mỗi sản phẩm được gắn đúng luồng bán. Khi để chế độ xem tất cả, danh mục sẽ tách riêng hàng đặt trước,
-                            hàng sẵn và nhóm sản phẩm có hai hình thức mua.
+                            hàng sẵn và nhóm sản phẩm có hai hình thức mua. Với pre-order, khách có thể chọn cọc 30% hoặc thanh toán 100% ngay từ đầu.
                         </p>
                     </div>
                     <div className="catalog-stats">
@@ -278,10 +278,10 @@ const ProductListPage = () => {
                                 <RocketOutlined /> In-stock
                             </button>
                             <button type="button" className={view === 'pre-order' ? 'active preorder' : ''} onClick={() => updateParam('view', 'pre-order')}>
-                                <ThunderboltOutlined /> Pre-order
+                                <ThunderboltOutlined /> Đặt trước
                             </button>
                             <button type="button" className={view === 'mixed' ? 'active mixed' : ''} onClick={() => updateParam('view', 'mixed')}>
-                                <TagOutlined /> Mixed
+                                <TagOutlined /> Hai hình thức
                             </button>
                         </div>
                     </div>
@@ -308,11 +308,11 @@ const ProductListPage = () => {
                         <div className="mixed-notice">
                             <div>
                                 <span className="mixed-notice-label">Sản phẩm có hai hình thức</span>
-                                <strong>{groups.mixed.length} mẫu đang mở đồng thời pre-order và in-stock</strong>
-                                <p>Danh mục chính vẫn ưu tiên hai nhóm riêng để dễ chọn. Bạn có thể mở nhóm này riêng khi cần.</p>
+                                <strong>{groups.mixed.length} mẫu đang mở đồng thời đặt trước và hàng sẵn</strong>
+                                <p>Nhóm này hữu ích khi bạn muốn so sánh giữa mua ngay và đi theo timeline pre-order trên cùng một mẫu.</p>
                             </div>
                             <button type="button" onClick={() => updateParam('view', 'mixed')}>
-                                Xem nhóm mixed
+                                Xem hai hình thức
                             </button>
                         </div>
                     )}
@@ -328,7 +328,7 @@ const ProductListPage = () => {
                                     {renderSection(
                                         'preorder',
                                         'Đặt trước',
-                                        'Nhóm này chỉ gồm các sản phẩm đi theo luồng cọc và chờ hàng về.',
+                                        'Nhóm này chỉ gồm các sản phẩm đi theo luồng pre-order: đặt cọc hoặc thanh toán 100%, support duyệt và mở bước thanh toán còn lại nếu vẫn còn số dư.',
                                         groups.preorder,
                                         '⌛',
                                         'Chưa có mẫu chỉ bán pre-order trong bộ lọc hiện tại.'

@@ -45,8 +45,8 @@ const HomePage = () => {
                 className: 'mode-preorder',
                 label: 'Đặt trước',
                 copy: fulfillmentDate
-                    ? `Dự kiến có hàng từ ${formatDate(fulfillmentDate)}`
-                    : 'Thanh toán theo luồng pre-order và chờ hàng về.',
+                    ? `Đặt cọc trước, support duyệt rồi backend sẽ mở bước thanh toán còn lại theo tiến độ đơn hàng từ ${formatDate(fulfillmentDate)}.`
+                    : 'Đặt cọc trước, support duyệt rồi chuyển sang bước thanh toán còn lại nếu vẫn còn số dư.',
             };
         }
 
@@ -134,7 +134,7 @@ const HomePage = () => {
                                 <ThunderboltOutlined />
                                 <div>
                                     <strong>Pre-order</strong>
-                                    <span>Hỗ trợ đặt cọc 30% và chờ hàng về.</span>
+                                    <span>Đặt cọc hoặc thanh toán 100%, rồi theo dõi bước support duyệt và thanh toán còn lại nếu còn số dư.</span>
                                 </div>
                             </div>
                             <div className="mode-card ready">
@@ -174,7 +174,7 @@ const HomePage = () => {
                     <div>
                         <span className="section-kicker preorder">Pre-order</span>
                         <h2>Các mẫu đặt trước</h2>
-                        <p className="section-subcopy">Khách đặt cọc trước, chờ hàng về rồi hoàn tất thanh toán theo tiến độ pre-order.</p>
+                        <p className="section-subcopy">Khách có thể đặt cọc 30% hoặc thanh toán 100% ngay từ đầu. Nếu chọn cọc, bước thanh toán còn lại chỉ xuất hiện khi support duyệt xong và hàng đã về.</p>
                     </div>
                     <Link to="/customer/products?view=pre-order" className="section-link">
                         Xem pre-order <RightOutlined />

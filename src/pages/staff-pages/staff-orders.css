@@ -178,6 +178,10 @@
     min-height: 420px;
 }
 
+.support-panel-full {
+    grid-column: 1 / -1;
+}
+
 .panel-header {
     display: flex;
     align-items: flex-start;
@@ -462,6 +466,11 @@
 .return-evidence ul {
     margin: 6px 0 0;
     padding-left: 18px;
+}
+
+.refund-note-pre {
+    white-space: pre-wrap;
+    word-break: break-word;
 }
 
 .return-actions {

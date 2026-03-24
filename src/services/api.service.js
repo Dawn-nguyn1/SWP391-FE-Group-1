@@ -313,8 +313,11 @@ const payRemainingOrderAPI = (orderId) => axios.post(`/api/customer/orders/${ord
 const createCustomerReturnRequestAPI = (dto) => axios.post('/api/customer/return-requests', dto);
 const getCustomerReturnRequestsAPI = () => axios.get('/api/customer/return-requests');
 const getCustomerReturnRequestDetailAPI = (id) => axios.get(`/api/customer/return-requests/${id}`);
+const getCustomerRefundRequestsByOrderAPI = (orderId) => axios.get(`/api/customer/orders/${orderId}/refund-requests`);
 
 // ===== SUPPORT STAFF APIs =====
+const getSupportWaitingOrdersAPI = (page = 0, size = 20, sort = ['createdAt,desc', 'id,desc']) =>
+    axios.get('/api/support_staff/orders/waiting', { params: { page, size, sort } });
 const getSupportOrdersAPI = () => axios.get('/api/support_staff/orders');
 const getSupportOrderDetailAPI = (orderId) => axios.get(`/api/support_staff/orders/${orderId}`);
 const supportConfirmOrderAPI = (orderId) => axios.post(`/api/support_staff/orders/${orderId}/confirm`);
@@ -323,6 +326,11 @@ const getSupportReturnRequestsAPI = () => axios.get('/api/support_staff/return-r
 const supportApproveReturnRequestAPI = (id) => axios.post(`/api/support_staff/return-requests/${id}/approve`);
 const supportRejectReturnRequestAPI = (id, note) =>
     axios.post(`/api/support_staff/return-requests/${id}/reject`, note ? { note } : {});
+const getSupportRefundRequestsAPI = () => axios.get('/api/support_staff/refund-requests/requested');
+const supportDoneRefundRequestAPI = (id, note) =>
+    axios.post(`/api/support_staff/refund-requests/${id}/done`, note ? { note } : {});
+const supportRejectRefundRequestAPI = (id, note) =>
+    axios.post(`/api/support_staff/refund-requests/${id}/reject`, note ? { note } : {});
 
 // ===== OPERATIONS STAFF APIs =====
 const getOperationOrdersAPI = () => axios.get('/api/operation_staff/orders');
@@ -372,10 +380,11 @@ export {
     getProfileAPI, updateProfileAPI, changePasswordAPI, deleteProfileAPI,
     getAddressesAPI, createAddressAPI, updateAddressAPI, setDefaultAddressAPI, deleteAddressAPI,
     cancelOrderByCustomerAPI, getCustomerOrdersAPI, getCustomerOrderDetailAPI, getCustomerPaymentsAPI, payRemainingOrderAPI,
-    createCustomerReturnRequestAPI, getCustomerReturnRequestsAPI, getCustomerReturnRequestDetailAPI,
+    createCustomerReturnRequestAPI, getCustomerReturnRequestsAPI, getCustomerReturnRequestDetailAPI, getCustomerRefundRequestsByOrderAPI,
     // Support Staff APIs
-    getSupportOrdersAPI, getSupportOrderDetailAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
+    getSupportWaitingOrdersAPI, getSupportOrdersAPI, getSupportOrderDetailAPI, supportConfirmOrderAPI, supportCancelOrderAPI,
     getSupportReturnRequestsAPI, supportApproveReturnRequestAPI, supportRejectReturnRequestAPI,
+    getSupportRefundRequestsAPI, supportDoneRefundRequestAPI, supportRejectRefundRequestAPI,
     // Operations Staff APIs
     getOperationOrdersAPI, getApprovedOrdersAPI, getOperationOrderDetailAPI, operationsConfirmOrderAPI,
     getOperationReturnRequestsAPI, operationReceiveReturnRequestAPI,

@@ -20,6 +20,12 @@ const PAYMENT_STAGE_CONFIG = {
     REMAINING: { label: 'Thanh toán còn lại', color: 'cyan' },
 };
 
+const PAYMENT_METHOD_LABELS = {
+    VNPAY: 'VNPay',
+    COD: 'COD',
+    BANKING: 'Chuyển khoản',
+};
+
 const formatVND = n => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
 const formatDate = d => d ? new Date(d).toLocaleString('vi-VN') : '';
 const getPaymentTimestamp = (payment) => {
@@ -27,6 +33,41 @@ const getPaymentTimestamp = (payment) => {
     const time = rawDate ? new Date(rawDate).getTime() : 0;
 
     return Number.isNaN(time) ? 0 : time;
+};
+
+const getPaymentMethodLabel = (method) => PAYMENT_METHOD_LABELS[method] || method || 'Không rõ';
+
+const getTimelineStepLabel = (payment) => {
+    if (payment.stage === 'DEPOSIT') return 'Bước 1/2 của pre-order';
+    if (payment.stage === 'REMAINING') return 'Bước 2/2 của pre-order';
+    if (payment.stage === 'FULL') return 'Thanh toán một lần';
+    return 'Giao dịch thanh toán';
+};
+
+const getPaymentNarrative = (payment) => {
+    if (payment.stage === 'DEPOSIT') {
+        if (payment.status === 'SUCCESS') return 'Khoản cọc pre-order đã được ghi nhận. Đơn sẽ chờ support xác nhận và chuyển sang bước thanh toán còn lại nếu vẫn còn số dư.';
+        if (payment.status === 'PENDING') return 'Khoản cọc pre-order đang chờ cổng thanh toán xác nhận.';
+        if (payment.status === 'FAILED') return 'Khoản cọc pre-order chưa hoàn tất. Nếu chưa có giao dịch thành công khác, đơn có thể không được giữ chỗ.';
+        if (payment.status === 'CANCELLED') return 'Khoản cọc này đã bị hủy và không còn hiệu lực.';
+    }
+
+    if (payment.stage === 'REMAINING') {
+        if (payment.status === 'SUCCESS') return 'Khoản thanh toán còn lại đã hoàn tất. Đơn pre-order có thể chuyển sang bước xử lý giao vận.';
+        if (payment.status === 'PENDING') return 'Khoản thanh toán còn lại đang chờ xác nhận từ cổng thanh toán.';
+        if (payment.status === 'FAILED') return 'Khoản thanh toán còn lại chưa thành công. Đơn vẫn chưa hoàn tất đủ tiền.';
+        if (payment.status === 'CANCELLED') return 'Yêu cầu thanh toán còn lại này đã bị hủy.';
+        if (payment.status === 'UNPAID') return 'Khoản thanh toán còn lại đã được tạo nhưng chưa được hoàn tất.';
+    }
+
+    if (payment.stage === 'FULL') {
+        if (payment.status === 'SUCCESS') return 'Đơn đã được thanh toán đủ trong một lần.';
+        if (payment.status === 'PENDING') return 'Giao dịch thanh toán toàn bộ đang chờ xác nhận.';
+        if (payment.status === 'FAILED') return 'Giao dịch thanh toán toàn bộ chưa thành công.';
+        if (payment.status === 'UNPAID') return 'Đơn đã tạo thanh toán nhưng chưa hoàn tất.';
+    }
+
+    return 'Theo dõi trạng thái giao dịch này để biết khi nào hệ thống ghi nhận thanh toán.';
 };
 
 const PaymentsPage = () => {
@@ -64,6 +105,8 @@ const PaymentsPage = () => {
 
         return dateSort === 'asc' ? timeA - timeB : timeB - timeA;
     });
+    const successfulPayments = payments.filter((payment) => payment.status === 'SUCCESS').length;
+    const pendingPayments = payments.filter((payment) => payment.status === 'PENDING').length;
     const total = sortedPayments.length;
     const pageItems = sortedPayments.slice((page - 1) * pageSize, page * pageSize);
 
@@ -85,6 +128,10 @@ const PaymentsPage = () => {
                         />
                     </div>
                 </div>
+                <div className="orders-page-meta">
+                    <span>Tổng {payments.length} giao dịch</span>
+                    <strong>{successfulPayments} thành công, {pendingPayments} đang chờ</strong>
+                </div>
                 {payments.length === 0 ? (
                     <div className="orders-empty">
                         <Empty description={<span>Bạn chưa có giao dịch nào. <Link to="/customer/products">Mua sắm ngay!</Link></span>} />
@@ -94,6 +141,8 @@ const PaymentsPage = () => {
                         {pageItems.map(payment => {
                             const statusCfg = PAYMENT_STATUS_CONFIG[payment.status] || { label: payment.status, color: 'default' };
                             const stageCfg = PAYMENT_STAGE_CONFIG[payment.stage] || { label: payment.stage, color: 'default' };
+                            const timelineLabel = getTimelineStepLabel(payment);
+                            const narrative = getPaymentNarrative(payment);
 
                             return (
                                 <div key={payment.paymentId} className="order-card">
@@ -104,7 +153,14 @@ const PaymentsPage = () => {
                                         </div>
                                         <div className="order-header-right">
                                             <Tag color={statusCfg.color}>{statusCfg.label}</Tag>
-                                            <span className="order-pay-method">{payment.method || '-'}</span>
+                                            <span className="order-pay-method">{getPaymentMethodLabel(payment.method)}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className={`remaining-payment-banner ${payment.status === 'SUCCESS' ? 'done' : payment.status === 'PENDING' ? 'ready' : 'waiting'}`}>
+                                        <div>
+                                            <strong>{timelineLabel}</strong>
+                                            <p>{narrative}</p>
                                         </div>
                                     </div>
 
@@ -118,8 +174,16 @@ const PaymentsPage = () => {
                                             <span className="oi-price"><Tag color={stageCfg.color}>{stageCfg.label}</Tag></span>
                                         </div>
                                         <div className="order-item">
-                                            <span className="oi-name">Khởi tạo: </span>
+                                            <span className="oi-name">Tiến độ</span>
+                                            <span className="oi-price">{timelineLabel}</span>
+                                        </div>
+                                        <div className="order-item">
+                                            <span className="oi-name">Khởi tạo</span>
                                             <span className="oi-price">{formatDate(payment.createAt)}</span>
+                                        </div>
+                                        <div className="order-item">
+                                            <span className="oi-name">Hoàn tất</span>
+                                            <span className="oi-price">{formatDate(payment.paidAt) || 'Chưa hoàn tất'}</span>
                                         </div>
                                     </div>
 
