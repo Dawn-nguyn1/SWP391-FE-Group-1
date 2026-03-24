@@ -318,12 +318,20 @@
 .complaint-modal {
     display: grid;
     gap: 18px;
+    min-width: 0;
+}
+
+.complaint-modal *,
+.complaint-modal *::before,
+.complaint-modal *::after {
+    box-sizing: border-box;
 }
 
 .complaint-overview {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
+    min-width: 0;
 }
 
 .complaint-overview-card,
@@ -340,6 +348,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    min-width: 0;
 }
 
 .complaint-overview-card span,
@@ -384,11 +393,13 @@
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 14px;
+    min-width: 0;
 }
 
 .complaint-field {
     display: grid;
     gap: 6px;
+    min-width: 0;
 }
 
 .complaint-field.full {
@@ -397,10 +408,25 @@
 
 .complaint-field select,
 .complaint-field input {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     min-height: 40px;
     border-radius: 10px;
     border: 1px solid #d1d5db;
     padding: 0 12px;
+}
+
+.complaint-field .ant-input,
+.complaint-field .ant-input-affix-wrapper,
+.complaint-field .ant-input-number,
+.complaint-field .ant-input-number-input-wrap,
+.complaint-field .ant-input-number-input,
+.complaint-field .ant-input-textarea,
+.complaint-field textarea {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
 }
 
 .complaint-actions {
@@ -416,6 +442,7 @@
 
 .complaint-history-card {
     padding: 16px;
+    min-width: 0;
 }
 
 .complaint-history-head,
@@ -444,6 +471,7 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 12px;
+    min-width: 0;
 }
 
 .complaint-note-box,
@@ -459,6 +487,29 @@
 .complaint-evidence-box ul {
     margin: 8px 0 0;
     padding-left: 18px;
+    overflow-wrap: anywhere;
+}
+
+.complaint-note-box,
+.complaint-evidence-box,
+.complaint-refund-row,
+.complaint-history-grid > div,
+.complaint-history-head > div,
+.complaint-refund-row > div {
+    min-width: 0;
+}
+
+.complaint-note-box,
+.complaint-evidence-box,
+.complaint-history-grid strong,
+.complaint-history-head strong,
+.complaint-refund-row strong,
+.complaint-refund-row p {
+    overflow-wrap: anywhere;
+}
+
+.ant-modal .complaint-modal {
+    overflow-x: hidden;
 }
 
 .complaint-status-pill {

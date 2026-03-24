@@ -47,7 +47,7 @@ const SHIPMENT_STATUS_CONFIG = {
     WAITING_CONFIRM: { label: 'Chờ tạo vận đơn', color: 'default' },
     READY_TO_PICK: { label: 'Chờ GHN lấy hàng', color: 'blue' },
     PICKING: { label: 'Đang lấy hàng', color: 'blue' },
-    PICKED: { label: 'Đã nhận hàng', color: 'cyan' },
+    PICKED: { label: 'Đã lấy hàng', color: 'cyan' },
     DELIVERING: { label: 'Đang giao hàng', color: 'cyan' },
     DELIVERED: { label: 'Đã giao hàng', color: 'green' },
     FAILED: { label: 'Giao hàng thất bại', color: 'red' },
@@ -208,7 +208,7 @@ const getShipmentLabel = (status) => {
         WAITING_CONFIRM: 'Chờ tạo vận đơn',
         READY_TO_PICK: 'Chờ GHN lấy hàng',
         PICKING: 'Đang lấy hàng',
-        PICKED: 'Đã nhận hàng',
+        PICKED: 'Đã lấy hàng',
         DELIVERING: 'Đang giao hàng',
         DELIVERED: 'Hoàn thành',
         FAILED: 'Giao hàng thất bại',
@@ -601,7 +601,7 @@ const OrdersPage = () => {
                         <div className="complaint-section">
                             <div className="complaint-section-header">
                                 <h3>Gửi yêu cầu trả hàng</h3>
-                                <p>Backend chỉ cho phép tạo yêu cầu khi đơn đã COMPLETED và mỗi item chỉ có một yêu cầu đang xử lý.</p>
+                                <p>Chỉ cho phép tạo yêu cầu đổi trả với đơn đã hoàn thành và chỉ xử lý một lần.</p>
                             </div>
                             {selectedOrder.orderStatus !== 'COMPLETED' ? (
                                 <div className="complaint-callout">
