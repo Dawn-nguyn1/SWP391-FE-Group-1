@@ -153,7 +153,15 @@ const ProductForm = (props) => {
                 layout="vertical"
                 name="product_form"
                 onFinish={onFinish}
-                initialValues={{ variants: [{}] }}
+                initialValues={{
+                    variants: [{
+                        saleType: 'IN_STOCK',
+                        attributes: [
+                            { attributeName: 'Size', attributeValue: '', images: [] },
+                            { attributeName: 'Color', attributeValue: '', images: [] }
+                        ]
+                    }]
+                }}
             >
                 {/* PRODUCT INFO */}
                 <Divider titlePlacement="left">Product Info</Divider>
@@ -579,52 +587,21 @@ const ProductForm = (props) => {
                                                                 </div>
                                                             )}
                                                         </Form.List>
-                                                        <MinusCircleOutlined
-                                                            onClick={() => {
-                                                                const attribute = form.getFieldValue(['variants', name, 'attributes', attrName]);
-                                                                if (attribute && attribute.id) {
-                                                                    // Delete API
-                                                                    Modal.confirm({
-                                                                        title: 'Delete Attribute',
-                                                                        content: 'Are you sure?',
-                                                                        onOk: async () => {
-                                                                            try {
-                                                                                await deleteAttributeAPI(attribute.id);
-                                                                                message.success('Attribute deleted');
-                                                                                removeAttr(attrName);
-                                                                            } catch (_e) {
-                                                                                message.error('Failed to delete attribute');
-                                                                            }
-                                                                        }
-                                                                    });
-                                                                } else {
-                                                                    removeAttr(attrName);
-                                                                }
-                                                            }}
-                                                        />
                                                     </Space>
                                                 ))}
-                                                <Form.Item>
-                                                    <Button 
-                                                        type="dashed" 
-                                                        onClick={() => {
-                                                            // Add Size and Color attributes together
-                                                            addAttr({ attributeName: 'Size', attributeValue: '', images: [] });
-                                                            addAttr({ attributeName: 'Color', attributeValue: '', images: [] });
-                                                        }} 
-                                                        block 
-                                                        icon={<PlusOutlined />}
-                                                    >
-                                                        Add Size & Color Attributes
-                                                    </Button>
-                                                </Form.Item>
                                             </>
                                         )}
                                     </Form.List>
                                 </Card>
                             ))}
                             <Form.Item>
-                                <Button type="dashed" onClick={() => add({ saleType: 'IN_STOCK' })} block icon={<PlusOutlined />}>
+                                <Button type="dashed" onClick={() => add({ 
+                                    saleType: 'IN_STOCK',
+                                    attributes: [
+                                        { attributeName: 'Size', attributeValue: '', images: [] },
+                                        { attributeName: 'Color', attributeValue: '', images: [] }
+                                    ]
+                                })} block icon={<PlusOutlined />}>
                                     Add New Variant
                                 </Button>
                             </Form.Item>

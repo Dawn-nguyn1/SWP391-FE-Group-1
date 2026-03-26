@@ -663,43 +663,19 @@ const UpdateProductModal = (props) => {
                                                                 </div>
                                                             )}
                                                         </Form.List>
-                                                        <MinusCircleOutlined
-                                                            onClick={() => {
-                                                                const attribute = form.getFieldValue(['variants', name, 'attributes', attrName]);
-                                                                if (attribute && attribute.id) {
-                                                                    Modal.confirm({
-                                                                        title: 'Delete Attribute',
-                                                                        content: 'Are you sure?',
-                                                                        onOk: async () => {
-                                                                            try {
-                                                                                await deleteAttributeAPI(attribute.id);
-                                                                                message.success('Attribute deleted');
-                                                                                removeAttr(attrName);
-                                                                            } catch (_e) {
-                                                                                message.error('Failed to delete attribute');
-                                                                            }
-                                                                        }
-                                                                    });
-                                                                } else {
-                                                                    removeAttr(attrName);
-                                                                }
-                                                            }}
-                                                        />
                                                     </Space>
                                                 ))}
-                                                <Button type="dashed" onClick={() => {
-                                                            // Add Size and Color attributes together
-                                                            addAttr({ attributeName: 'Size', attributeValue: '', images: [] });
-                                                            addAttr({ attributeName: 'Color', attributeValue: '', images: [] });
-                                                        }} block icon={<PlusOutlined />} size="small">
-                                                    Add Size & Color Attributes
-                                                </Button>
                                             </>
                                         )}
                                     </Form.List>
                                 </Card>
                             ))}
-                            <Button type="dashed" onClick={() => add()} block icon={<PlusOutlined />}>
+                            <Button type="dashed" onClick={() => add({
+                                attributes: [
+                                    { attributeName: 'Size', attributeValue: '', images: [] },
+                                    { attributeName: 'Color', attributeValue: '', images: [] }
+                                ]
+                            })} block icon={<PlusOutlined />}>
                                 Add Variant
                             </Button>
                         </>
