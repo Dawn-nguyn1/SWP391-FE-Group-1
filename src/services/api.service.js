@@ -223,7 +223,12 @@ const deleteVariantAPI = (variantId) => {
 const deleteAttributeAPI = (attributeId) => {
     const URL_BACKEND = `/api/manager/attributes/${attributeId}`;
     return axios.delete(URL_BACKEND);
-}
+};
+
+const allocateCurrentStockAPI = (variantId) => {
+    const URL_BACKEND = `/api/manager/preorders/variants/${variantId}/allocate-current-stock`;
+    return axios.post(URL_BACKEND);
+};
 
 // Image Management APIs
 const addImagesToAttributeAPI = (attributeId, images) => {
@@ -393,5 +398,5 @@ export {
     // Dashboard APIs
     getManagerDashboardAPI,
     // Manager preorder APIs
-    markPreorderStockArrivedAPI, allocateCurrentStockForPreordersAPI,
+    markPreorderStockArrivedAPI, allocateCurrentStockForPreordersAPI, allocateCurrentStockAPI,
 }

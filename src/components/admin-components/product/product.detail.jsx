@@ -1,6 +1,6 @@
-import { Modal, Descriptions, Image, Card, Tag, Divider } from 'antd'
+import { Modal, Descriptions, Image, Card, Tag, Divider, Button, message } from 'antd'
 import React, { useEffect, useState } from 'react'
-import { fetchManagerProductByIdAPI } from '../../../services/api.service'
+import { fetchManagerProductByIdAPI, allocateCurrentStockAPI } from '../../../services/api.service'
 
 const ProductDetail = (props) => {
     const { isDetailOpen, setIsDetailOpen, productId } = props;
@@ -31,6 +31,40 @@ const ProductDetail = (props) => {
     const handleClose = () => {
         setIsDetailOpen(false);
         setProductDetail(null);
+    };
+
+    const handleAllocateStock = async (variantId) => {
+        try {
+            await allocateCurrentStockAPI(variantId);
+            message.success('Current stock allocated to preorder queue successfully!');
+            // Reload product detail to reflect changes
+            await loadProductDetail();
+        } catch (error) {
+            console.error('Error allocating stock:', error);
+            message.error('Failed to allocate stock: ' + (error.message || 'Unknown error'));
+        }
+    };
+
+    const canShowAllocateButton = (variant) => {
+        if (!variant) return false;
+        
+        // Check if sale type is PRE_ORDER
+        if (variant.saleType !== 'PRE_ORDER') return false;
+        
+        // Check if allowPreorder is false OR end date has passed
+        const allowPreorder = variant.allowPreorder || false;
+        const endDate = variant.preorderEndDate;
+        const hasPassedEndDate = endDate && new Date(endDate) < new Date();
+        
+        if (!allowPreorder || hasPassedEndDate) {
+            // Check stock > 0 and currentPreorders > 0
+            const stock = Number(variant.stockQuantity) || 0;
+            const currentPreorders = Number(variant.currentPreorders) || 0;
+            
+            return stock > 0 && currentPreorders > 0;
+        }
+        
+        return false;
     };
 
     return (
@@ -141,6 +175,19 @@ const ProductDetail = (props) => {
                                                     </div>
                                                 ))}
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* ALLOCATE STOCK BUTTON FOR PRE-ORDER VARIANTS */}
+                                    {canShowAllocateButton(variant) && (
+                                        <div style={{ marginTop: 16, textAlign: 'right' }}>
+                                            <Button
+                                                type="primary"
+                                                onClick={() => handleAllocateStock(variant.id)}
+                                                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                                            >
+                                                Allocate Stock
+                                            </Button>
                                         </div>
                                     )}
                                 </div>

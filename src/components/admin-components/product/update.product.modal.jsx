@@ -492,12 +492,16 @@ const UpdateProductModal = (props) => {
                                                                     {...restField}
                                                                     name={[name, 'preorderFulfillmentDate']}
                                                                     label="Fulfillment Date"
-                                                                    dependencies={[[name, 'allowPreorder']]}
+                                                                    dependencies={[[name, 'allowPreorder'], [name, 'preorderEndDate']]}
                                                                     rules={[
                                                                         ({ getFieldValue }) => ({
                                                                             validator(_, value) {
                                                                                 if (getFieldValue([name, 'allowPreorder']) && !value) {
                                                                                     return Promise.reject('Fulfillment date is required when preorder is allowed!');
+                                                                                }
+                                                                                const endDate = getFieldValue([name, 'preorderEndDate']);
+                                                                                if (endDate && value && new Date(value) < new Date(endDate)) {
+                                                                                    return Promise.reject('Fulfillment date must be on or after end date!');
                                                                                 }
                                                                                 return Promise.resolve();
                                                                             },
@@ -534,17 +538,6 @@ const UpdateProductModal = (props) => {
                                                                         type="date"
                                                                         style={{ width: '100%' }}
                                                                         min={new Date().toISOString().split('T')[0]}
-                                                                        onChange={(e) => {
-                                                                            const startDate = e.target.value;
-                                                                            if (startDate) {
-                                                                                const endDate = new Date(startDate);
-                                                                                endDate.setDate(endDate.getDate() + 7);
-                                                                                const endDateString = endDate.toISOString().split('T')[0];
-                                                                                form.setFieldValue(['variants', name, 'preorderEndDate'], endDateString);
-                                                                            } else {
-                                                                                form.setFieldValue(['variants', name, 'preorderEndDate'], null);
-                                                                            }
-                                                                        }}
                                                                     />
                                                                 </Form.Item>
                                                             </Col>
@@ -561,8 +554,8 @@ const UpdateProductModal = (props) => {
                                                                                     return Promise.reject('Preorder end date is required when preorder is allowed!');
                                                                                 }
                                                                                 const startDate = getFieldValue([name, 'preorderStartDate']);
-                                                                                if (startDate && value && new Date(value) <= new Date(startDate)) {
-                                                                                    return Promise.reject('End date must be after start date!');
+                                                                                if (startDate && value && new Date(value) < new Date(startDate)) {
+                                                                                    return Promise.reject('End date must be on or after start date!');
                                                                                 }
                                                                                 return Promise.resolve();
                                                                             },
@@ -668,7 +661,7 @@ const UpdateProductModal = (props) => {
                                             </>
                                         )}
                                     </Form.List>
-                                </Card>
+                            </Card>
                             ))}
                             <Button type="dashed" onClick={() => add({
                                 attributes: [
