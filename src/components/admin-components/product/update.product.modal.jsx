@@ -389,7 +389,7 @@ const UpdateProductModal = (props) => {
                                             >
                                                 {({ getFieldValue }) => {
                                                     const currentSaleType = getFieldValue(['variants', name, 'saleType']);
-                                                    const stockLabel = currentSaleType === 'PRE_ORDER' ? 'Upcoming stock' : 'Stock';
+                                                    const stockLabel = 'Stock';
 
                                                     return (
                                                         <Form.Item
@@ -400,8 +400,17 @@ const UpdateProductModal = (props) => {
                                                                 { required: true, message: 'Missing stock' },
                                                                 {
                                                                     validator(_, value) {
-                                                                        if (value === undefined || value === null || value <= 0) {
-                                                                            return Promise.reject('Stock must be greater than 0!');
+                                                                        if (value === undefined || value === null) {
+                                                                            return Promise.reject('Stock is required');
+                                                                        }
+                                                                        if (currentSaleType === 'PRE_ORDER') {
+                                                                            if (value < 0) {
+                                                                                return Promise.reject('Stock must be >= 0 for PRE_ORDER');
+                                                                            }
+                                                                        } else {
+                                                                            if (value <= 0) {
+                                                                                return Promise.reject('Stock must be > 0 for IN_STOCK');
+                                                                            }
                                                                         }
                                                                         return Promise.resolve();
                                                                     }
@@ -588,10 +597,24 @@ const UpdateProductModal = (props) => {
                                                             name={[attrName, 'attributeName']}
                                                             rules={[{ required: true, message: 'Please select attribute type!' }]}
                                                         >
-                                                            <Select placeholder="Select attribute type" style={{ width: '100%' }}>
-                                                                <Select.Option value="Size">Size</Select.Option>
-                                                                <Select.Option value="Color">Color</Select.Option>
-                                                            </Select>
+                                                            <Form.Item
+                                                                noStyle
+                                                                shouldUpdate={(prevValues, currentValues) => 
+                                                                    prevValues.variants?.[name]?.attributes?.[attrName]?.attributeName !== 
+                                                                    currentValues.variants?.[name]?.attributes?.[attrName]?.attributeName
+                                                                }
+                                                            >
+                                                                {({ getFieldValue }) => {
+                                                                    const currentValue = getFieldValue(['variants', name, 'attributes', attrName, 'attributeName']);
+                                                                    return (
+                                                                        <Input 
+                                                                            value={currentValue || ''}
+                                                                            style={{ width: '100%' }}
+                                                                            disabled
+                                                                        />
+                                                                    );
+                                                                }}
+                                                            </Form.Item>
                                                         </Form.Item>
                                                         <Form.Item
                                                             {...attrRestField}
@@ -664,8 +687,12 @@ const UpdateProductModal = (props) => {
                                                         />
                                                     </Space>
                                                 ))}
-                                                <Button type="dashed" onClick={() => addAttr()} block icon={<PlusOutlined />} size="small">
-                                                    Add Attribute
+                                                <Button type="dashed" onClick={() => {
+                                                            // Add Size and Color attributes together
+                                                            addAttr({ attributeName: 'Size', attributeValue: '', images: [] });
+                                                            addAttr({ attributeName: 'Color', attributeValue: '', images: [] });
+                                                        }} block icon={<PlusOutlined />} size="small">
+                                                    Add Size & Color Attributes
                                                 </Button>
                                             </>
                                         )}

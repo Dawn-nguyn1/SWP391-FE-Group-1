@@ -49,6 +49,9 @@ const getPreorderWindowState = (variant) => {
 
 const hasPositiveStock = (variant) => {
     const stockQuantity = Number(variant?.stockQuantity);
+    if (variant?.saleType === 'PRE_ORDER') {
+        return Number.isFinite(stockQuantity) && stockQuantity >= 0;
+    }
     return Number.isFinite(stockQuantity) && stockQuantity > 0;
 };
 
@@ -101,48 +104,48 @@ const getAvailabilityMeta = (variant) => {
 
     if (variant?.saleType === 'PRE_ORDER') {
         if (availability === 'PRE_ORDER') {
-            if (!preorder.hasPositiveUpcomingStock) {
+            if (!hasPositiveStock(variant)) {
                 return {
-                    label: 'Tạm đóng pre-order',
+                    label: 'Hết hàng',
                     tone: 'out',
-                    copy: 'Biến thể pre-order này chưa có stock hợp lệ để nhận đơn. Cần upcoming stock lớn hơn 0.',
+                    copy: 'Biến thể này không có stock hợp lệ để nhận đơn.',
                     canAddToCart: false,
                 };
             }
 
             if (!preorder.hasLimit || preorder.remainingSlots === 0) {
                 return {
-                    label: 'Hết suất pre-order',
+                    label: 'Hết suất',
                     tone: 'out',
-                    copy: 'Biến thể pre-order này đã hết suất nhận đơn hoặc chưa được cấu hình giới hạn hợp lệ.',
+                    copy: 'Biến thể này đã hết suất nhận đơn.',
                     canAddToCart: false,
                 };
             }
 
             if (!preorder.canPreorder) {
                 return {
-                    label: 'Tạm đóng pre-order',
+                    label: 'Tạm đóng',
                     tone: 'out',
-                    copy: 'Biến thể pre-order này chưa đủ điều kiện nhận đơn theo cấu hình hiện tại.',
+                    copy: 'Biến thể này chưa đủ điều kiện nhận đơn.',
                     canAddToCart: false,
                 };
             }
 
             return {
-                label: 'Pre-order',
-                tone: 'preorder',
+                label: 'Stock',
+                tone: 'in',
                 copy: variant?.preorderFulfillmentDate
-                    ? `Biến thể đang mở pre-order. Khách có thể đặt cọc hoặc thanh toán 100%; hàng dự kiến về từ ${formatDate(variant.preorderFulfillmentDate)}.`
-                    : 'Biến thể đang mở pre-order. Khách có thể đặt cọc hoặc thanh toán 100% ngay khi đặt đơn.',
+                    ? `Đang mở pre-order, hàng dự kiến về từ ${formatDate(variant.preorderFulfillmentDate)}.`
+                    : 'Đang mở pre-order, có thể đặt ngay.',
                 canAddToCart: true,
             };
         }
 
         if (availability === 'OUT_OF_STOCK') {
             return {
-                label: 'Tạm đóng pre-order',
+                label: 'Tạm đóng',
                 tone: 'out',
-                copy: 'Biến thể pre-order này hiện chưa mở nhận đơn theo trạng thái từ BE.',
+                copy: 'Biến thể này hiện chưa mở nhận đơn.',
                 canAddToCart: false,
             };
         }
@@ -150,60 +153,61 @@ const getAvailabilityMeta = (variant) => {
         if (availability === 'IN_STOCK') {
             if (!preorder.canPreorder) {
                 return {
-                    label: 'Tạm đóng pre-order',
+                    label: 'Tạm đóng',
                     tone: 'out',
-                    copy: 'Biến thể pre-order này đã được backend chuyển trạng thái nhưng chưa đủ stock hoặc slot để nhận thêm đơn.',
+                    copy: 'Biến thể này chưa đủ điều kiện nhận thêm đơn.',
                     canAddToCart: false,
                 };
             }
 
             return {
-                label: 'Sẵn sàng xử lý',
-                tone: 'preorder',
+                label: 'Stock',
+                tone: 'in',
                 copy: variant?.preorderFulfillmentDate
-                    ? `Đợt pre-order đang được xử lý theo trạng thái BE, dự kiến hoàn tất từ ${formatDate(variant.preorderFulfillmentDate)}.`
-                    : 'Biến thể pre-order đang được backend chuyển sang bước xử lý tiếp theo.',
+                    ? `Đang xử lý, dự kiến hoàn tất từ ${formatDate(variant.preorderFulfillmentDate)}.`
+                    : 'Đang xử lý đơn hàng.',
                 canAddToCart: true,
             };
         }
 
         if (preorder.windowState === 'upcoming') {
             return {
-                label: 'Sắp mở pre-order',
-                tone: 'preorder',
+                label: 'Sắp mở',
+                tone: 'out',
                 copy: variant?.preorderStartDate
-                    ? `Đợt đặt trước bắt đầu từ ${formatDate(variant.preorderStartDate)}.`
-                    : 'Biến thể này chưa mở đặt trước.',
+                    ? `Mở nhận đơn từ ${formatDate(variant.preorderStartDate)}.`
+                    : 'Chưa mở nhận đơn.',
                 canAddToCart: false,
             };
         }
 
         if (preorder.windowState === 'closed') {
             return {
-                label: 'Đã đóng pre-order',
+                label: 'Đã đóng',
                 tone: 'out',
-                copy: 'Đợt nhận đặt trước đã kết thúc.',
+                copy: 'Đã kết thúc nhận đơn.',
                 canAddToCart: false,
             };
         }
 
         if (!preorder.allowPreorder) {
             return {
-                label: 'Pre-order chưa bật',
+                label: 'Chưa bật',
                 tone: 'out',
-                copy: 'Biến thể này chưa được backend mở cho đặt trước.',
+                copy: 'Biến thể này chưa được mở cho đặt trước.',
                 canAddToCart: false,
             };
         }
 
         return {
-            label: 'Chờ trạng thái từ BE',
+            label: 'Tạm đóng',
             tone: 'out',
-            copy: 'Biến thể pre-order chưa có availability status phù hợp để nhận đơn.',
+            copy: 'Biến thể này chưa có trạng thái phù hợp.',
             canAddToCart: false,
         };
     }
 
+    // IN_STOCK variants
     if (availability === 'OUT_OF_STOCK') {
         return {
             label: 'Hết hàng',
@@ -216,12 +220,12 @@ const getAvailabilityMeta = (variant) => {
         return {
             label: 'Hết hàng',
             tone: 'out',
-            copy: 'Biến thể này có tồn kho không hợp lệ hoặc đã hết hàng.',
+            copy: 'Biến thể này đã hết hàng.',
             canAddToCart: false,
         };
     }
     return {
-        label: 'Có hàng',
+        label: 'Stock',
         tone: 'in',
         copy: `Tồn kho hiện tại: ${Math.max((variant?.stockQuantity ?? 0) - (variant?.currentPreorders ?? 0), 0)}`,
         canAddToCart: true,
