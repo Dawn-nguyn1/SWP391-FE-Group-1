@@ -47,10 +47,72 @@ const CampaignForm = (props) => {
         try {
             console.log('Create campaign form values:', values);
             
+            // Validate selected variants
+            if (selectedVariants.length === 0) {
+                message.error('Please add at least one product variant');
+                setLoading(false);
+                return;
+            }
+
+            // Check for duplicate variants
+            const variantIds = selectedVariants.map(v => v.variantId).filter(Boolean);
+            const uniqueVariantIds = [...new Set(variantIds)];
+            if (variantIds.length !== uniqueVariantIds.length) {
+                message.error('Duplicate product variants are not allowed');
+                setLoading(false);
+                return;
+            }
+
+            // Validate each variant
+            for (const variant of selectedVariants) {
+                if (!variant.variantId) {
+                    message.error('Please select a product variant for all items');
+                    setLoading(false);
+                    return;
+                }
+
+                if (variant.preorderPaymentOption !== 'FULL_ONLY') {
+                    if (variant.depositPercent === null || variant.depositPercent === undefined || variant.depositPercent === '') {
+                        message.error('Deposit percent is required for this payment option');
+                        setLoading(false);
+                        return;
+                    }
+                    if (variant.depositPercent < 0 || variant.depositPercent > 100) {
+                        message.error('Deposit percent must be between 0 and 100');
+                        setLoading(false);
+                        return;
+                    }
+                }
+            }
+
+            // Validate dates
+            if (values.startDate && values.endDate) {
+                if (values.startDate.isAfter(values.endDate)) {
+                    message.error('Start date must be before or equal to end date');
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            if (values.endDate && values.fulfillmentDate) {
+                if (values.fulfillmentDate.isBefore(values.endDate)) {
+                    message.error('Fulfillment date must be after or equal to end date');
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Validate preorder limit
+            if (values.preorderLimit !== null && values.preorderLimit !== undefined && values.preorderLimit < 0) {
+                message.error('Preorder limit must be greater than or equal to 0');
+                setLoading(false);
+                return;
+            }
+
             // Build variant configs with deposit percent and payment options
             const variantConfigs = selectedVariants.map(variant => ({
                 variantId: variant.variantId,
-                depositPercent: variant.depositPercent || 30,
+                depositPercent: variant.preorderPaymentOption === 'FULL_ONLY' ? null : (variant.depositPercent || 30),
                 preorderPaymentOption: variant.preorderPaymentOption || "DEPOSIT_ONLY"
             }));
 
@@ -271,7 +333,10 @@ const CampaignForm = (props) => {
                         label="Start Date"
                         rules={[{ required: true, message: 'Please select start date' }]}
                     >
-                        <DatePicker style={{ width: '100%' }} />
+                        <DatePicker 
+                            style={{ width: '100%' }} 
+                            disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        />
                     </Form.Item>
 
                     <Form.Item
@@ -279,7 +344,10 @@ const CampaignForm = (props) => {
                         label="End Date"
                         rules={[{ required: true, message: 'Please select end date' }]}
                     >
-                        <DatePicker style={{ width: '100%' }} />
+                        <DatePicker 
+                            style={{ width: '100%' }} 
+                            disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        />
                     </Form.Item>
 
                     <Form.Item
@@ -287,7 +355,10 @@ const CampaignForm = (props) => {
                         label="Fulfillment Date"
                         rules={[{ required: true, message: 'Please select fulfillment date' }]}
                     >
-                        <DatePicker style={{ width: '100%' }} />
+                        <DatePicker 
+                            style={{ width: '100%' }} 
+                            disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        />
                     </Form.Item>
 
                     <Form.Item
@@ -331,26 +402,29 @@ const CampaignForm = (props) => {
                                         help={!variant.variantId ? 'Please select a variant' : ''}
                                     >
                                         <Select
-                                            placeholder="Select product variant"
+                                            placeholder="Search and select product variant"
                                             value={variant.variantId}
                                             onChange={(value) => updateVariant(index, 'variantId', value)}
                                             style={{ width: '100%' }}
-                                        >
-                                            {variants.map(v => (
-                                                <Select.Option key={v.id} value={v.id}>
-                                                    {v.sku} - {v.productName}
-                                                </Select.Option>
-                                            ))}
-                                        </Select>
+                                            showSearch
+                                            filterOption={(input, option) =>
+                                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                            }
+                                            options={variants.map(v => ({
+                                                value: v.id,
+                                                label: `${v.sku} - ${v.productName}`
+                                            }))}
+                                        />
                                     </Form.Item>
                                     <Form.Item label="Deposit Percent (%)">
                                         <InputNumber
                                             min={0}
                                             max={100}
                                             placeholder="Enter deposit percent"
-                                            value={variant.depositPercent}
+                                            value={variant.preorderPaymentOption === 'FULL_ONLY' ? 100 : (variant.depositPercent || 30)}
                                             onChange={(value) => updateVariant(index, 'depositPercent', value)}
                                             style={{ width: '100%' }}
+                                            disabled={variant.preorderPaymentOption === 'FULL_ONLY'}
                                         />
                                     </Form.Item>
                                     <Form.Item label="Payment Option">
