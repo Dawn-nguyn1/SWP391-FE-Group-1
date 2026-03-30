@@ -17,31 +17,31 @@ const getResultCopy = ({ success, status, amount, transactionCode }) => {
         return {
             title: 'Thanh toán thành công',
             subtitle: [
-                amountText ? `Hệ thống đã ghi nhận giao dịch ${amountText}.` : 'Hệ thống đã ghi nhận giao dịch của bạn.',
+                amountText ? `Chúng tôi đã ghi nhận thanh toán ${amountText}.` : 'Chúng tôi đã ghi nhận thanh toán của bạn.',
                 transactionCode ? `Mã giao dịch: ${transactionCode}.` : null,
-                'Nếu đây là khoản cọc pre-order, đơn sẽ chờ support xác nhận và mở bước thanh toán còn lại nếu vẫn còn số dư.',
-                'Nếu đây là khoản thanh toán còn lại, đơn có thể tiếp tục sang bước xử lý giao vận.',
+                'Cảm ơn bạn đã mua sắm tại GENETIX.',
+                'Đơn hàng của bạn sẽ sớm được cập nhật trong mục đơn hàng để bạn tiện theo dõi.',
             ].filter(Boolean).join(' '),
         };
     }
 
     if (status === 'invalid') {
         return {
-            title: 'Không xác minh được giao dịch',
-            subtitle: 'Callback từ cổng thanh toán không hợp lệ hoặc đã bị thay đổi. Hãy kiểm tra lại lịch sử thanh toán trước khi thử lại.',
+            title: 'Không thể xác nhận giao dịch',
+            subtitle: 'Thông tin thanh toán chưa hợp lệ. Bạn có thể kiểm tra lại lịch sử thanh toán hoặc thử lại sau ít phút.',
         };
     }
 
     if (status === 'failed') {
         return {
-            title: 'Thanh toán thất bại',
-            subtitle: 'Cổng thanh toán không xác nhận giao dịch. Đơn sẽ giữ nguyên trạng thái trước đó cho tới khi bạn tạo một giao dịch thành công.',
+            title: 'Thanh toán chưa thành công',
+            subtitle: 'Giao dịch chưa được xác nhận. Đừng lo, bạn vẫn có thể kiểm tra lại đơn hàng và thử thanh toán lại khi sẵn sàng.',
         };
     }
 
     return {
-        title: 'Không thể hoàn tất thanh toán',
-        subtitle: 'Hệ thống chưa đủ dữ liệu để xác nhận giao dịch này. Hãy kiểm tra lại lịch sử thanh toán hoặc thử lại sau.',
+        title: 'Chưa thể hoàn tất thanh toán',
+        subtitle: 'Chúng tôi chưa nhận đủ thông tin để xác nhận giao dịch này. Hãy thử lại sau hoặc kiểm tra trong lịch sử thanh toán.',
     };
 };
 

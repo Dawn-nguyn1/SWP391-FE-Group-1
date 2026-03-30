@@ -47,6 +47,7 @@
     display: flex;
     flex-direction: column;
     gap: 18px;
+    max-width: 760px;
 }
 
 .hero-pill {
@@ -83,8 +84,8 @@
     margin: 0;
     max-width: 690px;
     color: rgba(241, 245, 249, 0.84);
-    font-size: 16px;
-    line-height: 1.72;
+    font-size: 17px;
+    line-height: 1.8;
 }
 
 .hero-actions {
@@ -135,7 +136,7 @@
 
 .hero-stats div {
     min-width: 130px;
-    padding: 14px 16px;
+    padding: 16px 18px;
     border-radius: 18px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -297,7 +298,8 @@
     margin: 10px 0 0;
     max-width: 720px;
     color: var(--home-soft);
-    line-height: 1.65;
+    line-height: 1.75;
+    font-size: 15px;
 }
 
 .brand-row {
@@ -452,7 +454,7 @@
 }
 
 .showcase-content {
-    padding: 18px 18px 22px;
+    padding: 22px 22px 24px;
 }
 
 .showcase-brand {
@@ -467,15 +469,16 @@
 .showcase-name {
     margin: 0 0 8px;
     color: var(--home-ink);
-    font-size: 21px;
-    line-height: 1.25;
+    font-size: 22px;
+    line-height: 1.22;
 }
 
 .showcase-copy {
     margin: 0 0 14px;
     color: #52627a;
-    min-height: 42px;
-    line-height: 1.56;
+    min-height: 52px;
+    line-height: 1.68;
+    font-size: 14px;
 }
 
 .showcase-price {
@@ -552,6 +555,8 @@
 .cta-strip p {
     margin: 0;
     color: var(--home-soft);
+    line-height: 1.7;
+    max-width: 680px;
 }
 
 @media (max-width: 1080px) {

@@ -565,6 +565,10 @@ const getPublicCombosAPI = (page = 0, size = 10) => axios.get('/api/public/produ
 
 const getPublicComboDetailAPI = (id) => axios.get(`/api/public/products/combos/${id}`);
 
+const getPublicCampaignsAPI = () => axios.get('/api/public/products/campaigns');
+
+const getPublicCampaignDetailAPI = (campaignId) => axios.get(`/api/public/products/campaigns/${campaignId}`);
+
 
 
 // ===== CART APIs =====
@@ -805,7 +809,7 @@ export {
 
     getPublicProductsAPI, searchProductsAPI, getPublicProductDetailAPI, getBrandsAPI,
 
-    getPublicCombosAPI, getPublicComboDetailAPI,
+    getPublicCombosAPI, getPublicComboDetailAPI, getPublicCampaignsAPI, getPublicCampaignDetailAPI,
 
     // Cart APIs
 
