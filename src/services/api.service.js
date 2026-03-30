@@ -351,13 +351,45 @@ const operationReceiveReturnRequestAPI = (id, dto) =>
 const vnpayReturnAPI = (params) => axios.get('/api/payment/vnpay-return', { params });
 
 // ===== DASHBOARD APIS =====
-const getManagerDashboardAPI = () => axios.get('/api/manager/dashboard');
+const getManagerDashboardAPI = (from, to) => {
+    const params = {};
+    if (from) params.from = from;
+    if (to) params.to = to;
+    return axios.get('/api/manager/dashboard', { params });
+};
+
+const getDashboardOrderDetailAPI = (status, from, to, page = 0, size = 10) => {
+    const params = { page, size };
+    if (status && status !== 'ALL') params.status = status;
+    if (from) params.from = from;
+    if (to) params.to = to;
+    return axios.get('/api/manager/dashboard/order-detail', { params });
+};
+
+const getDashboardRevenueDetailAPI = (type, from, to) => {
+    const params = { type };
+    if (from) params.from = from;
+    if (to) params.to = to;
+    return axios.get('/api/manager/dashboard/revenue-detail', { params });
+};
 
 // ===== MANAGER PREORDER APIS =====
 const markPreorderStockArrivedAPI = (variantId, arrivedQuantity) =>
     axios.post(`/api/manager/preorders/variants/${variantId}/stock-arrived`, { arrivedQuantity });
 const allocateCurrentStockForPreordersAPI = (variantId) =>
     axios.post(`/api/manager/preorders/variants/${variantId}/allocate-current-stock`);
+
+// ===== PREORDER CAMPAIGN APIS =====
+const fetchPreorderCampaignsAPI = (page = 0, size = 10) =>
+    axios.get(`/api/manager/preorder-campaigns?page=${page}&size=${size}`);
+const createPreorderCampaignAPI = (campaignData) =>
+    axios.post('/api/manager/preorder-campaigns', campaignData);
+const fetchPreorderCampaignByIdAPI = (id) =>
+    axios.get(`/api/manager/preorder-campaigns/${id}`);
+const updatePreorderCampaignAPI = (id, campaignData) =>
+    axios.put(`/api/manager/preorder-campaigns/${id}`, campaignData);
+const deletePreorderCampaignAPI = (id) =>
+    axios.delete(`/api/manager/preorder-campaigns/${id}`);
 
 export {
     // Updated User APIs
@@ -396,7 +428,9 @@ export {
     // Payment APIs
     vnpayReturnAPI,
     // Dashboard APIs
-    getManagerDashboardAPI,
+    getManagerDashboardAPI, getDashboardOrderDetailAPI, getDashboardRevenueDetailAPI,
     // Manager preorder APIs
     markPreorderStockArrivedAPI, allocateCurrentStockForPreordersAPI, allocateCurrentStockAPI,
+    // Preorder Campaign APIs
+    fetchPreorderCampaignsAPI, createPreorderCampaignAPI, fetchPreorderCampaignByIdAPI, updatePreorderCampaignAPI, deletePreorderCampaignAPI,
 }
