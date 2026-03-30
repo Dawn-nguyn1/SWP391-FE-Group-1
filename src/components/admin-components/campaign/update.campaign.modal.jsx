@@ -1,5 +1,5 @@
 import { Button, Input, Modal, Select, Form, DatePicker, InputNumber, Switch, message, Card, Divider, Tag, Space } from "antd";
-import { EditOutlined } from '@ant-design/icons';
+import { EditOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { updatePreorderCampaignAPI, fetchVariantsAPI, fetchPreorderCampaignByIdAPI } from '../../../services/api.service';
@@ -16,6 +16,7 @@ const UpdateCampaignModal = (props) => {
     const [loading, setLoading] = useState(false);
     const [variants, setVariants] = useState([]);
     const [campaignDetail, setCampaignDetail] = useState(null);
+    const [selectedVariants, setSelectedVariants] = useState([]);
 
     useEffect(() => {
         if (dataUpdate) {
@@ -23,6 +24,18 @@ const UpdateCampaignModal = (props) => {
             loadCampaignDetail(dataUpdate.id);
         }
     }, [dataUpdate]);
+
+    // Update selectedVariants when campaignDetail changes
+    useEffect(() => {
+        if (campaignDetail && campaignDetail.variantConfigs) {
+            const formattedVariants = campaignDetail.variantConfigs.map(config => ({
+                variantId: config.variantId,
+                depositPercent: config.depositPercent || 30,
+                preorderPaymentOption: config.preorderPaymentOption || "DEPOSIT_ONLY"
+            }));
+            setSelectedVariants(formattedVariants);
+        }
+    }, [campaignDetail]);
 
     const loadCampaignDetail = async (campaignId) => {
         try {
@@ -47,8 +60,7 @@ const UpdateCampaignModal = (props) => {
                 endDate: dayjs(campaignData.endDate),
                 fulfillmentDate: dayjs(campaignData.fulfillmentDate),
                 preorderLimit: campaignData.preorderLimit,
-                isActive: campaignData.isActive,
-                variantConfigs: campaignData.variantConfigs?.map(config => config.variantId) || []
+                isActive: campaignData.isActive
             });
         } catch (error) {
             console.error("Error loading campaign detail for update:", error);
@@ -59,8 +71,7 @@ const UpdateCampaignModal = (props) => {
                 endDate: dayjs(dataUpdate.endDate),
                 fulfillmentDate: dayjs(dataUpdate.fulfillmentDate),
                 preorderLimit: dataUpdate.preorderLimit,
-                isActive: dataUpdate.isActive,
-                variantConfigs: dataUpdate.variantConfigs?.map(config => config.variantId) || []
+                isActive: dataUpdate.isActive
             });
         }
     };
@@ -86,6 +97,7 @@ const UpdateCampaignModal = (props) => {
         setIsUpdateOpen(false);
         setDataUpdate(null);
         setCampaignDetail(null);
+        setSelectedVariants([]);
     };
 
     const onFinish = async (values) => {
@@ -93,6 +105,75 @@ const UpdateCampaignModal = (props) => {
         try {
             console.log('Update campaign form values:', values);
             
+            // Validate selected variants
+            if (selectedVariants.length === 0) {
+                message.error('Please add at least one product variant');
+                setLoading(false);
+                return;
+            }
+
+            // Check for duplicate variants
+            const variantIds = selectedVariants.map(v => v.variantId).filter(Boolean);
+            const uniqueVariantIds = [...new Set(variantIds)];
+            if (variantIds.length !== uniqueVariantIds.length) {
+                message.error('Duplicate product variants are not allowed');
+                setLoading(false);
+                return;
+            }
+
+            // Validate each variant
+            for (const variant of selectedVariants) {
+                if (!variant.variantId) {
+                    message.error('Please select a product variant for all items');
+                    setLoading(false);
+                    return;
+                }
+
+                if (variant.preorderPaymentOption !== 'FULL_ONLY') {
+                    if (variant.depositPercent === null || variant.depositPercent === undefined || variant.depositPercent === '') {
+                        message.error('Deposit percent is required for this payment option');
+                        setLoading(false);
+                        return;
+                    }
+                    if (variant.depositPercent < 0 || variant.depositPercent > 100) {
+                        message.error('Deposit percent must be between 0 and 100');
+                        setLoading(false);
+                        return;
+                    }
+                }
+            }
+
+            // Validate dates
+            if (values.startDate && values.endDate) {
+                if (values.startDate.isAfter(values.endDate)) {
+                    message.error('Start date must be before or equal to end date');
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            if (values.endDate && values.fulfillmentDate) {
+                if (values.fulfillmentDate.isBefore(values.endDate)) {
+                    message.error('Fulfillment date must be after or equal to end date');
+                    setLoading(false);
+                    return;
+                }
+            }
+
+            // Validate preorder limit
+            if (values.preorderLimit !== null && values.preorderLimit !== undefined && values.preorderLimit < 0) {
+                message.error('Preorder limit must be greater than or equal to 0');
+                setLoading(false);
+                return;
+            }
+
+            // Build variant configs with deposit percent and payment options
+            const variantConfigs = selectedVariants.map(variant => ({
+                variantId: variant.variantId,
+                depositPercent: variant.preorderPaymentOption === 'FULL_ONLY' ? null : (variant.depositPercent || 30),
+                preorderPaymentOption: variant.preorderPaymentOption || "DEPOSIT_ONLY"
+            }));
+
             // Convert dates to YYYY-MM-DD format
             const campaignData = {
                 name: values.name,
@@ -101,12 +182,10 @@ const UpdateCampaignModal = (props) => {
                 fulfillmentDate: values.fulfillmentDate.format('YYYY-MM-DD'),
                 preorderLimit: values.preorderLimit,
                 isActive: values.isActive || false,
-                variantConfigs: values.variantConfigs ? values.variantConfigs.map(variantId => ({
-                    variantId: variantId,
-                    depositPercent: 30, // Default deposit percent
-                    preorderPaymentOption: "DEPOSIT_ONLY"
-                })) : []
+                variantConfigs: variantConfigs
             };
+
+            console.log('Campaign data to update:', campaignData);
 
             // Update campaign
             await updatePreorderCampaignAPI(dataUpdate.id, campaignData);
@@ -126,13 +205,32 @@ const UpdateCampaignModal = (props) => {
         console.log('Update failed:', errorInfo);
     };
 
+    const addVariant = () => {
+        setSelectedVariants([...selectedVariants, {
+            variantId: null,
+            depositPercent: 30,
+            preorderPaymentOption: "DEPOSIT_ONLY"
+        }]);
+    };
+
+    const removeVariant = (index) => {
+        const newVariants = selectedVariants.filter((_, i) => i !== index);
+        setSelectedVariants(newVariants);
+    };
+
+    const updateVariant = (index, field, value) => {
+        const newVariants = [...selectedVariants];
+        newVariants[index][field] = value;
+        setSelectedVariants(newVariants);
+    };
+
     return (
         <Modal
             title="Update Preorder Campaign"
             open={isUpdateOpen}
             onCancel={resetAndCloseModal}
             footer={null}
-            width={700}
+            width={800}
         >
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&display=swap');
@@ -188,58 +286,23 @@ const UpdateCampaignModal = (props) => {
                     box-shadow: 0 0 0 2px rgba(124,58,237,0.1);
                 }
 
-                .update-campaign-info-card {
-                    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
-                    border: 1px solid #0891b2;
-                    border-radius: 12px;
-                    margin-bottom: 20px;
+                .variant-card {
+                    margin-bottom: 16px;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    padding: 16px;
                 }
 
-                .update-campaign-info-card .ant-card-head {
-                    background: transparent;
-                    border-bottom: 1px solid #0891b2;
-                }
-
-                .update-campaign-info-card .ant-card-head-title {
-                    color: #0891b2;
-                    font-weight: 600;
-                    font-family: 'Sora', sans-serif;
-                }
-
-                .update-campaign-info-item {
+                .variant-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    padding: 8px 0;
-                    border-bottom: 1px solid rgba(8,145,178,0.1);
+                    margin-bottom: 12px;
                 }
 
-                .update-campaign-info-item:last-child {
-                    border-bottom: none;
-                }
-
-                .update-campaign-info-label {
+                .variant-title {
                     font-weight: 600;
-                    color: #1e293b;
-                }
-
-                .update-campaign-info-value {
-                    color: #64748b;
-                }
-
-                .update-campaign-progress {
-                    width: 100%;
-                    height: 8px;
-                    background: #e2e8f0;
-                    border-radius: 4px;
-                    overflow: hidden;
-                    margin-top: 4px;
-                }
-
-                .update-campaign-progress-fill {
-                    height: 100%;
-                    background: linear-gradient(90deg, #0891b2, #7c3aed);
-                    transition: width 0.3s ease;
+                    color: var(--ink);
                 }
             `}</style>
 
@@ -264,7 +327,10 @@ const UpdateCampaignModal = (props) => {
                         rules={[{ required: true, message: 'Please select start date' }]}
                         style={{ flex: 1 }}
                     >
-                        <DatePicker style={{ width: '100%' }} />
+                        <DatePicker 
+                            style={{ width: '100%' }} 
+                            disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        />
                     </Form.Item>
 
                     <Form.Item
@@ -273,7 +339,10 @@ const UpdateCampaignModal = (props) => {
                         rules={[{ required: true, message: 'Please select end date' }]}
                         style={{ flex: 1 }}
                     >
-                        <DatePicker style={{ width: '100%' }} />
+                        <DatePicker 
+                            style={{ width: '100%' }} 
+                            disabledDate={(current) => current && current < dayjs().startOf('day')}
+                        />
                     </Form.Item>
                 </div>
 
@@ -282,7 +351,10 @@ const UpdateCampaignModal = (props) => {
                     label="Fulfillment Date"
                     rules={[{ required: true, message: 'Please select fulfillment date' }]}
                 >
-                    <DatePicker style={{ width: '100%' }} />
+                    <DatePicker 
+                        style={{ width: '100%' }} 
+                        disabledDate={(current) => current && current < dayjs().startOf('day')}
+                    />
                 </Form.Item>
 
                 <div style={{ display: 'flex', gap: 16 }}>
@@ -309,22 +381,71 @@ const UpdateCampaignModal = (props) => {
                     </Form.Item>
                 </div>
 
-                <Form.Item
-                    name="variantConfigs"
-                    label="Product Variants"
-                    rules={[{ required: true, message: 'Please select at least one product variant' }]}
-                >
-                    <Select
-                        mode="multiple"
-                        placeholder="Select product variants"
+                <Form.Item label="Product Variants">
+                    {selectedVariants.map((variant, index) => (
+                        <Card key={index} className="variant-card" size="small">
+                            <div className="variant-header">
+                                <div className="variant-title">Variant {index + 1}</div>
+                                <Button
+                                    type="text"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={() => removeVariant(index)}
+                                />
+                            </div>
+                            <Space direction="vertical" style={{ width: '100%' }}>
+                                <Form.Item
+                                    label="Select Variant"
+                                    required
+                                    validateStatus={!variant.variantId ? 'error' : ''}
+                                    help={!variant.variantId ? 'Please select a variant' : ''}
+                                >
+                                    <Select
+                                        placeholder="Select product variant"
+                                        value={variant.variantId}
+                                        onChange={(value) => updateVariant(index, 'variantId', value)}
+                                        style={{ width: '100%' }}
+                                    >
+                                        {variants.map(v => (
+                                            <Select.Option key={v.id} value={v.id}>
+                                                {v.sku} - {v.productName}
+                                            </Select.Option>
+                                        ))}
+                                    </Select>
+                                </Form.Item>
+                                <Form.Item label="Deposit Percent (%)">
+                                    <InputNumber
+                                        min={0}
+                                        max={100}
+                                        placeholder="Enter deposit percent"
+                                        value={variant.depositPercent}
+                                        onChange={(value) => updateVariant(index, 'depositPercent', value)}
+                                        style={{ width: '100%' }}
+                                    />
+                                </Form.Item>
+                                <Form.Item label="Payment Option">
+                                    <Select
+                                        placeholder="Select payment option"
+                                        value={variant.preorderPaymentOption}
+                                        onChange={(value) => updateVariant(index, 'preorderPaymentOption', value)}
+                                        style={{ width: '100%' }}
+                                    >
+                                        <Select.Option value="DEPOSIT_ONLY">Deposit Only</Select.Option>
+                                        <Select.Option value="FULL_ONLY">Full Payment Only</Select.Option>
+                                        <Select.Option value="FLEXIBLE">Flexible</Select.Option>
+                                    </Select>
+                                </Form.Item>
+                            </Space>
+                        </Card>
+                    ))}
+                    <Button
+                        type="dashed"
+                        icon={<PlusOutlined />}
+                        onClick={addVariant}
                         style={{ width: '100%' }}
                     >
-                        {variants.map(variant => (
-                            <Select.Option key={variant.id} value={variant.id}>
-                                {variant.sku} - {variant.productName}
-                            </Select.Option>
-                        ))}
-                    </Select>
+                        Add Variant
+                    </Button>
                 </Form.Item>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 24 }}>
