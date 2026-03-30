@@ -153,7 +153,15 @@ const ProductForm = (props) => {
                 layout="vertical"
                 name="product_form"
                 onFinish={onFinish}
-                initialValues={{ variants: [{}] }}
+                initialValues={{
+                    variants: [{
+                        saleType: 'IN_STOCK',
+                        attributes: [
+                            { attributeName: 'Size', attributeValue: '', images: [] },
+                            { attributeName: 'Color', attributeValue: '', images: [] }
+                        ]
+                    }]
+                }}
             >
                 {/* PRODUCT INFO */}
                 <Divider titlePlacement="left">Product Info</Divider>
@@ -297,7 +305,7 @@ const ProductForm = (props) => {
                                             >
                                                 {({ getFieldValue }) => {
                                                     const currentSaleType = getFieldValue(['variants', name, 'saleType']);
-                                                    const stockLabel = currentSaleType === 'PRE_ORDER' ? 'Upcoming stock' : 'Stock';
+                                                    const stockLabel = 'Stock';
 
                                                     return (
                                                         <Form.Item
@@ -308,13 +316,16 @@ const ProductForm = (props) => {
                                                                 { required: true, message: 'Missing stock' },
                                                                 {
                                                                     validator(_, value) {
+                                                                        if (value === undefined || value === null) {
+                                                                            return Promise.reject('Stock is required');
+                                                                        }
                                                                         if (currentSaleType === 'PRE_ORDER') {
-                                                                            if (value === undefined || value === null || value <= 0) {
-                                                                                return Promise.reject('Pre-order stock must be greater than 0!');
+                                                                            if (value < 0) {
+                                                                                return Promise.reject('Stock must be >= 0 for PRE_ORDER');
                                                                             }
                                                                         } else {
-                                                                            if (value === undefined || value === null || value < 0) {
-                                                                                return Promise.reject('Stock must be a non-negative number!');
+                                                                            if (value <= 0) {
+                                                                                return Promise.reject('Stock must be > 0 for IN_STOCK');
                                                                             }
                                                                         }
                                                                         return Promise.resolve();
@@ -398,12 +409,16 @@ const ProductForm = (props) => {
                                                                     {...restField}
                                                                     name={[name, 'preorderFulfillmentDate']}
                                                                     label="Fulfillment Date"
-                                                                    dependencies={[[name, 'allowPreorder']]}
+                                                                    dependencies={[[name, 'allowPreorder'], [name, 'preorderEndDate']]}
                                                                     rules={[
                                                                         ({ getFieldValue }) => ({
                                                                             validator(_, value) {
                                                                                 if (getFieldValue([name, 'allowPreorder']) && !value) {
                                                                                     return Promise.reject('Fulfillment date is required when preorder is allowed!');
+                                                                                }
+                                                                                const endDate = getFieldValue([name, 'preorderEndDate']);
+                                                                                if (endDate && value && new Date(value) < new Date(endDate)) {
+                                                                                    return Promise.reject('Fulfillment date must be on or after end date!');
                                                                                 }
                                                                                 return Promise.resolve();
                                                                             },
@@ -440,17 +455,6 @@ const ProductForm = (props) => {
                                                                         type="date"
                                                                         style={{ width: '100%' }}
                                                                         min={new Date().toISOString().split('T')[0]}
-                                                                        onChange={(e) => {
-                                                                            const startDate = e.target.value;
-                                                                            if (startDate) {
-                                                                                const endDate = new Date(startDate);
-                                                                                endDate.setDate(endDate.getDate() + 7);
-                                                                                const endDateString = endDate.toISOString().split('T')[0];
-                                                                                form.setFieldValue(['variants', name, 'preorderEndDate'], endDateString);
-                                                                            } else {
-                                                                                form.setFieldValue(['variants', name, 'preorderEndDate'], null);
-                                                                            }
-                                                                        }}
                                                                     />
                                                                 </Form.Item>
                                                             </Col>
@@ -467,8 +471,8 @@ const ProductForm = (props) => {
                                                                                     return Promise.reject('Preorder end date is required when preorder is allowed!');
                                                                                 }
                                                                                 const startDate = getFieldValue([name, 'preorderStartDate']);
-                                                                                if (startDate && value && new Date(value) <= new Date(startDate)) {
-                                                                                    return Promise.reject('End date must be after start date!');
+                                                                                if (startDate && value && new Date(value) < new Date(startDate)) {
+                                                                                    return Promise.reject('End date must be on or after start date!');
                                                                                 }
                                                                                 return Promise.resolve();
                                                                             },
@@ -503,10 +507,24 @@ const ProductForm = (props) => {
                                                             name={[attrName, 'attributeName']}
                                                             rules={[{ required: true, message: 'Please select attribute type!' }]}
                                                         >
-                                                            <Select placeholder="Select attribute type" style={{ width: '100%' }}>
-                                                                <Select.Option value="Size">Size</Select.Option>
-                                                                <Select.Option value="Color">Color</Select.Option>
-                                                            </Select>
+                                                            <Form.Item
+                                                                noStyle
+                                                                shouldUpdate={(prevValues, currentValues) => 
+                                                                    prevValues.variants?.[name]?.attributes?.[attrName]?.attributeName !== 
+                                                                    currentValues.variants?.[name]?.attributes?.[attrName]?.attributeName
+                                                                }
+                                                            >
+                                                                {({ getFieldValue }) => {
+                                                                    const currentValue = getFieldValue(['variants', name, 'attributes', attrName, 'attributeName']);
+                                                                    return (
+                                                                        <Input 
+                                                                            value={currentValue || ''}
+                                                                            style={{ width: '100%' }}
+                                                                            disabled
+                                                                        />
+                                                                    );
+                                                                }}
+                                                            </Form.Item>
                                                         </Form.Item>
                                                         <Form.Item
                                                             {...attrRestField}
@@ -562,43 +580,21 @@ const ProductForm = (props) => {
                                                                 </div>
                                                             )}
                                                         </Form.List>
-                                                        <MinusCircleOutlined
-                                                            onClick={() => {
-                                                                const attribute = form.getFieldValue(['variants', name, 'attributes', attrName]);
-                                                                if (attribute && attribute.id) {
-                                                                    // Delete API
-                                                                    Modal.confirm({
-                                                                        title: 'Delete Attribute',
-                                                                        content: 'Are you sure?',
-                                                                        onOk: async () => {
-                                                                            try {
-                                                                                await deleteAttributeAPI(attribute.id);
-                                                                                message.success('Attribute deleted');
-                                                                                removeAttr(attrName);
-                                                                            } catch (_e) {
-                                                                                message.error('Failed to delete attribute');
-                                                                            }
-                                                                        }
-                                                                    });
-                                                                } else {
-                                                                    removeAttr(attrName);
-                                                                }
-                                                            }}
-                                                        />
                                                     </Space>
                                                 ))}
-                                                <Form.Item>
-                                                    <Button type="dashed" onClick={() => addAttr()} block icon={<PlusOutlined />}>
-                                                        Add Attribute (Color, Size...)
-                                                    </Button>
-                                                </Form.Item>
                                             </>
                                         )}
                                     </Form.List>
                                 </Card>
                             ))}
                             <Form.Item>
-                                <Button type="dashed" onClick={() => add({ saleType: 'IN_STOCK' })} block icon={<PlusOutlined />}>
+                                <Button type="dashed" onClick={() => add({ 
+                                    saleType: 'IN_STOCK',
+                                    attributes: [
+                                        { attributeName: 'Size', attributeValue: '', images: [] },
+                                        { attributeName: 'Color', attributeValue: '', images: [] }
+                                    ]
+                                })} block icon={<PlusOutlined />}>
                                     Add New Variant
                                 </Button>
                             </Form.Item>

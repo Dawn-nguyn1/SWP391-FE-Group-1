@@ -37,6 +37,7 @@ import AdminLayout from './AdminLayout.jsx';
 import ErrorPage from './pages/error/error.page.jsx';
 import PrivateRoute from './pages/admin-pages/private.route.jsx';
 import ComboPage from './components/admin-components/combo/combo.jsx';
+import CampaignPage from './components/admin-components/campaign/campaign.jsx';
 
 const router = createBrowserRouter([
   {
@@ -81,6 +82,9 @@ const router = createBrowserRouter([
           },
           {
             path: "combo", element: (<PrivateRoute><ComboPage/></PrivateRoute>),
+          },
+          {
+            path: "campaign", element: (<PrivateRoute><CampaignPage/></PrivateRoute>),
           }
         ]
       },

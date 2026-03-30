@@ -7,7 +7,7 @@ import {
     PlayCircleOutlined,
     AliwangwangOutlined,
     LoginOutlined,
-    GiftOutlined
+    GiftOutlined,
 } from '@ant-design/icons';
 
 import { useState } from 'react';
@@ -121,6 +121,10 @@ const Header = () => {
             },{
                 label: <Link to={"/admin/combo"}>Combo</Link>,
                 key: 'combo',
+                icon: <GiftOutlined />
+            },{
+                label: <Link to={"/admin/campaign"}>Campaign</Link>,
+                key: 'campaign',
                 icon: <GiftOutlined />
             }
         ] : []),

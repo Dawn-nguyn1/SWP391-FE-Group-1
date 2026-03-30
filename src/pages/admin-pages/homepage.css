@@ -14,6 +14,9 @@
 /* Header section */
 .admin-header {
   margin-bottom: 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
 }
 
 .admin-header h1 {
@@ -28,6 +31,13 @@
   font-size: 13px;
   color: #94a3b8;
   margin-top: 4px;
+}
+
+/* Dashboard filters */
+.dashboard-filters {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* Section label */
@@ -516,6 +526,248 @@
   color: #94a3b8;
 }
 
+/* Metric card content and change */
+.metric-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.metric-card-change {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.change-text {
+  opacity: 0.8;
+  font-weight: 400;
+}
+
+/* Revenue Chart */
+.revenue-chart {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.revenue-chart:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.revenue-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.revenue-chart-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.revenue-chart-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.chart-controls {
+  display: flex;
+  align-items: center;
+}
+
+/* Recent Orders Table */
+.recent-orders-table {
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.recent-orders-table:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.recent-orders-header {
+  margin-bottom: 20px;
+}
+
+.recent-orders-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.recent-orders-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.orders-table .order-code {
+  font-family: 'DM Mono', monospace;
+  font-weight: 600;
+  color: #7c3aed;
+}
+
+.orders-table .product-name {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.orders-table .more-items {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+.orders-table .order-value {
+  font-family: 'DM Mono', monospace;
+  font-weight: 600;
+  color: #059669;
+}
+
+.orders-table .order-status {
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.orders-table .order-date {
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Improved Best Sellers */
+.best-seller-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.best-seller-item:last-child {
+  border-bottom: none;
+}
+
+.best-seller-rank {
+  flex-shrink: 0;
+}
+
+.rank-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.rank-number.rank-1 {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.rank-number.rank-2 {
+  background: linear-gradient(135deg, #94a3b8, #64748b);
+}
+
+.rank-number.rank-3 {
+  background: linear-gradient(135deg, #fb923c, #ea580c);
+}
+
+.rank-number.rank-other {
+  background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+}
+
+.best-seller-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.best-seller-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.best-seller-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sold-count {
+  font-weight: 700;
+  color: #1e293b;
+  font-family: 'DM Mono', monospace;
+}
+
+.sold-percentage {
+  font-size: 11px;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.best-seller-bar-container {
+  position: relative;
+  height: 6px;
+  background: #f1f5f9;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.best-seller-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.best-seller-bar-fill.rank-1 {
+  background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.best-seller-bar-fill.rank-2 {
+  background: linear-gradient(90deg, #94a3b8, #64748b);
+}
+
+.best-seller-bar-fill.rank-3 {
+  background: linear-gradient(90deg, #fb923c, #ea580c);
+}
+
+.best-seller-bar-fill.rank-other {
+  background: linear-gradient(90deg, #e2e8f0, #94a3b8);
+}
+
+.best-seller-bar-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: #f1f5f9;
+  border-radius: 3px;
+  opacity: 0.3;
+}
+
 /* Responsive design */
 @media (max-width: 1200px) {
   .metrics-grid {
@@ -535,6 +787,17 @@
   .metrics-grid {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+  
+  .dashboard-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .admin-header {
+    flex-direction: column;
+    gap: 16px;
   }
   
   .gender-chart-content {
