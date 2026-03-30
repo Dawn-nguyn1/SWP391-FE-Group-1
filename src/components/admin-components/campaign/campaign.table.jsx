@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Table, message, Modal, Descriptions, Tag, Popconfirm, notification } from 'antd';
-import { DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
 import { deletePreorderCampaignAPI } from '../../../services/api.service';
 import CampaignDetail from './campaign.detail';
+import UpdateCampaignModal from './update.campaign.modal';
 import dayjs from 'dayjs';
 import './campaign.css';
 
@@ -20,6 +21,8 @@ const CampaignTable = (props) => {
 
     const [dataDetail, setDataDetail] = useState(null);
     const [isDetailOpen, setIsDetailOpen] = useState(false);
+    const [isUpdateOpen, setIsUpdateOpen] = useState(false);
+    const [dataUpdate, setDataUpdate] = useState(null);
 
     const columns = [
         {
@@ -130,6 +133,16 @@ const CampaignTable = (props) => {
                     >
                         <EyeOutlined />
                     </button>
+                    <button
+                        className="action-btn-icon edit-btn"
+                        onClick={() => {
+                            setIsUpdateOpen(true);
+                            setDataUpdate(record);
+                        }}
+                        title="Edit"
+                    >
+                        <EditOutlined />
+                    </button>
                     <Popconfirm
                         title="Delete Campaign"
                         description="Are you sure you want to delete this campaign?"
@@ -209,6 +222,15 @@ const CampaignTable = (props) => {
                 isVisible={isDetailOpen}
                 onClose={() => setIsDetailOpen(false)}
                 campaignId={dataDetail?.id}
+            />
+
+            {/* Update Modal */}
+            <UpdateCampaignModal
+                isUpdateOpen={isUpdateOpen}
+                setIsUpdateOpen={setIsUpdateOpen}
+                dataUpdate={dataUpdate}
+                setDataUpdate={setDataUpdate}
+                loadCampaigns={loadCampaigns}
             />
         </div>
     );
