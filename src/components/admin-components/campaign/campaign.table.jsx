@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { Table, message, Modal, Descriptions, Tag, Popconfirm, notification } from 'antd';
+import { Table, Switch, Popconfirm, notification } from 'antd';
 import { DeleteOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
-import { deletePreorderCampaignAPI } from '../../../services/api.service';
+import { deletePreorderCampaignAPI, activatePreorderCampaignAPI, deactivatePreorderCampaignAPI } from '../../../services/api.service';
 import CampaignDetail from './campaign.detail';
 import UpdateCampaignModal from './update.campaign.modal';
 import dayjs from 'dayjs';
@@ -23,27 +23,49 @@ const CampaignTable = (props) => {
     const [isDetailOpen, setIsDetailOpen] = useState(false);
     const [isUpdateOpen, setIsUpdateOpen] = useState(false);
     const [dataUpdate, setDataUpdate] = useState(null);
+    const [switchLoadingIds, setSwitchLoadingIds] = useState([]);
+
+    // ✅ Gọi API functions từ api.service.js
+    const handleToggleStatus = async (record) => {
+        const { id, isActive } = record;
+        
+        setSwitchLoadingIds((prev) => [...prev, id]);
+
+        try {
+            if (isActive) {
+                await deactivatePreorderCampaignAPI(id);
+            } else {
+                await activatePreorderCampaignAPI(id);
+            }
+
+            await loadCampaigns();
+        } catch (error) {
+            console.error('Toggle status error:', error);
+            notification.error({
+                message: 'Error updating status',
+                description: error?.message || 'Failed to update campaign status.',
+            });
+        } finally {
+            setSwitchLoadingIds((prev) => prev.filter((loadingId) => loadingId !== id));
+        }
+    };
 
     const columns = [
         {
             title: 'STT',
             width: 70,
-            render: (_, record, index) => {
-                return (
-                    <span className="stt-number">
-                        {(index + 1) + (current) * pageSize}
-                    </span>
-                );
-            }
+            render: (_, record, index) => (
+                <span className="stt-number">
+                    {index + 1 + current * pageSize}
+                </span>
+            ),
         },
         {
             title: 'Campaign Name',
             dataIndex: 'name',
             key: 'name',
             render: (name) => (
-                <span style={{ fontWeight: 600, color: '#1e293b' }}>
-                    {name}
-                </span>
+                <span style={{ fontWeight: 600, color: '#1e293b' }}>{name}</span>
             ),
         },
         {
@@ -81,9 +103,10 @@ const CampaignTable = (props) => {
             key: 'currentPreorders',
             align: 'center',
             render: (current, record) => {
-                const percentage = record.preorderLimit > 0 
-                    ? (current / record.preorderLimit * 100).toFixed(1) 
-                    : 0;
+                const percentage =
+                    record.preorderLimit > 0
+                        ? ((current / record.preorderLimit) * 100).toFixed(1)
+                        : 0;
                 return (
                     <div style={{ textAlign: 'center' }}>
                         <span style={{ fontWeight: 600, color: '#7c3aed' }}>
@@ -101,10 +124,16 @@ const CampaignTable = (props) => {
             title: 'Status',
             dataIndex: 'isActive',
             key: 'isActive',
-            render: (isActive) => (
-                <Tag color={isActive ? 'green' : 'red'}>
-                    {isActive ? 'Active' : 'Inactive'}
-                </Tag>
+            align: 'center',
+            // ✅ Switch thay cho Tag
+            render: (isActive, record) => (
+                <Switch
+                    checkedChildren="Active"
+                    unCheckedChildren="Inactive"
+                    checked={isActive}
+                    loading={switchLoadingIds.includes(record.id)}
+                    onChange={() => handleToggleStatus(record)}
+                />
             ),
         },
         {
@@ -151,10 +180,7 @@ const CampaignTable = (props) => {
                         cancelText="No"
                         placement="left"
                     >
-                        <button
-                            className="action-btn-icon delete-btn"
-                            title="Delete"
-                        >
+                        <button className="action-btn-icon delete-btn" title="Delete">
                             <DeleteOutlined />
                         </button>
                     </Popconfirm>
@@ -167,64 +193,65 @@ const CampaignTable = (props) => {
         try {
             await deletePreorderCampaignAPI(id);
             notification.success({
-                message: "Delete Campaign",
-                description: "Campaign deleted successfully"
+                message: 'Delete Campaign',
+                description: 'Campaign deleted successfully',
             });
             await loadCampaigns();
         } catch (error) {
-            console.error("Delete campaign error:", error);
+            console.error('Delete campaign error:', error);
             notification.error({
-                message: "Error delete campaign",
-                description: error?.message || "Failed to delete campaign"
+                message: 'Error delete campaign',
+                description: error?.message || 'Failed to delete campaign',
             });
         }
     };
 
-    const onChange = (pagination, filters, sorter, extra) => {
-        if (pagination && pagination.current) {
-            if (pagination.current !== +current + 1) {
-                setCurrent(+pagination.current - 1);
-            }
+    const onChange = (pagination) => {
+        if (pagination?.current && pagination.current !== +current + 1) {
+            setCurrent(+pagination.current - 1);
         }
-
-        if (pagination && pagination.pageSize) {
-            if (pagination.pageSize !== +pageSize) {
-                setPageSize(+pagination.pageSize);
-                setCurrent(0);
-            }
+        if (pagination?.pageSize && pagination.pageSize !== +pageSize) {
+            setPageSize(+pagination.pageSize);
+            setCurrent(0);
         }
     };
 
     return (
-    <div className="campaign-table-wrapper" style={{ border: 'none', boxShadow: '0 4px 20px rgba(0,0,0,0.05)', borderRadius: '12px', overflow: 'hidden' }}>
-        <Table
-            className="campaign-table"
-            columns={columns}
-            dataSource={dataCampaigns}
-            rowKey="id"
-            loading={loading}
-            pagination={{
-                current: current + 1,
-                pageSize: pageSize,
-                showSizeChanger: true,
-                total: total,
-                showTotal: (total, range) => (
-                    <span style={{ fontWeight: 500, color: '#64748b' }}>
-                        Showing <b>{range[0]}-{range[1]}</b> of {total} campaigns
-                    </span>
-                )
+        <div
+            className="campaign-table-wrapper"
+            style={{
+                border: 'none',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+                borderRadius: '12px',
+                overflow: 'hidden',
             }}
-            onChange={onChange}
-        />
+        >
+            <Table
+                className="campaign-table"
+                columns={columns}
+                dataSource={dataCampaigns}
+                rowKey="id"
+                loading={loading}
+                pagination={{
+                    current: current + 1,
+                    pageSize: pageSize,
+                    showSizeChanger: true,
+                    total: total,
+                    showTotal: (total, range) => (
+                        <span style={{ fontWeight: 500, color: '#64748b' }}>
+                            Showing <b>{range[0]}-{range[1]}</b> of {total} campaigns
+                        </span>
+                    ),
+                }}
+                onChange={onChange}
+            />
 
-            {/* View Details Modal */}
             <CampaignDetail
                 isVisible={isDetailOpen}
                 onClose={() => setIsDetailOpen(false)}
                 campaignId={dataDetail?.id}
             />
 
-            {/* Update Modal */}
             <UpdateCampaignModal
                 isUpdateOpen={isUpdateOpen}
                 setIsUpdateOpen={setIsUpdateOpen}

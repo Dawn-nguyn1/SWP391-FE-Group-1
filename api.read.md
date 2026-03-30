@@ -1331,3 +1331,91 @@ Code	Description	Links
 No Content
 
 No links
+# deactivate campaign
+PATCH
+/api/manager/preorder-campaigns/{campaignId}/deactivate
+
+
+Parameters
+Try it out
+Name	Description
+campaignId *
+integer($int64)
+(path)
+campaignId
+Responses
+Code	Description	Links
+200	
+OK
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "name": "string",
+  "startDate": "2026-03-30",
+  "endDate": "2026-03-30",
+  "fulfillmentDate": "2026-03-30",
+  "preorderLimit": 0,
+  "currentPreorders": 0,
+  "isActive": true,
+  "variantIds": [
+    0
+  ],
+  "variantConfigs": [
+    {
+      "variantId": 0,
+      "depositPercent": 0,
+      "preorderPaymentOption": "DEPOSIT_ONLY"
+    }
+  ]
+}
+
+# activate campaign
+
+PATCH
+/api/manager/preorder-campaigns/{campaignId}/activate
+
+
+Parameters
+Try it out
+Name	Description
+campaignId *
+integer($int64)
+(path)
+campaignId
+Responses
+Code	Description	Links
+200	
+OK
+
+Media type
+
+*/*
+Controls Accept header.
+Example Value
+Schema
+{
+  "id": 0,
+  "name": "string",
+  "startDate": "2026-03-30",
+  "endDate": "2026-03-30",
+  "fulfillmentDate": "2026-03-30",
+  "preorderLimit": 0,
+  "currentPreorders": 0,
+  "isActive": true,
+  "variantIds": [
+    0
+  ],
+  "variantConfigs": [
+    {
+      "variantId": 0,
+      "depositPercent": 0,
+      "preorderPaymentOption": "DEPOSIT_ONLY"
+    }
+  ]
+}
