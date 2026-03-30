@@ -418,9 +418,10 @@ const UpdateCampaignModal = (props) => {
                                         min={0}
                                         max={100}
                                         placeholder="Enter deposit percent"
-                                        value={variant.depositPercent}
+                                        value={variant.preorderPaymentOption === 'FULL_ONLY' ? 100 : (variant.depositPercent || 30)}
                                         onChange={(value) => updateVariant(index, 'depositPercent', value)}
                                         style={{ width: '100%' }}
+                                        disabled={variant.preorderPaymentOption === 'FULL_ONLY'}
                                     />
                                 </Form.Item>
                                 <Form.Item label="Payment Option">
