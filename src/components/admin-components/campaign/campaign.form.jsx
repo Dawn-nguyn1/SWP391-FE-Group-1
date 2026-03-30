@@ -402,17 +402,19 @@ const CampaignForm = (props) => {
                                         help={!variant.variantId ? 'Please select a variant' : ''}
                                     >
                                         <Select
-                                            placeholder="Select product variant"
+                                            placeholder="Search and select product variant"
                                             value={variant.variantId}
                                             onChange={(value) => updateVariant(index, 'variantId', value)}
                                             style={{ width: '100%' }}
-                                        >
-                                            {variants.map(v => (
-                                                <Select.Option key={v.id} value={v.id}>
-                                                    {v.sku} - {v.productName}
-                                                </Select.Option>
-                                            ))}
-                                        </Select>
+                                            showSearch
+                                            filterOption={(input, option) =>
+                                                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                                            }
+                                            options={variants.map(v => ({
+                                                value: v.id,
+                                                label: `${v.sku} - ${v.productName}`
+                                            }))}
+                                        />
                                     </Form.Item>
                                     <Form.Item label="Deposit Percent (%)">
                                         <InputNumber

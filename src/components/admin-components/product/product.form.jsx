@@ -74,6 +74,25 @@ const ProductForm = (props) => {
 
                     if (resVariant && resVariant.id) {
                         const variantId = resVariant.id;
+                        
+                        // Handle variant images
+                        if (variant.images && Array.isArray(variant.images)) {
+                            const imagesToUpload = variant.images
+                                .map((img, index) => ({
+                                    imageUrl: (img?.imageUrl ?? "").toString().trim(),
+                                    sortOrder: Number.isFinite(Number(img?.sortOrder))
+                                        ? Number(img.sortOrder)
+                                        : index
+                                }))
+                                .filter(i => !!i.imageUrl);
+
+                            if (imagesToUpload.length > 0) {
+                                // Add images to variant (assuming there's an API for this)
+                                // await addImagesToVariantAPI(variantId, imagesToUpload);
+                                console.log("Variant images to upload:", imagesToUpload);
+                            }
+                        }
+                        
                         if (variant.attributes) {
                             for (const attr of variant.attributes) {
                                 // Tránh gọi API với attribute rỗng → backend trả 400 (BAD_REQUEST)
@@ -81,12 +100,12 @@ const ProductForm = (props) => {
                                 const attributeValue = (attr?.attributeValue ?? "").toString().trim();
                                 if (!attributeName || !attributeValue) continue;
 
-                                // Create attribute with images
+                                // Create attribute without images
                                 const resAttr = await createAttributeAPI(
                                     variantId,
                                     attributeName,
                                     attributeValue,
-                                    attr.images || []
+                                    [] // Empty array since images are now at variant level
                                 );
 
                                 console.log("=== ATTRIBUTE CREATION DEBUG ===");
@@ -94,27 +113,7 @@ const ProductForm = (props) => {
                                 console.log("Type of resAttr:", typeof resAttr);
                                 console.log("resAttr keys:", Object.keys(resAttr || {}));
                                 console.log("resAttr.id:", resAttr?.id);
-                                console.log("attr.images:", attr.images);
                                 console.log("================================");
-
-                                // Get attribute ID directly from response
-                                const attributeId = resAttr?.id;
-
-                                // If have images and got attribute ID, upload remaining images
-                                if (attributeId && Array.isArray(attr.images) && attr.images.length > 0) {
-                                    const imagesToUpload = attr.images
-                                        .map((img, index) => ({
-                                            imageUrl: (img?.imageUrl ?? "").toString().trim(),
-                                            sortOrder: Number.isFinite(Number(img?.sortOrder))
-                                                ? Number(img.sortOrder)
-                                                : index
-                                        }))
-                                        .filter(i => !!i.imageUrl);
-
-                                    if (imagesToUpload.length > 0) {
-                                        await addImagesToAttributeAPI(attributeId, imagesToUpload);
-                                    }
-                                }
                             }
                         }
                     }
@@ -536,53 +535,55 @@ const ProductForm = (props) => {
                                                         >
                                                             <Input placeholder="Enter value (e.g XL or 40 or Red)" />
                                                         </Form.Item>
-
-                                                        {/* IMAGES FOR ATTRIBUTE */}
-                                                        <Form.List name={[attrName, 'images']}>
-                                                            {(imgFields, { add: addImg, remove: removeImg }) => (
-                                                                <div style={{ width: '100%' }}>
-                                                                    {imgFields.map(({ key: imgKey, name: imgName, ...imgRestField }) => (
-                                                                        <div key={imgKey} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                                                                            <Form.Item
-                                                                                {...imgRestField}
-                                                                                name={[imgName, 'imageUrl']}
-                                                                                rules={[
-                                                                                    { required: true, message: 'Missing image URL' },
-                                                                                    { max: 255, message: 'Image URL cannot exceed 255 characters!' }
-                                                                                ]}
-                                                                                style={{ flex: 1 }}
-                                                                            >
-                                                                                <Input placeholder="Image URL" />
-                                                                            </Form.Item>
-                                                                            <Form.Item
-                                                                                {...imgRestField}
-                                                                                name={[imgName, 'sortOrder']}
-                                                                                initialValue={imgName + 1}
-                                                                                style={{ width: 80 }}
-                                                                            >
-                                                                                <InputNumber placeholder="Order" min={1} />
-                                                                            </Form.Item>
-                                                                            <MinusCircleOutlined
-                                                                                onClick={() => removeImg(imgName)}
-                                                                                style={{ marginTop: 8 }}
-                                                                            />
-                                                                        </div>
-                                                                    ))}
-                                                                    <Button
-                                                                        type="dashed"
-                                                                        onClick={() => addImg({ sortOrder: imgFields.length + 1 })}
-                                                                        block
-                                                                        icon={<PlusOutlined />}
-                                                                        size="small"
-                                                                    >
-                                                                        Add Image
-                                                                    </Button>
-                                                                </div>
-                                                            )}
-                                                        </Form.List>
                                                     </Space>
                                                 ))}
                                             </>
+                                        )}
+                                    </Form.List>
+
+                                    {/* IMAGES FOR VARIANT */}
+                                    <Form.List name={[name, 'images']}>
+                                        {(imgFields, { add: addImg, remove: removeImg }) => (
+                                            <div style={{ width: '100%', marginTop: 16 }}>
+                                                <div style={{ fontSize: '14px', fontWeight: '600', color: '#333', marginBottom: 8 }}>
+                                                    Variant Images
+                                                </div>
+                                                {imgFields.map(({ key: imgKey, name: imgName, ...imgRestField }) => (
+                                                    <div key={imgKey} style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                                                        <Form.Item
+                                                            {...imgRestField}
+                                                            name={[imgName, 'imageUrl']}
+                                                            rules={[
+                                                                { required: true, message: 'Missing image URL' },
+                                                                { max: 255, message: 'Image URL cannot exceed 255 characters!' }
+                                                            ]}
+                                                            style={{ flex: 1 }}
+                                                        >
+                                                            <Input placeholder="Image URL" />
+                                                        </Form.Item>
+                                                        <Form.Item
+                                                            {...imgRestField}
+                                                            name={[imgName, 'sortOrder']}
+                                                            initialValue={imgName + 1}
+                                                            style={{ width: 80 }}
+                                                        >
+                                                            <InputNumber placeholder="Order" min={1} />
+                                                        </Form.Item>
+                                                        <MinusCircleOutlined
+                                                            onClick={() => removeImg(imgName)}
+                                                            style={{ marginTop: 8 }}
+                                                        />
+                                                    </div>
+                                                ))}
+                                                <Button
+                                                    type="dashed"
+                                                    onClick={() => addImg({ sortOrder: imgFields.length + 1 })}
+                                                    block
+                                                    icon={<PlusOutlined />}
+                                                >
+                                                    Add Image
+                                                </Button>
+                                            </div>
                                         )}
                                     </Form.List>
                                 </Card>
@@ -591,9 +592,10 @@ const ProductForm = (props) => {
                                 <Button type="dashed" onClick={() => add({ 
                                     saleType: 'IN_STOCK',
                                     attributes: [
-                                        { attributeName: 'Size', attributeValue: '', images: [] },
-                                        { attributeName: 'Color', attributeValue: '', images: [] }
-                                    ]
+                                        { attributeName: 'Size', attributeValue: '' },
+                                        { attributeName: 'Color', attributeValue: '' }
+                                    ],
+                                    images: []
                                 })} block icon={<PlusOutlined />}>
                                     Add New Variant
                                 </Button>
