@@ -1,5 +1,5 @@
-import { Button, Input, Modal, Select, Form, DatePicker, InputNumber, Switch, message } from "antd";
-import { PlusOutlined } from '@ant-design/icons';
+import { Button, Input, Modal, Select, Form, DatePicker, InputNumber, Switch, message, Card, Space } from "antd";
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { createPreorderCampaignAPI, fetchVariantsAPI } from '../../../services/api.service';
@@ -10,11 +10,13 @@ const CampaignForm = (props) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [variants, setVariants] = useState([]);
+    const [selectedVariants, setSelectedVariants] = useState([]);
 
     useEffect(() => {
         if (isModalOpen) {
             loadVariants();
             form.resetFields();
+            setSelectedVariants([]);
         }
     }, [isModalOpen, form]);
 
@@ -36,6 +38,7 @@ const CampaignForm = (props) => {
 
     const resetAndCloseModal = () => {
         form.resetFields();
+        setSelectedVariants([]);
         setIsModalOpen(false);
     };
 
@@ -44,6 +47,13 @@ const CampaignForm = (props) => {
         try {
             console.log('Create campaign form values:', values);
             
+            // Build variant configs with deposit percent and payment options
+            const variantConfigs = selectedVariants.map(variant => ({
+                variantId: variant.variantId,
+                depositPercent: variant.depositPercent || 30,
+                preorderPaymentOption: variant.preorderPaymentOption || "DEPOSIT_ONLY"
+            }));
+
             // Convert dates to YYYY-MM-DD format
             const campaignData = {
                 name: values.name,
@@ -52,12 +62,10 @@ const CampaignForm = (props) => {
                 fulfillmentDate: values.fulfillmentDate.format('YYYY-MM-DD'),
                 preorderLimit: values.preorderLimit,
                 isActive: values.isActive || false,
-                variantConfigs: values.variantConfigs ? values.variantConfigs.map(variantId => ({
-                    variantId: variantId,
-                    depositPercent: 30, // Default deposit percent
-                    preorderPaymentOption: "DEPOSIT_ONLY"
-                })) : []
+                variantConfigs: variantConfigs
             };
+
+            console.log('Campaign data to send:', campaignData);
 
             // Create campaign
             await createPreorderCampaignAPI(campaignData);
@@ -79,7 +87,27 @@ const CampaignForm = (props) => {
 
     const handleCreateCampaign = () => {
         form.resetFields();
+        setSelectedVariants([]);
         setIsModalOpen(true);
+    };
+
+    const addVariant = () => {
+        setSelectedVariants([...selectedVariants, {
+            variantId: null,
+            depositPercent: 30,
+            preorderPaymentOption: "DEPOSIT_ONLY"
+        }]);
+    };
+
+    const removeVariant = (index) => {
+        const newVariants = selectedVariants.filter((_, i) => i !== index);
+        setSelectedVariants(newVariants);
+    };
+
+    const updateVariant = (index, field, value) => {
+        const newVariants = [...selectedVariants];
+        newVariants[index][field] = value;
+        setSelectedVariants(newVariants);
     };
 
     return (
@@ -184,6 +212,25 @@ const CampaignForm = (props) => {
                     border-color: var(--violet);
                     box-shadow: 0 0 0 2px rgba(124,58,237,0.1);
                 }
+
+                .variant-card {
+                    margin-bottom: 16px;
+                    border: 1px solid var(--border);
+                    border-radius: 8px;
+                    padding: 16px;
+                }
+
+                .variant-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 12px;
+                }
+
+                .variant-title {
+                    font-weight: 600;
+                    color: var(--ink);
+                }
             `}</style>
 
             <div className="cf-header">
@@ -203,7 +250,7 @@ const CampaignForm = (props) => {
                 open={isModalOpen}
                 onCancel={resetAndCloseModal}
                 footer={null}
-                width={600}
+                width={800}
             >
                 <Form
                     form={form}
@@ -263,25 +310,77 @@ const CampaignForm = (props) => {
                     >
                         <Switch />
                     </Form.Item>
-                    <Form.Item
-                        name="variantConfigs"
-                        label="Product Variants"
-                    >
-                        <Select
-                            mode="multiple"
-                            placeholder="Select product variants"
+
+                    <Form.Item label="Product Variants">
+                        {selectedVariants.map((variant, index) => (
+                            <Card key={index} className="variant-card" size="small">
+                                <div className="variant-header">
+                                    <div className="variant-title">Variant {index + 1}</div>
+                                    <Button
+                                        type="text"
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        onClick={() => removeVariant(index)}
+                                    />
+                                </div>
+                                <Space direction="vertical" style={{ width: '100%' }}>
+                                    <Form.Item
+                                        label="Select Variant"
+                                        required
+                                        validateStatus={!variant.variantId ? 'error' : ''}
+                                        help={!variant.variantId ? 'Please select a variant' : ''}
+                                    >
+                                        <Select
+                                            placeholder="Select product variant"
+                                            value={variant.variantId}
+                                            onChange={(value) => updateVariant(index, 'variantId', value)}
+                                            style={{ width: '100%' }}
+                                        >
+                                            {variants.map(v => (
+                                                <Select.Option key={v.id} value={v.id}>
+                                                    {v.sku} - {v.productName}
+                                                </Select.Option>
+                                            ))}
+                                        </Select>
+                                    </Form.Item>
+                                    <Form.Item label="Deposit Percent (%)">
+                                        <InputNumber
+                                            min={0}
+                                            max={100}
+                                            placeholder="Enter deposit percent"
+                                            value={variant.depositPercent}
+                                            onChange={(value) => updateVariant(index, 'depositPercent', value)}
+                                            style={{ width: '100%' }}
+                                        />
+                                    </Form.Item>
+                                    <Form.Item label="Payment Option">
+                                        <Select
+                                            placeholder="Select payment option"
+                                            value={variant.preorderPaymentOption}
+                                            onChange={(value) => updateVariant(index, 'preorderPaymentOption', value)}
+                                            style={{ width: '100%' }}
+                                        >
+                                            <Select.Option value="DEPOSIT_ONLY">Deposit Only</Select.Option>
+                                            <Select.Option value="FULL_ONLY">Full Payment Only</Select.Option>
+                                            <Select.Option value="FLEXIBLE">Flexible</Select.Option>
+                                        </Select>
+                                    </Form.Item>
+                                </Space>
+                            </Card>
+                        ))}
+                        <Button
+                            type="dashed"
+                            icon={<PlusOutlined />}
+                            onClick={addVariant}
                             style={{ width: '100%' }}
                         >
-                            {variants.map(variant => (
-                                <Select.Option key={variant.id} value={variant.id}>
-                                    {variant.sku} - {variant.productName}
-                                </Select.Option>
-                            ))}
-                        </Select>
+                            Add Variant
+                        </Button>
                     </Form.Item>
 
                     <Form.Item style={{ marginTop: 24 }}>
                         <Button type="primary" htmlType="submit" loading={loading} style={{ marginRight: 8 }}>
+                            Submit
                         </Button>
                         <Button onClick={resetAndCloseModal}>
                             Cancel

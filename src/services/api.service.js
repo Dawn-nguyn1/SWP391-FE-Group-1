@@ -11,38 +11,21 @@ import axios from "./axios.customize";
 
 
 const createUserAPI = (fullName, email, password, phone, dob, gender, role = "CUSTOMER") => {
-
     const URL_BACKEND = "/api/admin/users";
-
     const data = { fullName, email, password, phone, dob, gender, role };
-
     return axios.post(URL_BACKEND, data);
-
 }
-
-
 
 const updateUserAPI = (id, fullName, dob, gender, role) => {
-
     const URL_BACKEND = `/api/admin/users/${id}`;
-
     const data = { fullName, dob, gender, role };
-
     return axios.put(URL_BACKEND, data);
-
 }
-
-
 
 const fetchAllUserAPI = (current = 0, size = 10, keyword = "", role = "", status = "") => {
-
     const URL_BACKEND = `/api/admin/users?page=${current}&size=${size}${keyword ? `&keyword=${keyword}` : ""}${role ? `&role=${role}` : ""}${status ? `&status=${status}` : ""}`;
-
     return axios.get(URL_BACKEND);
-
 }
-
-
 
 const searchAdminUsersAPI = (page = 0, size = 10, keyword = "", role = "", status = "", sort = []) => {
 
@@ -763,31 +746,24 @@ const allocateCurrentStockForPreordersAPI = (variantId) =>
 // ===== PREORDER CAMPAIGN APIS =====
 
 const fetchPreorderCampaignsAPI = (page = 0, size = 10) =>
-
     axios.get(`/api/manager/preorder-campaigns?page=${page}&size=${size}`);
 
 const createPreorderCampaignAPI = (campaignData) =>
-
     axios.post('/api/manager/preorder-campaigns', campaignData);
 
 const fetchPreorderCampaignByIdAPI = (id) =>
-
     axios.get(`/api/manager/preorder-campaigns/${id}`);
 
 const updatePreorderCampaignAPI = (id, campaignData) =>
-
     axios.put(`/api/manager/preorder-campaigns/${id}`, campaignData);
 
 const deletePreorderCampaignAPI = (id) =>
-
     axios.delete(`/api/manager/preorder-campaigns/${id}`);
 
 const activatePreorderCampaignAPI = (id) =>
-
     axios.patch(`/api/manager/preorder-campaigns/${id}/activate`);
 
 const deactivatePreorderCampaignAPI = (id) =>
-
     axios.patch(`/api/manager/preorder-campaigns/${id}/deactivate`);
 
 
