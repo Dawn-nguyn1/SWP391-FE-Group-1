@@ -46,7 +46,6 @@ import {
 } from '../../utils/role-data';
 import {
     canSupportConfirmPreOrder,
-    hasPreOrderRemainingBalance,
     isPreOrderRemainingOpen,
     isPreOrderRemainingPaid,
     isPreOrderSupportApproved,
@@ -106,34 +105,6 @@ const canSupportCancel = (orderOrStatus) => {
         : orderOrStatus;
 
     return !['CANCELLED', 'COMPLETED', 'SHIPPING', 'OPERATION_CONFIRMED'].includes(status);
-};
-
-const isPreOrderAwaitingFinalPayment = (order) =>
-    hasPreOrderRemainingBalance(order)
-    && !isPreOrderRemainingPaid(order)
-    && isPreOrderRemainingOpen(order);
-
-const getSupportNextStep = (order) => {
-    if (order?.orderType === 'PRE_ORDER') {
-        if (canSupportConfirm(order)) {
-            if (order?.orderStatus === 'PENDING_PAYMENT') {
-                return 'Khi support duyệt xong, đơn tiếp tục chờ khách thanh toán phần còn lại trước khi chuyển cho operations.';
-            }
-            if (order?.orderStatus === 'CONFIRMED') {
-                return 'Đơn đã đủ điều kiện xử lý nhưng vẫn cần support duyệt trước khi chuyển cho operations.';
-            }
-            return 'Sau khi support duyệt, customer có thể thanh toán phần còn lại trước khi đơn chuyển cho operations.';
-        }
-        if (isPreOrderAwaitingFinalPayment(order)) {
-            return 'Đơn đã mở bước thanh toán phần còn lại và đang chờ khách hoàn tất.';
-        }
-    }
-
-    if (order?.orderStatus === 'SUPPORT_CONFIRMED' || order?.orderStatus === 'CONFIRMED') {
-        return 'Đơn đã qua support và sẽ được operations xử lý giao GHN ở bước tiếp theo.';
-    }
-
-    return 'Support chỉ xử lý bước duyệt và hủy đơn trong queue hiện tại.';
 };
 
 const SupportOrdersPage = () => {
@@ -470,7 +441,6 @@ const SupportOrdersPage = () => {
                         {canApprove && (
                             <Popconfirm
                                 title="Xác nhận duyệt đơn hàng này?"
-                                description="Với pre-order, support duyệt xong thì customer sẽ bước sang thanh toán phần còn lại nếu đơn vẫn còn số dư."
                                 onConfirm={() => handleAction(record.id, supportConfirmOrderAPI, `Đã duyệt đơn #${record.id} và chuyển sang bước tiếp theo`)}
                                 okText="Duyệt"
                                 cancelText="Không"
@@ -773,11 +743,19 @@ const SupportOrdersPage = () => {
                                             {evidences.length > 0 && (
                                                 <div className="return-evidence">
                                                     <span>Minh chứng:</span>
-                                                    <ul>
+                                                    <div className="evidence-gallery">
                                                         {evidences.slice(0, 3).map((url, idx) => (
-                                                            <li key={`${req.id}-ev-${idx}`}>{url}</li>
+                                                            <a
+                                                                key={`${req.id}-ev-${idx}`}
+                                                                href={url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="evidence-thumb"
+                                                            >
+                                                                <img src={url} alt={`Minh chá»©ng ${idx + 1}`} loading="lazy" />
+                                                            </a>
                                                         ))}
-                                                    </ul>
+                                                    </div>
                                                 </div>
                                             )}
 
@@ -1090,3 +1068,4 @@ const SupportOrdersPage = () => {
 };
 
 export default SupportOrdersPage;
+

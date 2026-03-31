@@ -193,34 +193,6 @@ const isOrderReadyForShipment = (order) =>
         || CAN_SHIP_STATUSES.includes(order.orderStatus)))
     || isPreOrderReadyForOperation(order));
 
-const getShipReadinessText = (order) => {
-    if (hasShipmentCreated(order)) {
-        return `Đơn đã có mã vận đơn ${order.ghnOrderCode || ''}. Theo dõi tiếp trạng thái GHN ở màn hình này.`;
-    }
-    if (order?.orderType !== 'PRE_ORDER' && (hasSupportApproval(order) || hasCompletedInStockPayment(order))) {
-        return 'Đơn in-stock đã được support duyệt và có thể tạo vận đơn GHN ngay từ màn hình này.';
-    }
-    if (hasOutstandingPreorderBalance(order)) {
-        if (isPreOrderWaitingSupport(order)) {
-            return 'Đơn pre-order mới dừng ở bước thanh toán ban đầu. Support cần duyệt trước khi customer thanh toán phần còn lại.';
-        }
-        if (isPreOrderRemainingOpen(order)) {
-            return 'Đơn đã mở bước thanh toán phần còn lại và đang chờ customer hoàn tất trước khi giao GHN.';
-        }
-        if (order.orderStatus === 'CONFIRMED') {
-            return 'Đơn đã đủ điều kiện xử lý nhưng vẫn chưa hoàn tất bước support trước khi giao GHN.';
-        }
-    }
-
-    if (isOrderReadyForShipment(order)) {
-        return 'Đơn đã đủ điều kiện ở BE và có thể tạo vận đơn GHN từ màn hình này.';
-    }
-    if (order.orderStatus === 'SHIPPING') return 'Đơn đã có vận đơn và đang trong quá trình giao.';
-    if (CAN_SHIP_STATUSES.includes(order.orderStatus)) return 'Đơn đã đủ điều kiện để tạo vận đơn GHN.';
-    if (order.orderStatus === 'PENDING_PAYMENT') return 'Đơn đang chờ khách hoàn tất thanh toán trước khi giao.';
-    return 'Đơn chưa sẵn sàng để tạo vận đơn.';
-};
-
 const getOperationsStageLabel = (order) => {
     if (hasShipmentCreated(order)) return getShipmentLabel(order?.shipmentStatus);
     if (order?.orderType !== 'PRE_ORDER' && (hasSupportApproval(order) || hasCompletedInStockPayment(order))) return 'Sẵn sàng giao GHN';
@@ -380,7 +352,6 @@ const OperationsOrdersPage = () => {
                 <div className="ops-branding">
                     <p className="ops-label">Operations Desk</p>
                     <h1>Genetix Logistics Control</h1>
-                    <span>Theo dõi đơn cần tạo vận đơn, tiến độ giao hàng và các yêu cầu hoàn trả đang chờ xử lý trong cùng một màn hình.</span>
                 </div>
                 <div className="ops-metrics">
                     <div className="metric-card">
@@ -440,7 +411,6 @@ const OperationsOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Đơn hàng vận hành</h2>
-                            <p>Luồng mới: operations chỉ giao GHN sau khi đơn pre-order đã qua support và khách hoàn tất phần thanh toán còn lại.</p>
                         </div>
                         <div className="support-panel-meta">
                             <span className="queue-badge queue-orders">Đơn hàng</span>
@@ -554,7 +524,6 @@ const OperationsOrdersPage = () => {
 
                                             <div className="order-footer">
                                                 <div className="ops-actions">
-                                                    <span className="ops-order-note">{getShipReadinessText(order)}</span>
                                                     {canShip ? (
                                                         <Popconfirm
                                                             title="Xác nhận giao qua GHN?"
@@ -602,7 +571,6 @@ const OperationsOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Hoàn trả chờ nhận</h2>
-                            <p>Theo dõi các yêu cầu hoàn trả đã được duyệt và xác nhận tình trạng hàng khi kho tiếp nhận.</p>
                         </div>
                         <div className="support-panel-meta">
                             <span className="queue-badge queue-returns">Hoàn trả</span>
@@ -700,16 +668,23 @@ const OperationsOrdersPage = () => {
                                             {evidences.length > 0 && (
                                                 <div className="return-evidence">
                                                     <span>Minh chứng:</span>
-                                                    <ul>
+                                                    <div className="evidence-gallery">
                                                         {evidences.slice(0, 4).map((url, idx) => (
-                                                            <li key={`${req.id}-ev-${idx}`}>{url}</li>
+                                                            <a
+                                                                key={`${req.id}-ev-${idx}`}
+                                                                href={url}
+                                                                target="_blank"
+                                                                rel="noreferrer"
+                                                                className="evidence-thumb"
+                                                            >
+                                                                <img src={url} alt={`Minh chá»©ng ${idx + 1}`} loading="lazy" />
+                                                            </a>
                                                         ))}
-                                                    </ul>
+                                                    </div>
                                                 </div>
                                             )}
 
                                             <div className="return-actions">
-                                                <span className="ops-order-note">Kiểm tra tình trạng thực tế của sản phẩm trước khi xác nhận nhập kho hoàn trả.</span>
                                                 {canReceive ? (
                                                     <Button
                                                         type="primary"
@@ -781,3 +756,6 @@ const OperationsOrdersPage = () => {
 };
 
 export default OperationsOrdersPage;
+
+
+
