@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { DatePicker, Select, Button, Card, Row, Col, Statistic, Table, Switch, Tooltip } from 'antd';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, BarChart, Bar } from 'recharts';
 import { ReloadOutlined, FallOutlined, RiseOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import './homepage.css';
 import { getManagerDashboardAPI, getDashboardOrderDetailAPI, getDashboardRevenueDetailAPI } from '../../services/api.service';
@@ -122,26 +123,14 @@ function RevenueChart({ data, chartType, onChartTypeChange }) {
 }
 
 function RecentOrdersTable({ orders }) {
+  const navigate = useNavigate();
+  
   const columns = [
     {
       title: 'Mã đơn',
       dataIndex: 'orderCode',
       key: 'orderCode',
       render: (text) => <span className="order-code">{text}</span>
-    },
-    {
-      title: 'Sản phẩm',
-      dataIndex: 'items',
-      key: 'items',
-      render: (items) => {
-        const firstItem = items[0];
-        return (
-          <div className="order-product">
-            <span className="product-name">{firstItem?.productName}</span>
-            {items.length > 1 && <span className="more-items">+{items.length - 1} khác</span>}
-          </div>
-        );
-      }
     },
     {
       title: 'Giá trị',
@@ -191,10 +180,17 @@ function RecentOrdersTable({ orders }) {
           <div className="recent-orders-title">Đơn hàng gần đây</div>
           <div className="recent-orders-subtitle">{orders.length} đơn hàng</div>
         </div>
+        <Button 
+          type="link" 
+          onClick={() => navigate('/admin/recent-orders')}
+          className="view-all-btn"
+        >
+          Xem tất cả →
+        </Button>
       </div>
       <Table
         columns={columns}
-        dataSource={orders}
+        dataSource={orders.slice(0, 3)}
         pagination={false}
         size="small"
         rowKey="id"
@@ -205,6 +201,7 @@ function RecentOrdersTable({ orders }) {
 }
 
 function BestSellersChart({ items }) {
+  const navigate = useNavigate();
   const max = Math.max(...items.map((i) => i.totalSold));
   const totalSold = items.reduce((s, i) => s + i.totalSold, 0);
 
@@ -215,10 +212,20 @@ function BestSellersChart({ items }) {
           <div className="best-sellers-title">Tổng đã bán</div>
           <div className="best-sellers-total">{totalSold} sản phẩm</div>
         </div>
-        <span className="best-sellers-badge">Top bán chạy</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span className="best-sellers-badge">Top bán chạy</span>
+          <Button 
+            type="link" 
+            size="small"
+            onClick={() => navigate('/admin/best-sellers')}
+            style={{ padding: 0 }}
+          >
+            Xem tất cả →
+          </Button>
+        </div>
       </div>
       <div className="best-sellers-list">
-        {items.map((item, idx) => {
+        {items.slice(0, 3).map((item, idx) => {
           const pct = (item.totalSold / max) * 100;
           const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other';
           return (
@@ -313,6 +320,7 @@ function StockBadge({ qty }) {
 }
 
 function LowStockTable({ items }) {
+  const navigate = useNavigate();
   return (
     <div className="low-stock-table hover-effect">
       {/* Header strip tím giống MetricCardPurple */}
@@ -326,13 +334,23 @@ function LowStockTable({ items }) {
           </div>
           <span className="low-stock-table-title">Tồn kho sắp hết</span>
         </div>
-        <span className="low-stock-table-badge">
-          {items.length} mặt hàng
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="low-stock-table-badge">
+            {items.length} mặt hàng
+          </span>
+          <Button 
+            type="link" 
+            size="small"
+            onClick={() => navigate('/admin/low-stock')}
+            style={{ padding: 0, color: 'white' }}
+          >
+            Xem tất cả →
+          </Button>
+        </div>
       </div>
 
       <div className="low-stock-table-content">
-        {items.map((item, idx) => (
+        {items.slice(0, 6).map((item, idx) => (
           <div key={item.variantId} className="low-stock-item">
             <div className="low-stock-item-info">
               <span className="low-stock-item-name">{item.productName}</span>
@@ -510,68 +528,98 @@ export default function AdminHomepage() {
 
   return (
     <div className="admin-homepage-container">
-      {/* Header with filters */}
+      {/* Header with improved filters */}
       <div className="admin-header">
         <div>
           <h1>Dashboard</h1>
           <p>Tổng quan hoạt động kinh doanh</p>
         </div>
-        <div className="dashboard-filters">
-          <Select
-            value={timeFilter}
-            onChange={setTimeFilter}
-            style={{ width: 150, marginRight: 8 }}
-            options={timeFilterOptions}
-          />
-          
-          <Select
-            value={orderStatusFilter}
-            onChange={setOrderStatusFilter}
-            style={{ width: 150, marginRight: 8 }}
-            options={orderStatusOptions}
-          />
-          
-          <Select
-            value={revenueTypeFilter}
-            onChange={setRevenueTypeFilter}
-            style={{ width: 120, marginRight: 8 }}
-            options={revenueTypeOptions}
-          />
-          
-          {timeFilter === 'custom' && (
-            <>
-              <DatePicker.RangePicker
-                value={[customDateRange.from, customDateRange.to]}
-                onChange={(dates) => setCustomDateRange({ from: dates?.[0], to: dates?.[1] })}
-                style={{ marginRight: 8 }}
+        
+        {/* Improved Filter Section */}
+        <Card className="filter-card" size="small">
+          <div className="dashboard-filters">
+            {/* Row 1: Time Period Filter */}
+            <div className="filter-group">
+              <label className="filter-label">📅 Thời gian:</label>
+              <Select
+                value={timeFilter}
+                onChange={setTimeFilter}
+                style={{ width: 160 }}
+                options={[
+                  { value: 'today', label: 'Hôm nay' },
+                  { value: '7days', label: '7 ngày qua' },
+                  { value: '30days', label: '30 ngày qua' },
+                  { value: 'thisMonth', label: 'Tháng này' },
+                  { value: 'custom', label: '📆 Tùy chọn...' },
+                  { value: 'monthYear', label: '📅 Tháng/Năm' },
+                ]}
               />
-              <Button type="primary" onClick={fetchDashboardData}>
-                Lọc
-              </Button>
-            </>
-          )}
-          
-          {timeFilter === 'monthYear' && (
-            <>
-              <DatePicker
-                picker="month"
-                value={dayjs().year(selectedYear).month(selectedMonth)}
-                onChange={(date) => {
-                  setSelectedMonth(date.month());
-                  setSelectedYear(date.year());
-                }}
-                format="MM/YYYY"
-                style={{ marginRight: 8 }}
+            </div>
+
+            {/* Custom Date Range */}
+            {timeFilter === 'custom' && (
+              <div className="filter-group">
+                <label className="filter-label">📆 Chọn ngày:</label>
+                <DatePicker.RangePicker
+                  value={[customDateRange.from, customDateRange.to]}
+                  onChange={(dates) => setCustomDateRange({ from: dates?.[0], to: dates?.[1] })}
+                  format="DD/MM/YYYY"
+                  placeholder={['Từ ngày', 'Đến ngày']}
+                />
+              </div>
+            )}
+
+            {/* Month/Year Picker */}
+            {timeFilter === 'monthYear' && (
+              <div className="filter-group">
+                <label className="filter-label">📅 Chọn tháng:</label>
+                <DatePicker
+                  picker="month"
+                  value={dayjs().year(selectedYear).month(selectedMonth)}
+                  onChange={(date) => {
+                    setSelectedMonth(date.month());
+                    setSelectedYear(date.year());
+                  }}
+                  format="MM/YYYY"
+                />
+              </div>
+            )}
+
+            {/* Row 2: Order Status Filter */}
+            <div className="filter-group">
+              <label className="filter-label">📦 Trạng thái đơn:</label>
+              <Select
+                value={orderStatusFilter}
+                onChange={setOrderStatusFilter}
+                style={{ width: 170 }}
+                options={[
+                  { value: 'ALL', label: '📋 Tất cả' },
+                  { value: 'PENDING', label: '⏳ Chờ xử lý' },
+                  { value: 'PAID', label: '✅ Đã thanh toán' },
+                  { value: 'SHIPPING', label: '🚚 Đang giao' },
+                  { value: 'COMPLETED', label: '🏁 Hoàn thành' },
+                  { value: 'CANCELLED', label: '❌ Đã hủy' },
+                ]}
               />
-            </>
-          )}
-          
-          <Button 
-            icon={<ReloadOutlined />} 
-            onClick={fetchDashboardData}
-            loading={loading}
-          />
-        </div>
+            </div>
+
+            {/* Row 3: Revenue Chart Type */}
+            <div className="filter-group">
+              <label className="filter-label">📊 Biểu đồ:</label>
+              <Select
+                value={revenueTypeFilter}
+                onChange={setRevenueTypeFilter}
+                style={{ width: 140 }}
+                options={[
+                  { value: 'DAY', label: '📅 Theo ngày' },
+                  { value: 'MONTH', label: '📆 Theo tháng' },
+                  { value: 'QUARTER', label: '📊 Theo quý' },
+                  { value: 'YEAR', label: '📈 Theo năm' },
+                ]}
+              />
+            </div>
+          </div>
+        </Card>
       </div>
 
       {/* Metrics Cards */}

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Space, Popconfirm, notification } from 'antd';
+import { Table, Button, Space, Modal, notification } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import ProductDetail from './product.detail';
 import UpdateProductModal from './update.product.modal';
@@ -133,21 +133,22 @@ const ProductTable = ({
                     >
                         <EditOutlined />
                     </button>
-                    <Popconfirm
-                        title="Delete the product"
-                        description="Are you sure to delete this product?"
-                        onConfirm={() => handleDeleteProduct(record.id)}
-                        okText="Yes"
-                        cancelText="No"
-                        placement="left"
+                    <button
+                        className="action-btn-icon delete-btn"
+                        onClick={() => {
+                            Modal.confirm({
+                                title: 'Xóa sản phẩm',
+                                content: 'Bạn chắc chắn muốn xóa sản phẩm này?',
+                                okText: 'Xóa',
+                                cancelText: 'Hủy',
+                                okButtonProps: { danger: true },
+                                onOk: () => handleDeleteProduct(record.id),
+                            });
+                        }}
+                        title="Delete"
                     >
-                        <button
-                            className="action-btn-icon delete-btn"
-                            title="Delete"
-                        >
-                            <DeleteOutlined />
-                        </button>
-                    </Popconfirm>
+                        <DeleteOutlined />
+                    </button>
                 </div>
             ),
         },
