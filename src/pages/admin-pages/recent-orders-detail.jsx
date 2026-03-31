@@ -72,7 +72,7 @@ export default function RecentOrdersDetail() {
 
   useEffect(() => {
     fetchOrders(1, pagination.pageSize);
-  }, [statusFilter]);
+  }, [statusFilter, dateRange]);
 
   const handleSearch = () => {
     fetchOrders(1, pagination.pageSize);
@@ -95,7 +95,7 @@ export default function RecentOrdersDetail() {
     return (
       order.orderCode?.toLowerCase().includes(keyword) ||
       order.items?.some(item => item.productName?.toLowerCase().includes(keyword)) ||
-      order.customerName?.toLowerCase().includes(keyword)
+      order.address?.receiverName?.toLowerCase().includes(keyword)
     );
   });
 
@@ -109,9 +109,9 @@ export default function RecentOrdersDetail() {
     },
     {
       title: 'Khách hàng',
-      dataIndex: 'customerName',
       key: 'customerName',
       width: 150,
+      render: (record) => record.address?.receiverName || 'N/A',
     },
     {
       title: 'Sản phẩm',
