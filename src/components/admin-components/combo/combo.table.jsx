@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, message, Modal, Descriptions, Tag, Popconfirm, notification } from 'antd';
+import { Table, message, Modal, Descriptions, Tag, notification } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import UpdateComboModal from './update.combo.modal';
 import { deleteComboAPI } from '../../../services/api.service';
@@ -111,21 +111,22 @@ const ComboTable = (props) => {
                     >
                         <EditOutlined />
                     </button>
-                    <Popconfirm
-                        title="Delete Combo"
-                        description="Are you sure you want to delete this combo?"
-                        onConfirm={() => handleDeleteCombo(record.id)}
-                        okText="Yes"
-                        cancelText="No"
-                        placement="left"
+                    <button
+                        className="action-btn-icon delete-btn"
+                        onClick={() => {
+                            Modal.confirm({
+                                title: 'Xóa Combo',
+                                content: 'Bạn chắc chắn muốn xóa combo này?',
+                                okText: 'Xóa',
+                                cancelText: 'Hủy',
+                                okButtonProps: { danger: true },
+                                onOk: () => handleDeleteCombo(record.id),
+                            });
+                        }}
+                        title="Delete"
                     >
-                        <button
-                            className="action-btn-icon delete-btn"
-                            title="Delete"
-                        >
-                            <DeleteOutlined />
-                        </button>
-                    </Popconfirm>
+                        <DeleteOutlined />
+                    </button>
                 </div>
             ),
         },

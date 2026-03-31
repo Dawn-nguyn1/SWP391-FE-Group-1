@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Switch, Popconfirm, notification } from 'antd';
+import { Table, Switch, Modal, notification } from 'antd';
 import { DeleteOutlined, EyeOutlined, EditOutlined } from '@ant-design/icons';
 import { deletePreorderCampaignAPI, activatePreorderCampaignAPI, deactivatePreorderCampaignAPI } from '../../../services/api.service';
 import CampaignDetail from './campaign.detail';
@@ -172,18 +172,22 @@ const CampaignTable = (props) => {
                     >
                         <EditOutlined />
                     </button>
-                    <Popconfirm
-                        title="Delete Campaign"
-                        description="Are you sure you want to delete this campaign?"
-                        onConfirm={() => handleDeleteCampaign(record.id)}
-                        okText="Yes"
-                        cancelText="No"
-                        placement="left"
+                    <button
+                        className="action-btn-icon delete-btn"
+                        onClick={() => {
+                            Modal.confirm({
+                                title: 'Xóa Campaign',
+                                content: 'Bạn chắc chắn muốn xóa campaign này?',
+                                okText: 'Xóa',
+                                cancelText: 'Hủy',
+                                okButtonProps: { danger: true },
+                                onOk: () => handleDeleteCampaign(record.id),
+                            });
+                        }}
+                        title="Delete"
                     >
-                        <button className="action-btn-icon delete-btn" title="Delete">
-                            <DeleteOutlined />
-                        </button>
-                    </Popconfirm>
+                        <DeleteOutlined />
+                    </button>
                 </div>
             ),
         },
