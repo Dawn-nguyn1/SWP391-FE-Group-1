@@ -4,6 +4,13 @@ import React, { useState, useEffect } from 'react';
 import dayjs from 'dayjs';
 import { createPreorderCampaignAPI, fetchVariantsAPI } from '../../../services/api.service';
 
+const formatVND = (amount) => {
+    return new Intl.NumberFormat('vi-VN', {
+        style: 'currency',
+        currency: 'VND'
+    }).format(amount);
+};
+
 const CampaignForm = (props) => {
     const { loadCampaigns } = props;
     const [form] = Form.useForm();
@@ -412,7 +419,7 @@ const CampaignForm = (props) => {
                                             }
                                             options={variants.map(v => ({
                                                 value: v.id,
-                                                label: `${v.sku} - ${v.productName}`
+                                                label: `${v.sku} - ${v.price ? formatVND(v.price) : 'Unknown Price'}`
                                             }))}
                                         />
                                     </Form.Item>

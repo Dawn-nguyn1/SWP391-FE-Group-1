@@ -128,11 +128,7 @@ const UpdateProductModal = (props) => {
                             variant.price,
                             variant.stockQuantity,
                             variant.saleType,
-                            variant.allowPreorder || false,
-                            variant.preorderLimit || 0,
-                            variant.preorderFulfillmentDate || null,
-                            variant.preorderStartDate || null,
-                            variant.preorderEndDate || null
+                            variant.allowPreorder || false
                         );
 
                         if (variant.saleType === 'PRE_ORDER' && Number(variant.arrivedQuantity) > 0) {
@@ -214,11 +210,7 @@ const UpdateProductModal = (props) => {
                             variant.price,
                             variant.stockQuantity,
                             variant.saleType || 'IN_STOCK',
-                            variant.allowPreorder || false,
-                            variant.preorderLimit || 0,
-                            variant.preorderFulfillmentDate || null,
-                            variant.preorderStartDate || null,
-                            variant.preorderEndDate || null
+                            variant.allowPreorder || false
                         );
                         if (resVar && resVar.id) {
                             if (variant.attributes) {
@@ -468,106 +460,18 @@ const UpdateProductModal = (props) => {
                                                                 </Form.Item>
                                                             </Col>
                                                             <Col span={8}>
-                                                                <Form.Item
-                                                                    {...restField}
-                                                                    name={[name, 'preorderLimit']}
-                                                                    label="Preorder Limit"
-                                                                    dependencies={[[name, 'allowPreorder']]}
-                                                                    rules={[
-                                                                        ({ getFieldValue }) => ({
-                                                                            validator(_, value) {
-                                                                                if (getFieldValue([name, 'allowPreorder']) && (!value || value < 0)) {
-                                                                                    return Promise.reject('Preorder limit is required when preorder is allowed!');
-                                                                                }
-                                                                                return Promise.resolve();
-                                                                            },
-                                                                        }),
-                                                                    ]}
-                                                                >
-                                                                    <InputNumber style={{ width: '100%' }} min={0} placeholder="0" />
-                                                                </Form.Item>
+                                                                {/* Preorder Limit removed - BE handles default null */}
                                                             </Col>
                                                             <Col span={8}>
-                                                                <Form.Item
-                                                                    {...restField}
-                                                                    name={[name, 'preorderFulfillmentDate']}
-                                                                    label="Fulfillment Date"
-                                                                    dependencies={[[name, 'allowPreorder'], [name, 'preorderEndDate']]}
-                                                                    rules={[
-                                                                        ({ getFieldValue }) => ({
-                                                                            validator(_, value) {
-                                                                                if (getFieldValue([name, 'allowPreorder']) && !value) {
-                                                                                    return Promise.reject('Fulfillment date is required when preorder is allowed!');
-                                                                                }
-                                                                                const endDate = getFieldValue([name, 'preorderEndDate']);
-                                                                                if (endDate && value && new Date(value) < new Date(endDate)) {
-                                                                                    return Promise.reject('Fulfillment date must be on or after end date!');
-                                                                                }
-                                                                                return Promise.resolve();
-                                                                            },
-                                                                        }),
-                                                                    ]}
-                                                                >
-                                                                    <Input
-                                                                        type="date"
-                                                                        style={{ width: '100%' }}
-                                                                        min={new Date().toISOString().split('T')[0]}
-                                                                    />
-                                                                </Form.Item>
+                                                                {/* Fulfillment Date removed - BE handles default null */}
                                                             </Col>
                                                         </Row>
                                                         <Row gutter={16}>
                                                             <Col span={12}>
-                                                                <Form.Item
-                                                                    {...restField}
-                                                                    name={[name, 'preorderStartDate']}
-                                                                    label="Preorder Start Date"
-                                                                    dependencies={[[name, 'allowPreorder']]}
-                                                                    rules={[
-                                                                        ({ getFieldValue }) => ({
-                                                                            validator(_, value) {
-                                                                                if (getFieldValue([name, 'allowPreorder']) && !value) {
-                                                                                    return Promise.reject('Preorder start date is required when preorder is allowed!');
-                                                                                }
-                                                                                return Promise.resolve();
-                                                                            },
-                                                                        }),
-                                                                    ]}
-                                                                >
-                                                                    <Input
-                                                                        type="date"
-                                                                        style={{ width: '100%' }}
-                                                                        min={new Date().toISOString().split('T')[0]}
-                                                                    />
-                                                                </Form.Item>
+                                                                {/* Preorder Start Date removed - BE handles default null */}
                                                             </Col>
                                                             <Col span={12}>
-                                                                <Form.Item
-                                                                    {...restField}
-                                                                    name={[name, 'preorderEndDate']}
-                                                                    label="Preorder End Date"
-                                                                    dependencies={[[name, 'allowPreorder'], [name, 'preorderStartDate']]}
-                                                                    rules={[
-                                                                        ({ getFieldValue }) => ({
-                                                                            validator(_, value) {
-                                                                                if (getFieldValue([name, 'allowPreorder']) && !value) {
-                                                                                    return Promise.reject('Preorder end date is required when preorder is allowed!');
-                                                                                }
-                                                                                const startDate = getFieldValue([name, 'preorderStartDate']);
-                                                                                if (startDate && value && new Date(value) < new Date(startDate)) {
-                                                                                    return Promise.reject('End date must be on or after start date!');
-                                                                                }
-                                                                                return Promise.resolve();
-                                                                            },
-                                                                        }),
-                                                                    ]}
-                                                                >
-                                                                    <Input
-                                                                        type="date"
-                                                                        style={{ width: '100%' }}
-                                                                        min={new Date().toISOString().split('T')[0]}
-                                                                    />
-                                                                </Form.Item>
+                                                                {/* Preorder End Date removed - BE handles default null */}
                                                             </Col>
                                                         </Row>
                                                     </>
@@ -612,9 +516,31 @@ const UpdateProductModal = (props) => {
                                                         <Form.Item
                                                             {...attrRestField}
                                                             name={[attrName, 'attributeValue']}
-                                                            rules={[{ required: true, message: 'Missing value!' }]}
+                                                            rules={[
+                                                                { required: true, message: 'Missing value!' },
+                                                                {
+                                                                    validator: async (_, value) => {
+                                                                        const attributeName = form.getFieldValue(['variants', name, 'attributes', attrName, 'attributeName']);
+                                                                        if (!value) return Promise.resolve();
+                                                                        
+                                                                        if (attributeName === 'Size') {
+                                                                            if (!/^\d+$/.test(value)) {
+                                                                                return Promise.reject('Size chỉ được nhập số!');
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        if (attributeName === 'Color') {
+                                                                            if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(value)) {
+                                                                                return Promise.reject('Color chỉ được nhập chữ!');
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        return Promise.resolve();
+                                                                    }
+                                                                }
+                                                            ]}
                                                         >
-                                                            <Input placeholder="Enter value (e.g XL or 40 or Red)" />
+                                                            <Input placeholder="Enter value (e.g 40 or Red)" />
                                                         </Form.Item>
 
                                                         {/* IMAGES FOR ATTRIBUTE */}

@@ -219,8 +219,8 @@ export default function LowStockDetail() {
       <Card className="page-card">
         <div className="page-header">
           <div>
-            <h1><InboxOutlined /> Tồn kho sắp hết</h1>
-            <p>Theo dõi và quản lý sản phẩm tồn kho thấp</p>
+            <h1><InboxOutlined style={{ color: 'white' }} /> <span style={{ color: 'white' }}>Tồn kho sắp hết</span></h1>
+            <p style={{ color: 'white' }}>Theo dõi và quản lý sản phẩm tồn kho thấp</p>
           </div>
         </div>
 

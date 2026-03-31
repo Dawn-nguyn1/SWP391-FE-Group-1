@@ -680,19 +680,23 @@
 }
 
 .rank-number.rank-1 {
-  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  background: #fef3c7;
+  color: #f59e0b;
 }
 
 .rank-number.rank-2 {
-  background: linear-gradient(135deg, #94a3b8, #64748b);
+  background: #f1f5f9;
+  color: #64748b;
 }
 
 .rank-number.rank-3 {
-  background: linear-gradient(135deg, #fb923c, #ea580c);
+  background: #fed7aa;
+  color: #c2410c;
 }
 
 .rank-number.rank-other {
-  background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+  background: #e5e7eb;
+  color: #4b5563;
 }
 
 .best-seller-content {

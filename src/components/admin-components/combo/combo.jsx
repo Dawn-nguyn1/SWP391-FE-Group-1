@@ -40,7 +40,7 @@ const ComboPage = () => {
         <div className="combo-page-container">
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Combo Management</h1>
+                    <h1 className="page-title" style={{ color: '#ffffff' }}>Combo Management</h1>
                     <p className="page-subtitle" style={{ color: '#ffffff' }}>Manage and view all combos in the system</p>
                 </div>
             </div>
