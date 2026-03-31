@@ -177,7 +177,7 @@ const UpdateComboModal = (props) => {
                                         >
                                             {variants.map(variant => (
                                                 <Select.Option key={variant.id} value={variant.id}>
-                                                    {variant.product?.name || 'Unknown Product'} - {variant.sku}
+                                                    {variant.product?.name || variant.productName || 'Unknown Product'} - {variant.sku}
                                                 </Select.Option>
                                             ))}
                                         </Select>
