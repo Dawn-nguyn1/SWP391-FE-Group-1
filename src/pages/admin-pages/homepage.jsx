@@ -65,29 +65,21 @@ function MetricCard({ label, value, sub, change, icon, color = "purple" }) {
 function RevenueChart({ data, chartType, onChartTypeChange }) {
   const chartData = data.map(item => ({
     time: item.time,
-    year: item.year,
-    value: item.revenue || item.value || 0,
-    displayTime: `${item.time}/${item.year}`
+    year: item.year === 0 ? new Date().getFullYear() : item.year,
+    revenue: item.revenue || 0,
+    displayTime: `Tháng ${item.time}/${item.year === 0 ? new Date().getFullYear() : item.year}`
   }));
 
   return (
     <div className="revenue-chart">
       <div className="revenue-chart-header">
         <div>
-          <div className="revenue-chart-title">Biểu đồ {chartType === 'revenue' ? 'Doanh thu' : 'Đơn hàng'}</div>
-          <div className="revenue-chart-subtitle">Theo thời gian</div>
-        </div>
-        <div className="chart-controls">
-          <Switch
-            checked={chartType === 'orders'}
-            onChange={(checked) => onChartTypeChange(checked ? 'orders' : 'revenue')}
-            checkedChildren="Đơn hàng"
-            unCheckedChildren="Doanh thu"
-          />
+          <div className="revenue-chart-title">Biểu đồ Doanh thu</div>
+          <div className="revenue-chart-subtitle">Theo tháng</div>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis 
             dataKey="displayTime" 
@@ -97,26 +89,20 @@ function RevenueChart({ data, chartType, onChartTypeChange }) {
           <YAxis 
             tick={{ fontSize: 12 }}
             stroke="#6b7280"
-            tickFormatter={(value) => chartType === 'revenue' ? `${(value / 1000000).toFixed(0)}M` : value}
+            tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
           />
           <RechartsTooltip
-            formatter={(value) => [
-              chartType === 'revenue' ? formatVND(value) : value,
-              chartType === 'revenue' ? 'Doanh thu' : 'Số lượng'
-            ]}
-            labelFormatter={(label) => `Thời gian: ${label}`}
+            formatter={(value) => [formatVND(value), 'Doanh thu']}
+            labelFormatter={(label) => label}
           />
           <Legend />
-          <Line 
-            type="monotone" 
-            dataKey="value" 
-            stroke="#7c3aed" 
-            strokeWidth={2}
-            dot={{ fill: '#7c3aed', strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6 }}
-            name={chartType === 'revenue' ? 'Doanh thu' : 'Đơn hàng'}
+          <Bar 
+            dataKey="revenue" 
+            fill="#7c3aed"
+            name="Doanh thu"
+            radius={[8, 8, 0, 0]}
           />
-        </LineChart>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
