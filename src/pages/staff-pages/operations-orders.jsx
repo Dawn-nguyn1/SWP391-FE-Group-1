@@ -137,8 +137,8 @@ const getShipmentLabel = (status) => {
     const labels = {
         WAITING_CONFIRM: 'Chờ tạo vận đơn',
         READY_TO_PICK: 'Chờ GHN lấy hàng',
-        PICKING: 'Đang lấy hàng',
-        PICKED: 'Đã lấy hàng',
+        PICKING: 'GHN đang lấy hàng',
+        PICKED: 'GHN đã lấy hàng',
         DELIVERING: 'Đang giao hàng',
         DELIVERED: 'Hoàn thành',
         FAILED: 'Giao thất bại',

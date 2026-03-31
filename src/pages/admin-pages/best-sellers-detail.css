@@ -1,0 +1,219 @@
+/* Best Sellers Detail Page */
+.best-sellers-detail-container {
+  padding: 24px;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+
+.page-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.page-header {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e8e8e8;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.page-header h1 {
+  font-size: 24px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.page-header p {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.top-product-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fef3c7;
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: 1px solid #fbbf24;
+}
+
+.top-product-badge .label {
+  font-size: 12px;
+  color: #92400e;
+}
+
+.top-product-badge .value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #78350f;
+}
+
+.top-product-badge .sold {
+  font-size: 12px;
+  color: #a16207;
+}
+
+/* Summary Cards */
+.summary-cards {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  flex: 1;
+  text-align: center;
+}
+
+.summary-card .summary-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.summary-card .summary-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+/* Filter Section */
+.filter-section {
+  background: #f8fafc;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-row:last-child {
+  margin-bottom: 0;
+}
+
+.filter-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-item label {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+/* Best Sellers Table */
+.best-sellers-table .product-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rank-badge {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.rank-1 {
+  background: #fef3c7;
+  color: #f59e0b;
+}
+
+.rank-2 {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.rank-3 {
+  background: #fed7aa;
+  color: #c2410c;
+}
+
+.rank-other {
+  background: #e5e7eb;
+  color: #4b5563;
+}
+
+.product-name-text {
+  font-weight: 500;
+  color: #374151;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sold-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #059669;
+  font-weight: 600;
+}
+
+.revenue-text {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.percentage-cell {
+  min-width: 120px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .best-sellers-detail-container {
+    padding: 12px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .summary-cards {
+    flex-direction: column;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .filter-actions {
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+  
+  .top-product-badge {
+    flex-wrap: wrap;
+  }
+}

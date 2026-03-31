@@ -14,6 +14,13 @@ import VerifyRegisterOTPPage from './pages/verify-register-otp.jsx';
 import AdminHomePage from './pages/admin-pages/homepage.jsx';
 import UserPage from './components/admin-components/user/user.jsx';
 import ProductPage from './components/admin-components/product/product.jsx';
+import ComboPage from './components/admin-components/combo/combo.jsx';
+import CampaignPage from './components/admin-components/campaign/campaign.jsx';
+
+// Admin detail pages
+import RecentOrdersDetail from './pages/admin-pages/recent-orders-detail.jsx';
+import BestSellersDetail from './pages/admin-pages/best-sellers-detail.jsx';
+import LowStockDetail from './pages/admin-pages/low-stock-detail.jsx';
 
 // Customer pages
 import CustomerHomePage from './pages/customer-pages/home.jsx';
@@ -33,8 +40,6 @@ import CustomerLayout from './CustomerLayout.jsx';
 import AdminLayout from './AdminLayout.jsx';
 import ErrorPage from './pages/error/error.page.jsx';
 import PrivateRoute from './pages/admin-pages/private.route.jsx';
-import ComboPage from './components/admin-components/combo/combo.jsx';
-import CampaignPage from './components/admin-components/campaign/campaign.jsx';
 
 const ProductDetailPage = lazy(() => import('./pages/customer-pages/product-detail.jsx'));
 const OrdersPage = lazy(() => import('./pages/customer-pages/orders.jsx'));
@@ -111,7 +116,10 @@ const router = createBrowserRouter([
           { path: 'users', element: (<PrivateRoute><UserPage /></PrivateRoute>) },
           { path: 'products', element: (<PrivateRoute><ProductPage /></PrivateRoute>) },
           { path: 'combo', element: (<PrivateRoute><ComboPage /></PrivateRoute>) },
-          { path: 'campaign', element: (<PrivateRoute><CampaignPage /></PrivateRoute>) }
+          { path: 'campaign', element: (<PrivateRoute><CampaignPage /></PrivateRoute>) },
+          { path: 'recent-orders', element: (<PrivateRoute><RecentOrdersDetail /></PrivateRoute>) },
+          { path: 'best-sellers', element: (<PrivateRoute><BestSellersDetail /></PrivateRoute>) },
+          { path: 'low-stock', element: (<PrivateRoute><LowStockDetail /></PrivateRoute>) },
         ]
       },
       { path: 'staff/support', element: <SupportOrdersPage /> },

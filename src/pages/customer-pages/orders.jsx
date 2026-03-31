@@ -46,8 +46,8 @@ const STATUS_CONFIG = {
 const SHIPMENT_STATUS_CONFIG = {
     WAITING_CONFIRM: { label: 'Chờ tạo vận đơn', color: 'default' },
     READY_TO_PICK: { label: 'Chờ GHN lấy hàng', color: 'blue' },
-    PICKING: { label: 'Đang lấy hàng', color: 'blue' },
-    PICKED: { label: 'Đã lấy hàng', color: 'cyan' },
+    PICKING: { label: 'GHN đang lấy hàng', color: 'blue' },
+    PICKED: { label: 'GHN đã lấy hàng', color: 'cyan' },
     DELIVERING: { label: 'Đang giao hàng', color: 'cyan' },
     DELIVERED: { label: 'Đã giao hàng', color: 'green' },
     FAILED: { label: 'Giao hàng thất bại', color: 'red' },
@@ -207,8 +207,8 @@ const getShipmentLabel = (status) => {
     const labels = {
         WAITING_CONFIRM: 'Chờ tạo vận đơn',
         READY_TO_PICK: 'Chờ GHN lấy hàng',
-        PICKING: 'Đang lấy hàng',
-        PICKED: 'Đã lấy hàng',
+        PICKING: 'GHN đang lấy hàng',
+        PICKED: 'GHN đã lấy hàng',
         DELIVERING: 'Đang giao hàng',
         DELIVERED: 'Hoàn thành',
         FAILED: 'Giao hàng thất bại',
@@ -237,17 +237,17 @@ const getRemainingPaymentMeta = (order) => {
     if (order.orderStatus === 'PAID') {
         return {
             tone: 'waiting',
-            title: isPreOrderSupportApproved(order) ? 'Đã mở thanh toán phần còn lại' : 'Đã ghi nhận khoản thanh toán đầu tiên',
+            title: 'Đã ghi nhận khoản thanh toán đầu tiên',
             description: isPreOrderSupportApproved(order)
-                ? `Bạn có thể thanh toán ${formatVND(order.remainingAmount)} còn lại ngay bây giờ để hoàn tất đơn hàng.`
+                ? `Đơn hàng đã được support duyệt. Bạn có thể thanh toán ${formatVND(order.remainingAmount)} còn lại ngay bây giờ để hoàn tất đơn hàng.`
                 : 'Khoản thanh toán ban đầu đã được ghi nhận. Đơn hàng sẽ sớm được cập nhật cho bước tiếp theo.',
         };
     }
     if (isPreOrderSupportApproved(order)) {
         return {
-            tone: 'waiting',
-            title: 'Đơn hàng đang được cập nhật',
-            description: 'Đơn của bạn đang tiến sang giai đoạn tiếp theo. Khi đến lúc hoàn tất khoản còn lại, nút thanh toán sẽ xuất hiện tại đây.',
+            tone: 'ready',
+            title: 'Đã mở thanh toán phần còn lại',
+            description: `Bạn có thể thanh toán ${formatVND(order.remainingAmount)} còn lại ngay bây giờ.`,
         };
     }
     return {
@@ -390,7 +390,7 @@ const OrdersPage = () => {
         } catch (e) {
             const backendMessage = getErrorMessage(e, 'Không thể thanh toán phần còn lại');
             if (typeof backendMessage === 'string' && backendMessage.includes('Remaining payment is not opened yet')) {
-                message.warning('Khoản thanh toán còn lại chưa sẵn sàng. Hãy thử lại sau ít phút.');
+                message.warning('Khoản thanh toán còn lại chưa được backend mở. Vui lòng chờ đến khi trạng thái đơn được cập nhật rồi thử lại.');
             } else {
                 message.error(backendMessage);
             }

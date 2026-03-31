@@ -388,20 +388,17 @@ const ProductForm = (props) => {
                                                                 <Form.Item
                                                                     {...restField}
                                                                     name={[name, 'preorderLimit']}
-                                                                    label="Preorder Limit"
+                                                                    label="Preorder Limit (Tùy chọn)"
                                                                     dependencies={[[name, 'allowPreorder']]}
                                                                     rules={[
-                                                                        ({ getFieldValue }) => ({
-                                                                            validator(_, value) {
-                                                                                if (getFieldValue([name, 'allowPreorder']) && (!value || value < 0)) {
-                                                                                    return Promise.reject('Preorder limit is required when preorder is allowed!');
-                                                                                }
-                                                                                return Promise.resolve();
-                                                                            },
-                                                                        }),
+                                                                        {
+                                                                            type: 'number',
+                                                                            min: 0,
+                                                                            message: 'Preorder limit phải >= 0',
+                                                                        },
                                                                     ]}
                                                                 >
-                                                                    <InputNumber style={{ width: '100%' }} min={0} placeholder="0" />
+                                                                    <InputNumber style={{ width: '100%' }} min={0} placeholder="Không giới hạn" />
                                                                 </Form.Item>
                                                             </Col>
                                                             <Col span={8}>
@@ -547,12 +544,11 @@ const ProductForm = (props) => {
                                                                                 {...imgRestField}
                                                                                 name={[imgName, 'imageUrl']}
                                                                                 rules={[
-                                                                                    { required: true, message: 'Missing image URL' },
                                                                                     { max: 255, message: 'Image URL cannot exceed 255 characters!' }
                                                                                 ]}
                                                                                 style={{ flex: 1 }}
                                                                             >
-                                                                                <Input placeholder="Image URL" />
+                                                                                <Input placeholder="Image URL (tùy chọn)" />
                                                                             </Form.Item>
                                                                             <Form.Item
                                                                                 {...imgRestField}

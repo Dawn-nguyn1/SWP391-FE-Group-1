@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { Table, Popconfirm, notification, Switch, Input, Select, Tooltip } from 'antd';
+import { Table, Modal, notification, Switch, Input, Select, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined, CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import ViewUserDetail from './user.detail';
 import { deleteUserAPI, updateUserStatusAPI } from '../../../services/api.service';
@@ -185,21 +185,22 @@ const UserTable = (props) => {
                                 <DeleteOutlined />
                             </button>
                         ) : (
-                            <Popconfirm
-                                title="Xóa người dùng"
-                                description="Bạn chắc chắn xóa user này ?"
-                                onConfirm={() => handleDeleteUser(record.id)}
-                                okText="Yes"
-                                cancelText="No"
-                                placement="left"
+                            <button
+                                className="action-btn-icon delete-btn"
+                                onClick={() => {
+                                    Modal.confirm({
+                                        title: 'Xóa người dùng',
+                                        content: 'Bạn chắc chắn muốn xóa user này?',
+                                        okText: 'Xóa',
+                                        cancelText: 'Hủy',
+                                        okButtonProps: { danger: true },
+                                        onOk: () => handleDeleteUser(record.id),
+                                    });
+                                }}
+                                title="Delete"
                             >
-                                <button
-                                    className="action-btn-icon delete-btn"
-                                    title="Delete"
-                                >
-                                    <DeleteOutlined />
-                                </button>
-                            </Popconfirm>
+                                <DeleteOutlined />
+                            </button>
                         )}
                     </div>
                 );

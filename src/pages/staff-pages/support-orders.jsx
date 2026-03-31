@@ -455,11 +455,6 @@ const SupportOrdersPage = () => {
     const refundPageItems = refundRequests.slice(refundStart, refundStart + refundPageSize);
     const loadedOrderCount = pageOrders.length;
 
-    const endpointPills = [
-        { label: 'Orders Queue', value: '/api/support_staff/orders/waiting' },
-        { label: 'Returns Queue', value: '/api/support_staff/return-requests/submitted' },
-        { label: 'Refund Queue', value: '/api/support_staff/refund-requests/requested' },
-    ];
     const orderPageCount = Math.max(Math.ceil(waitingCount / pageSize), 1);
     const returnPageCount = Math.max(Math.ceil(returnTotal / returnPageSize), 1);
     const refundPageCount = Math.max(Math.ceil(refundTotal / refundPageSize), 1);
@@ -525,15 +520,6 @@ const SupportOrdersPage = () => {
                 <div className="support-branding">
                     <p className="support-label">Support Desk</p>
                     <h1>Genetix Support Workspace</h1>
-                    <span>Giao diện này bám trực tiếp theo 2 queue BE hiện có: danh sách đơn support và return request đã submitted.</span>
-                    <div className="endpoint-pills">
-                        {endpointPills.map((item) => (
-                            <span key={item.value} className="endpoint-pill">
-                                <strong>{item.label}</strong>
-                                <code>{item.value}</code>
-                            </span>
-                        ))}
-                    </div>
                 </div>
                 <div className="support-metrics">
                     <div className="metric-card">
@@ -590,7 +576,6 @@ const SupportOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Đơn hàng cần duyệt</h2>
-                            <p>Luồng mới: support duyệt đơn pre-order xong thì customer sẽ thanh toán phần còn lại. Operations chỉ xử lý sau khi khách hoàn tất bước này.</p>
                         </div>
                         <div className="support-panel-meta">
                             <span className="queue-badge queue-orders">Orders Queue</span>
@@ -672,10 +657,6 @@ const SupportOrdersPage = () => {
                                                     <span className="info-label">Trạng thái GHN</span>
                                                     <span className="info-value">{getShipmentLabel(order.shipmentStatus)}</span>
                                                 </div>
-                                                <div className="info-row full">
-                                                    <span className="info-label">Bước tiếp theo</span>
-                                                    <span className="info-value">{getSupportNextStep(order)}</span>
-                                                </div>
                                             </div>
 
                                             <div className="order-footer">
@@ -718,7 +699,6 @@ const SupportOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Yêu cầu trả hàng</h2>
-                            <p>Danh sách return request được sắp xếp mới nhất trước và phân trang phía FE theo payload `submitted`.</p>
                         </div>
                         <div className="support-panel-meta">
                             <span className="queue-badge queue-returns">Returns Queue</span>
@@ -852,7 +832,6 @@ const SupportOrdersPage = () => {
                     <div className="panel-header">
                         <div>
                             <h2>Yeu cau hoan tien</h2>
-                            <p>Queue nay duoc tao sau khi operations nhan hang hoan tra. Support danh dau hoan tat hoac tu choi yeu cau hoan tien tai day.</p>
                         </div>
                         <div className="support-panel-meta">
                             <span className="queue-badge queue-returns">Refund Queue</span>
@@ -1034,9 +1013,6 @@ const SupportOrdersPage = () => {
                             <Descriptions.Item label="Trạng thái GHN">
                                 {getShipmentLabel(selectedOrder.shipmentStatus)}
                             </Descriptions.Item>
-                            <Descriptions.Item label="Bước tiếp theo" span={2}>
-                                {getSupportNextStep(selectedOrder)}
-                            </Descriptions.Item>
                         </Descriptions>
                     </div>
                 )}
@@ -1070,7 +1046,6 @@ const SupportOrdersPage = () => {
                 cancelText="Đóng"
                 okButtonProps={{ danger: true, loading: actioning === cancelTarget?.id }}
             >
-                <p>Backend yêu cầu truyền `reason` và `note` khi support hủy đơn.</p>
                 <div style={{ display: 'grid', gap: 12 }}>
                     <label>
                         <span style={{ display: 'block', marginBottom: 6 }}>Lý do hoàn tiền</span>
