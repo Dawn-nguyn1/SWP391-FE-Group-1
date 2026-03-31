@@ -136,8 +136,8 @@ export default function BestSellersDetail() {
       <Card className="page-card">
         <div className="page-header">
           <div>
-            <h1><TrophyOutlined /> Tổng sản phẩm đã bán</h1>
-            <p>Thống kê chi tiết sản phẩm bán chạy nhất</p>
+            <h1><TrophyOutlined style={{ color: 'white' }} /> <span style={{ color: 'white' }}>Tổng sản phẩm đã bán</span></h1>
+            <p style={{ color: 'white' }}>Thống kê chi tiết sản phẩm bán chạy nhất</p>
           </div>
           {topProduct && (
             <div className="top-product-badge">

@@ -163,8 +163,8 @@ export default function RecentOrdersDetail() {
       <Card className="page-card">
         <div className="page-header">
           <div>
-            <h1>Đơn hàng gần đây</h1>
-            <p>Chi tiết tất cả đơn hàng trong hệ thống</p>
+            <h1 style={{ color: 'white' }}>Đơn hàng gần đây</h1>
+            <p style={{ color: 'white' }}>Chi tiết tất cả đơn hàng trong hệ thống</p>
           </div>
         </div>
 
