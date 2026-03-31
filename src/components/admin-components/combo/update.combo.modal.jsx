@@ -1,4 +1,5 @@
 import { Button, Input, Modal, Select, Form, message, Card, Divider, Tag, Space } from "antd";
+
 import { PlusOutlined } from '@ant-design/icons';
 import React, { useState, useEffect } from 'react';
 import { updateComboAPI, fetchVariantsAPI, fetchComboByIdAPI } from '../../../services/api.service';
@@ -177,7 +178,7 @@ const UpdateComboModal = (props) => {
                                         >
                                             {variants.map(variant => (
                                                 <Select.Option key={variant.id} value={variant.id}>
-                                                    {variant.product?.name || 'Unknown Product'} - {variant.sku}
+                                                    {variant.sku}- {variant.price} đ
                                                 </Select.Option>
                                             ))}
                                         </Select>
@@ -216,7 +217,7 @@ const UpdateComboModal = (props) => {
                         </>
                     )}
                 </Form.List>
-
+                
                 {/* Display existing attributes and images */}
                 {comboDetail?.items?.some(item => item.attributes && item.attributes.length > 0) && (
                     <Divider>Current Attributes & Images</Divider>
@@ -231,7 +232,7 @@ const UpdateComboModal = (props) => {
                                 <div key={attrIndex} style={{ marginBottom: 12 }}>
                                     <Tag color="purple">{attr.attributeName}</Tag>
                                     <span style={{ marginLeft: 8 }}>{attr.attributeValue}</span>
-                                    
+                                
                                     {attr.images && attr.images.length > 0 && (
                                         <div style={{ marginTop: 8 }}>
                                             <div style={{ fontSize: '12px', color: '#999', marginBottom: 4 }}>Images:</div>

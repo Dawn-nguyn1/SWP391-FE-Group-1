@@ -115,6 +115,14 @@ const getBrandsAPI = () => axios.get('/api/public/products/brands');
 const getPublicCombosAPI = (page = 0, size = 10) => axios.get('/api/public/products/combos', { params: { page, size } });
 const getPublicComboDetailAPI = (id) => axios.get(`/api/public/products/combos/${id}`);
 
+const getPublicCampaignsAPI = () => axios.get('/api/public/products/campaigns');
+
+const getPublicCampaignDetailAPI = (campaignId) => axios.get(`/api/public/products/campaigns/${campaignId}`);
+
+
+
+// ===== CART APIs =====
+
 const getCartAPI = () => axios.get('/api/customer/cart');
 const addToCartAPI = (productVariantId, quantity) => axios.post('/api/customer/cart/add', { productVariantId, quantity });
 const updateCartItemAPI = (itemId, quantity) => axios.put(`/api/customer/cart/items/${itemId}`, { quantity });
@@ -201,11 +209,37 @@ const deactivatePreorderCampaignAPI = (id) => axios.patch(`/api/manager/preorder
 export {
     createUserAPI, updateUserAPI, fetchAllUserAPI, searchAdminUsersAPI, deleteUserAPI, getUserByIdAPI, updateUserStatusAPI,
     registerUserAPI, forgotPasswordAPI, resetPasswordAPI, verifyRegisterOTPAPI, resendRegisterOTPAPI, loginAPI,
-    fetchProductsAPI, fetchVariantsAPI, fetchProductByIdAPI, createProductAPI, createVariantAPI, createAttributeAPI,
-    updateProductAPI, updateVariantAPI, updateAttributeAPI, deleteProductAPI, deleteVariantAPI, deleteAttributeAPI,
-    fetchManagerProductByIdAPI, addImagesToAttributeAPI, updateAttributeImageAPI, deleteAttributeImageAPI, searchManagerProductsAPI,
-    fetchCombosAPI, fetchComboByIdAPI, createComboAPI, updateComboAPI, deleteComboAPI,
-    getPublicProductsAPI, searchProductsAPI, getPublicProductDetailAPI, getBrandsAPI, getPublicCombosAPI, getPublicComboDetailAPI,
+
+    // Product APIs
+
+    fetchProductsAPI, fetchVariantsAPI, fetchProductByIdAPI,
+
+    createProductAPI, createVariantAPI, createAttributeAPI,
+
+    updateProductAPI, updateVariantAPI, updateAttributeAPI,
+
+    deleteProductAPI, deleteVariantAPI, deleteAttributeAPI,
+
+    fetchManagerProductByIdAPI,
+
+    addImagesToAttributeAPI, updateAttributeImageAPI, deleteAttributeImageAPI,
+
+    searchManagerProductsAPI,
+
+    // Combo Management APIs
+
+    fetchCombosAPI, fetchComboByIdAPI,
+
+    createComboAPI, updateComboAPI, deleteComboAPI,
+
+    // Public product APIs
+
+    getPublicProductsAPI, searchProductsAPI, getPublicProductDetailAPI, getBrandsAPI,
+
+    getPublicCombosAPI, getPublicComboDetailAPI, getPublicCampaignsAPI, getPublicCampaignDetailAPI,
+
+    // Cart APIs
+
     getCartAPI, addToCartAPI, updateCartItemAPI, removeCartItemAPI, updateCartSummaryAPI, clearCartAPI, checkoutAPI,
     getProfileAPI, updateProfileAPI, changePasswordAPI, deleteProfileAPI, getAddressesAPI, createAddressAPI, updateAddressAPI,
     setDefaultAddressAPI, deleteAddressAPI, cancelOrderByCustomerAPI, getCustomerOrdersAPI, getCustomerOrderDetailAPI,

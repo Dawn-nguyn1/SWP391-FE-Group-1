@@ -41,7 +41,7 @@
     display: grid;
     grid-template-columns: minmax(320px, 0.82fr) minmax(0, 1.18fr);
     gap: 28px;
-    padding: 28px;
+    padding: 32px;
     border-radius: 28px;
     background: rgba(255, 255, 255, 0.95);
     border: 1px solid rgba(226, 232, 240, 0.88);
@@ -249,7 +249,7 @@
 .detail-title {
     margin: 0 0 10px;
     color: #172033;
-    font-size: 40px;
+    font-size: 42px;
     line-height: 1.04;
     letter-spacing: -0.04em;
 }
@@ -293,7 +293,7 @@
 
 .status-panel {
     margin-bottom: 20px;
-    padding: 16px 18px;
+    padding: 18px 20px;
     border-radius: 18px;
     border: 1px solid rgba(226, 232, 240, 0.8);
 }
@@ -344,8 +344,8 @@
 .status-panel p {
     margin: 0;
     color: #4b5563;
-    line-height: 1.6;
-    font-size: 14px;
+    line-height: 1.72;
+    font-size: 15px;
 }
 
 .status-meta-row {
@@ -360,7 +360,7 @@
 
 .preorder-zone {
     margin-bottom: 20px;
-    padding: 16px;
+    padding: 20px;
     border-radius: 20px;
     background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%);
     border: 1px solid #fde68a;
@@ -604,8 +604,8 @@
 .detail-desc p {
     margin: 0;
     color: #64748b;
-    font-size: 14px;
-    line-height: 1.72;
+    font-size: 15px;
+    line-height: 1.8;
 }
 
 .detail-meta {

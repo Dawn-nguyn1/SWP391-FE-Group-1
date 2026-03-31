@@ -209,7 +209,7 @@ const ComboForm = (props) => {
                                             >
                                                 {variants.map(variant => (
                                                     <Select.Option key={variant.id} value={variant.id}>
-                                                        {variant.product?.name || 'Unknown Product'} - {variant.sku}
+                                                          {variant.sku}- {variant.price} đ
                                                     </Select.Option>
                                                 ))}
                                             </Select>

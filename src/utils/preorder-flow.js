@@ -1,4 +1,4 @@
-const PREORDER_REMAINING_OPEN_STATUSES = new Set(['PENDING_PAYMENT']);
+const PREORDER_REMAINING_OPEN_STATUSES = new Set(['PENDING_PAYMENT', 'READY_FOR_REMAINING_PAYMENT']);
 const PREORDER_REMAINING_DONE_STATUSES = new Set([
     'SUPPORT_CONFIRMED',
     'OPERATION_CONFIRMED',
@@ -38,6 +38,7 @@ export const isPreOrderRemainingOpen = (order) =>
     && (
         order?.remainingPaymentOpen === true
         || isPreOrderSupportApproved(order)
+        || Boolean(order?.remainingPaymentOpenedAt)
         || PREORDER_REMAINING_OPEN_STATUSES.has(order?.orderStatus)
     );
 
@@ -57,7 +58,7 @@ export const isPreOrderReadyForOperation = (order) =>
     && (
         isPreOrderFullyPaidAfterSupport(order)
         || order?.queueSource === 'approved_queue'
-        || order?.orderStatus === 'SUPPORT_CONFIRMED'
+        || order?.orderStatus === 'OPERATION_CONFIRMED'
         || order?.orderStatus === 'SHIPPING'
         || order?.orderStatus === 'COMPLETED'
     );

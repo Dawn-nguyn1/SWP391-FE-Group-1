@@ -1,9 +1,11 @@
 .customer-footer {
-    background: #0f172a;
-    color: #94a3b8;
+    background:
+        radial-gradient(circle at top left, rgba(245, 158, 11, 0.08), transparent 26%),
+        linear-gradient(180deg, #2a160b 0%, #1a0f08 100%);
+    color: #d7c3ae;
     padding: 80px 0 0;
     margin-top: auto;
-    border-top: 1px solid #1e293b;
+    border-top: 1px solid rgba(251, 191, 36, 0.12);
 }
 
 .footer-inner {
@@ -28,8 +30,36 @@
 .footer-brand p {
     font-size: 14px;
     line-height: 1.6;
-    color: #94a3b8;
+    color: #e7d4bf;
     max-width: 320px;
+}
+
+.footer-highlight-card {
+    margin-top: 22px;
+    padding: 18px 18px 16px;
+    border-radius: 22px;
+    background: rgba(255, 247, 237, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    display: grid;
+    gap: 8px;
+    max-width: 360px;
+}
+
+.footer-highlight-card strong {
+    color: #fff7ed;
+    font-size: 1rem;
+}
+
+.footer-highlight-card span {
+    color: #f5dcc3;
+    line-height: 1.55;
+    font-size: 13px;
+}
+
+.footer-highlight-card a {
+    color: #fbbf24;
+    text-decoration: none;
+    font-weight: 800;
 }
 
 .footer-socials {
@@ -44,7 +74,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #1e293b;
+    background: rgba(255, 247, 237, 0.08);
     border-radius: 8px;
     text-decoration: none;
     transition: all 0.2s ease;
@@ -55,7 +85,7 @@
 .footer-socials a:hover {
     filter: grayscale(0);
     opacity: 1;
-    background: #4f46e5;
+    background: #c2410c;
     transform: translateY(-2px);
 }
 
@@ -66,7 +96,7 @@
 }
 
 .footer-col h4 {
-    color: #fff;
+    color: #fff7ed;
     font-size: 15px;
     font-weight: 700;
     margin-bottom: 8px;
@@ -74,23 +104,23 @@
 
 .footer-col a,
 .footer-col span {
-    color: #94a3b8;
+    color: #e7d4bf;
     font-size: 14px;
     text-decoration: none;
     transition: all 0.2s ease;
 }
 
 .footer-col a:hover {
-    color: #818cf8;
+    color: #fbbf24;
     padding-left: 4px;
 }
 
 .footer-bottom {
     text-align: center;
     padding: 24px 20px;
-    border-top: 1px solid #1e293b;
+    border-top: 1px solid rgba(251, 191, 36, 0.12);
     font-size: 13px;
-    color: #64748b;
+    color: #c9aa8a;
 }
 
 @media (max-width: 768px) {

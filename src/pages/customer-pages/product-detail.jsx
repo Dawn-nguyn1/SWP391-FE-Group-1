@@ -1,8 +1,15 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Spin, message, InputNumber, Button } from 'antd';
-import { ShoppingCartOutlined, ArrowLeftOutlined, CheckCircleOutlined, ThunderboltOutlined, InboxOutlined } from '@ant-design/icons';
-import { getPublicProductDetailAPI, addToCartAPI } from '../../services/api.service';
+import {
+    ShoppingCartOutlined,
+    ArrowLeftOutlined,
+    CheckCircleOutlined,
+    ThunderboltOutlined,
+    InboxOutlined,
+    RightOutlined,
+} from '@ant-design/icons';
+import { addToCartAPI, getPublicCampaignsAPI, getPublicProductDetailAPI } from '../../services/api.service';
 import { CartContext } from '../../context/cart.context';
 import { AuthContext } from '../../context/auth.context';
 import './product-detail.css';
@@ -21,7 +28,6 @@ const formatDate = (value) => {
 };
 
 const normalizeImage = (image) => image?.imageUrl || image?.url || image || null;
-const DEFAULT_PREORDER_LIMIT = 2;
 
 const getVariantImages = (variant, productImage) => {
     const attributeImages = (variant?.attributes || [])
@@ -37,248 +43,51 @@ const getVariantLabel = (variant) => {
     return values.length > 0 ? values.join(' / ') : variant?.sku || `Variant ${variant?.id}`;
 };
 
-const getPreorderWindowState = (variant) => {
-    const now = new Date();
-    const start = variant?.preorderStartDate ? new Date(variant.preorderStartDate) : null;
-    const end = variant?.preorderEndDate ? new Date(variant.preorderEndDate) : null;
-
-    if (start && !Number.isNaN(start.getTime()) && now < start) return 'upcoming';
-    if (end && !Number.isNaN(end.getTime()) && now > end) return 'closed';
-    return 'open';
-};
-
 const hasPositiveStock = (variant) => {
     const stockQuantity = Number(variant?.stockQuantity);
-    if (variant?.saleType === 'PRE_ORDER') {
-        return Number.isFinite(stockQuantity) && stockQuantity >= 0;
-    }
     return Number.isFinite(stockQuantity) && stockQuantity > 0;
-};
-
-const getPreorderEligibility = (variant) => {
-    if (!variant || variant?.saleType !== 'PRE_ORDER') {
-        return { isPreorder: false, canPreorder: false, remainingSlots: null };
-    }
-
-    const hasAllowFlag = Object.prototype.hasOwnProperty.call(variant || {}, 'allowPreorder');
-    const allowPreorder = hasAllowFlag ? variant?.allowPreorder === true : true;
-    const currentPreorders = Number(variant?.currentPreorders);
-    const hasCurrent = Number.isFinite(currentPreorders) && currentPreorders >= 0;
-    const preorderLimit = DEFAULT_PREORDER_LIMIT;
-    const hasLimit = true;
-    const remainingSlots = Math.max(preorderLimit - (hasCurrent ? currentPreorders : 0), 0);
-    const hasFulfillmentDate = !Object.prototype.hasOwnProperty.call(variant || {}, 'preorderFulfillmentDate')
-        || Boolean(variant?.preorderFulfillmentDate);
-    const windowState = getPreorderWindowState(variant);
-    const hasPositiveUpcomingStock = hasPositiveStock(variant);
-
-    return {
-        isPreorder: true,
-        canPreorder: allowPreorder
-            && hasLimit
-            && hasFulfillmentDate
-            && hasPositiveUpcomingStock
-            && windowState === 'open'
-            && (remainingSlots === null || remainingSlots > 0),
-        allowPreorder,
-        hasLimit,
-        remainingSlots,
-        windowState,
-        hasFulfillmentDate,
-        hasPositiveUpcomingStock,
-    };
 };
 
 const getAvailabilityMeta = (variant) => {
     if (!variant) {
         return {
-            label: 'Chưa có biến thể',
+            label: 'Tạm hết lựa chọn',
             tone: 'out',
-            copy: 'Sản phẩm này hiện chưa có biến thể khả dụng.',
+            copy: 'Mẫu này đang được cập nhật thêm phiên bản phù hợp. Vui lòng quay lại sau để xem tiếp.',
             canAddToCart: false,
         };
     }
-
-    const availability = variant?.availabilityStatus;
-    const preorder = getPreorderEligibility(variant);
 
     if (variant?.saleType === 'PRE_ORDER') {
-        if (availability === 'PRE_ORDER') {
-            if (!hasPositiveStock(variant)) {
-                return {
-                    label: 'Hết hàng',
-                    tone: 'out',
-                    copy: 'Biến thể này không có stock hợp lệ để nhận đơn.',
-                    canAddToCart: false,
-                };
-            }
-
-            if (!preorder.hasLimit || preorder.remainingSlots === 0) {
-                return {
-                    label: 'Hết suất',
-                    tone: 'out',
-                    copy: 'Biến thể này đã hết suất nhận đơn.',
-                    canAddToCart: false,
-                };
-            }
-
-            if (!preorder.canPreorder) {
-                return {
-                    label: 'Tạm đóng',
-                    tone: 'out',
-                    copy: 'Biến thể này chưa đủ điều kiện nhận đơn.',
-                    canAddToCart: false,
-                };
-            }
-
-            return {
-                label: 'Stock',
-                tone: 'in',
-                copy: variant?.preorderFulfillmentDate
-                    ? `Đang mở pre-order, hàng dự kiến về từ ${formatDate(variant.preorderFulfillmentDate)}.`
-                    : 'Đang mở pre-order, có thể đặt ngay.',
-                canAddToCart: true,
-            };
-        }
-
-        if (availability === 'OUT_OF_STOCK') {
-            return {
-                label: 'Tạm đóng',
-                tone: 'out',
-                copy: 'Biến thể này hiện chưa mở nhận đơn.',
-                canAddToCart: false,
-            };
-        }
-
-        if (availability === 'IN_STOCK') {
-            if (!preorder.canPreorder) {
-                return {
-                    label: 'Tạm đóng',
-                    tone: 'out',
-                    copy: 'Biến thể này chưa đủ điều kiện nhận thêm đơn.',
-                    canAddToCart: false,
-                };
-            }
-
-            return {
-                label: 'Stock',
-                tone: 'in',
-                copy: variant?.preorderFulfillmentDate
-                    ? `Đang xử lý, dự kiến hoàn tất từ ${formatDate(variant.preorderFulfillmentDate)}.`
-                    : 'Đang xử lý đơn hàng.',
-                canAddToCart: true,
-            };
-        }
-
-        if (preorder.windowState === 'upcoming') {
-            return {
-                label: 'Sắp mở',
-                tone: 'out',
-                copy: variant?.preorderStartDate
-                    ? `Mở nhận đơn từ ${formatDate(variant.preorderStartDate)}.`
-                    : 'Chưa mở nhận đơn.',
-                canAddToCart: false,
-            };
-        }
-
-        if (preorder.windowState === 'closed') {
-            return {
-                label: 'Đã đóng',
-                tone: 'out',
-                copy: 'Đã kết thúc nhận đơn.',
-                canAddToCart: false,
-            };
-        }
-
-        if (!preorder.allowPreorder) {
-            return {
-                label: 'Chưa bật',
-                tone: 'out',
-                copy: 'Biến thể này chưa được mở cho đặt trước.',
-                canAddToCart: false,
-            };
-        }
-
         return {
-            label: 'Tạm đóng',
+            label: 'Đặt qua chiến dịch',
             tone: 'out',
-            copy: 'Biến thể này chưa có trạng thái phù hợp.',
+            copy: 'Phiên bản này đang mở bán trong một chiến dịch riêng để bạn theo dõi thông tin và quyền lợi trọn vẹn hơn.',
             canAddToCart: false,
         };
     }
 
-    // IN_STOCK variants
-    if (availability === 'OUT_OF_STOCK') {
+    if (variant?.availabilityStatus === 'OUT_OF_STOCK' || !hasPositiveStock(variant)) {
         return {
-            label: 'Hết hàng',
+            label: 'Tạm hết hàng',
             tone: 'out',
-            copy: 'Hiện chưa thể thêm vào giỏ hàng.',
+            copy: 'Phiên bản này đang được khách hàng quan tâm nhiều. Bạn có thể chọn phiên bản khác hoặc quay lại sau.',
             canAddToCart: false,
         };
     }
-    if (!hasPositiveStock(variant)) {
-        return {
-            label: 'Hết hàng',
-            tone: 'out',
-            copy: 'Biến thể này đã hết hàng.',
-            canAddToCart: false,
-        };
-    }
+
     return {
-        label: 'Stock',
+        label: 'Có sẵn',
         tone: 'in',
-        copy: `Tồn kho hiện tại: ${Math.max((variant?.stockQuantity ?? 0) - (variant?.currentPreorders ?? 0), 0)}`,
+        copy: `Sẵn sàng để thêm vào giỏ với số lượng còn lại: ${Math.max((variant?.stockQuantity ?? 0) - (variant?.currentPreorders ?? 0), 0)}`,
         canAddToCart: true,
     };
 };
 
-const getPreorderMetrics = (variant) => {
-    const currentPreorders = Number(variant?.currentPreorders);
-    const hasCurrent = Number.isFinite(currentPreorders) && currentPreorders >= 0;
-    const safeLimit = DEFAULT_PREORDER_LIMIT;
-    const safeCurrent = hasCurrent ? currentPreorders : 0;
-    const remaining = Math.max(safeLimit - safeCurrent, 0);
-    const percent = safeLimit > 0
-        ? Math.min((safeCurrent / safeLimit) * 100, 100)
-        : null;
-
-    return {
-        preorderLimit: safeLimit,
-        currentPreorders: safeCurrent,
-        remaining,
-        percent,
-        hasLimit: true,
-        hasCurrent,
-    };
-};
-
 const getDefaultVariantId = (variants = []) => {
-    const preorderReady = variants.find((variant) => {
-        const availability = getAvailabilityMeta(variant);
-        return availability.canAddToCart && variant?.saleType === 'PRE_ORDER';
-    });
-    if (preorderReady?.id) return preorderReady.id;
-
-    const sellable = variants.find((variant) => getAvailabilityMeta(variant).canAddToCart);
-    if (sellable?.id) return sellable.id;
-
+    const inStockVariant = variants.find((variant) => getAvailabilityMeta(variant).canAddToCart);
+    if (inStockVariant?.id) return inStockVariant.id;
     return variants?.[0]?.id || null;
-};
-
-const getActionLabel = (variant, availabilityMeta) => {
-    if (availabilityMeta.canAddToCart) {
-        return variant?.saleType === 'PRE_ORDER' ? 'Đặt trước ngay' : 'Thêm vào giỏ hàng';
-    }
-
-    if (variant?.saleType === 'PRE_ORDER') {
-        if (availabilityMeta.label === 'Sắp mở pre-order') return 'Chưa mở nhận cọc';
-        if (availabilityMeta.label === 'Đã đóng pre-order') return 'Đã đóng pre-order';
-        if (availabilityMeta.label === 'Tạm đóng pre-order') return 'Tạm đóng pre-order';
-        if (availabilityMeta.label === 'Pre-order chưa bật') return 'Pre-order chưa bật';
-        if (availabilityMeta.label === 'Chờ trạng thái từ BE') return 'Chờ BE mở trạng thái';
-    }
-
-    return 'Hết hàng';
 };
 
 const ProductDetailPage = () => {
@@ -288,6 +97,7 @@ const ProductDetailPage = () => {
     const { fetchCart } = useContext(CartContext);
 
     const [product, setProduct] = useState(null);
+    const [campaigns, setCampaigns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedVariantId, setSelectedVariantId] = useState(null);
     const [quantity, setQuantity] = useState(1);
@@ -295,16 +105,24 @@ const ProductDetailPage = () => {
     const [activeImg, setActiveImg] = useState(0);
 
     useEffect(() => {
-        getPublicProductDetailAPI(id)
-            .then((response) => {
-                setProduct(response);
-                const defaultVariantId = getDefaultVariantId(response?.variants || []);
+        let cancelled = false;
+
+        Promise.all([getPublicProductDetailAPI(id), getPublicCampaignsAPI()])
+            .then(([productResponse, campaignResponse]) => {
+                if (cancelled) return;
+                setProduct(productResponse);
+                setCampaigns(Array.isArray(campaignResponse) ? campaignResponse : []);
+                const defaultVariantId = getDefaultVariantId(productResponse?.variants || []);
                 if (defaultVariantId) {
                     setSelectedVariantId(defaultVariantId);
                 }
             })
-            .catch(() => message.error('Không tìm thấy sản phẩm'))
-            .finally(() => setLoading(false));
+            .catch(() => !cancelled && message.error('Không tìm thấy sản phẩm'))
+            .finally(() => !cancelled && setLoading(false));
+
+        return () => {
+            cancelled = true;
+        };
     }, [id]);
 
     const selectedVariant = useMemo(
@@ -312,53 +130,51 @@ const ProductDetailPage = () => {
         [product, selectedVariantId]
     );
 
+    const productCampaigns = useMemo(() => {
+        const variantIds = new Set((product?.variants || []).map((variant) => variant?.id));
+        return campaigns.filter((campaign) => {
+            const campaignVariantIds = Array.isArray(campaign?.variantIds)
+                ? campaign.variantIds
+                : Array.from(campaign?.variantIds || []);
+            return campaignVariantIds.some((variantId) => variantIds.has(variantId));
+        });
+    }, [campaigns, product?.variants]);
+
+    const matchedCampaign = useMemo(() => {
+        if (!selectedVariant?.id) return null;
+        return productCampaigns.find((campaign) => {
+            const campaignVariantIds = Array.isArray(campaign?.variantIds)
+                ? campaign.variantIds
+                : Array.from(campaign?.variantIds || []);
+            return campaignVariantIds.includes(selectedVariant.id);
+        }) || null;
+    }, [productCampaigns, selectedVariant?.id]);
+
     const variantImages = useMemo(
         () => getVariantImages(selectedVariant, product?.productImage),
         [selectedVariant, product?.productImage]
     );
+
     const productImage = useMemo(() => normalizeImage(product?.productImage), [product?.productImage]);
+    const availabilityMeta = getAvailabilityMeta(selectedVariant);
+    const maxQuantity = availabilityMeta.canAddToCart
+        ? Math.max((selectedVariant?.stockQuantity ?? 0) - (selectedVariant?.currentPreorders ?? 0), 1)
+        : 1;
 
     useEffect(() => {
         setActiveImg(0);
         setQuantity(1);
     }, [selectedVariantId]);
 
-    const availabilityMeta = getAvailabilityMeta(selectedVariant);
-    const preorderMetrics = getPreorderMetrics(selectedVariant);
-    const preorderEligibility = getPreorderEligibility(selectedVariant);
-    const isPreorderVariant = selectedVariant?.saleType === 'PRE_ORDER';
-    const hasPreorderWindow = Boolean(
-        isPreorderVariant && (selectedVariant?.preorderStartDate || selectedVariant?.preorderEndDate || selectedVariant?.preorderFulfillmentDate)
-    );
-    const actionLabel = getActionLabel(selectedVariant, availabilityMeta);
-    const maxQuantity = availabilityMeta.canAddToCart
-        ? Math.max(
-            1,
-            selectedVariant?.saleType === 'PRE_ORDER'
-                ? preorderEligibility.remainingSlots || 1
-                : Math.max((selectedVariant?.stockQuantity ?? 0) - (selectedVariant?.currentPreorders ?? 0), 0) || 1
-        )
-        : 1;
-
     const handleAddToCart = async () => {
         if (!user?.id) {
-            message.warning('Vui lòng đăng nhập để thêm vào giỏ hàng');
+            message.warning('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
             navigate('/login');
             return;
         }
 
-        if (!selectedVariant?.id) {
-            message.warning('Vui lòng chọn biến thể sản phẩm');
-            return;
-        }
-
-        if (!availabilityMeta.canAddToCart) {
-            message.warning('Biến thể này hiện chưa thể thêm vào giỏ hàng');
-            return;
-        }
-
-        if (quantity > maxQuantity) {
-            message.warning(`Số lượng vượt quá mức cho phép. Bạn chỉ có thể đặt tối đa ${maxQuantity}.`);
+        if (!selectedVariant?.id || !availabilityMeta.canAddToCart) {
+            message.warning('Phiên bản này hiện chưa thể thêm vào giỏ hàng');
             return;
         }
 
@@ -368,15 +184,7 @@ const ProductDetailPage = () => {
             await fetchCart();
             message.success('Đã thêm vào giỏ hàng');
         } catch (error) {
-            const backendMessage = error?.response?.data?.message || error?.message || 'Không thể thêm vào giỏ hàng';
-            if (
-                typeof backendMessage === 'string'
-                && (backendMessage.includes('Pre-order is not available') || backendMessage.includes('Variant is not available for preorder'))
-            ) {
-                message.error('Biến thể này chưa được backend mở cho preorder. Hãy chọn biến thể khác hoặc cập nhật cấu hình BE.');
-            } else {
-                message.error(backendMessage);
-            }
+            message.error(error?.message || 'Không thể thêm vào giỏ hàng');
         } finally {
             setAdding(false);
         }
@@ -404,10 +212,10 @@ const ProductDetailPage = () => {
 
                         <div className="gallery-shell">
                             <div className="main-img-wrap">
-                                {productImage ? (
-                                    <img src={productImage} alt={product.name} className="main-img" />
+                                {variantImages[activeImg] || productImage ? (
+                                    <img src={variantImages[activeImg] || productImage} alt={product.name} className="main-img" />
                                 ) : (
-                                    <div className="main-img-placeholder">👓</div>
+                                    <div className="main-img-placeholder">Kính</div>
                                 )}
                             </div>
                         </div>
@@ -415,8 +223,8 @@ const ProductDetailPage = () => {
                         <div className="gallery-panel">
                             <div className="gallery-panel-head">
                                 <div>
-                                    <span className="gallery-panel-kicker">Variant gallery</span>
-                                    <strong>Ảnh theo biến thể đang chọn</strong>
+                                    <span className="gallery-panel-kicker">Bộ ảnh sản phẩm</span>
+                                    <strong>Ngắm chi tiết phiên bản bạn đang quan tâm</strong>
                                 </div>
                                 <span className="gallery-panel-count">{variantImages.length} ảnh</span>
                             </div>
@@ -433,10 +241,6 @@ const ProductDetailPage = () => {
                                     </button>
                                 ))}
                             </div>
-
-                            <div className="gallery-note">
-                                Ảnh và thông tin bên phải đang đồng bộ theo biến thể bạn chọn.
-                            </div>
                         </div>
                     </div>
 
@@ -445,7 +249,6 @@ const ProductDetailPage = () => {
                         <h1 className="detail-title">{product.name}</h1>
                         <div className="purchase-strip">
                             <div className="detail-price">{formatVND(selectedVariant?.price)}</div>
-                            
                         </div>
 
                         <div className={`status-panel ${availabilityMeta.tone}`}>
@@ -454,11 +257,11 @@ const ProductDetailPage = () => {
                                 <span className="status-sku">{selectedVariant?.sku || `SKU-${selectedVariant?.id}`}</span>
                             </div>
                             <p>{availabilityMeta.copy}</p>
-                            {selectedVariant?.saleType === 'PRE_ORDER' && (
+                            {selectedVariant?.saleType === 'PRE_ORDER' && matchedCampaign && (
                                 <div className="status-meta-row">
-                                    <span><ThunderboltOutlined /> Loại bán: Pre-order</span>
-                                    {selectedVariant?.preorderFulfillmentDate && (
-                                        <span><InboxOutlined /> Giao dự kiến: {selectedVariant.preorderFulfillmentDate}</span>
+                                    <span><ThunderboltOutlined /> Có trong chiến dịch: {matchedCampaign.name}</span>
+                                    {matchedCampaign?.fulfillmentDate && (
+                                        <span><InboxOutlined /> Dự kiến giao từ: {formatDate(matchedCampaign.fulfillmentDate)}</span>
                                     )}
                                 </div>
                             )}
@@ -466,7 +269,7 @@ const ProductDetailPage = () => {
 
                         {product.variants?.length > 0 && (
                             <div className="select-group">
-                                <label>Biến thể</label>
+                                <label>Chọn phiên bản</label>
                                 <div className="variant-chips">
                                     {product.variants.map((variant) => {
                                         const variantAvailability = getAvailabilityMeta(variant);
@@ -485,69 +288,49 @@ const ProductDetailPage = () => {
                             </div>
                         )}
 
-                        {isPreorderVariant && (preorderMetrics || hasPreorderWindow) && (
+                        {matchedCampaign && (
                             <div className="preorder-zone">
                                 <div className="preorder-zone-head">
-                                    <strong>Thông tin pre-order</strong>
-                                    <span>Timeline: đặt đơn, support duyệt, rồi mở thanh toán còn lại nếu vẫn còn số dư</span>
+                                    <strong>Chiến dịch liên quan</strong>
+                                    <span>Khám phá không gian riêng dành cho phiên bản này để xem trọn bộ quyền lợi và thời gian mở bán.</span>
                                 </div>
-
-                                {preorderMetrics && (
-                                    <div className="preorder-stats">
-                                        <div className="preorder-stat-card">
-                                            <span className="preorder-stat-label">Đã đặt trước</span>
-                                            <strong>{preorderMetrics.currentPreorders}</strong>
-                                        </div>
-                                        <div className="preorder-stat-card">
-                                            <span className="preorder-stat-label">Giới hạn</span>
-                                            <strong>{preorderMetrics.preorderLimit || '—'}</strong>
-                                        </div>
-                                        <div className="preorder-stat-card">
-                                            <span className="preorder-stat-label">Còn lại</span>
-                                            <strong>{preorderMetrics.remaining ?? '—'}</strong>
-                                        </div>
-                                        {preorderMetrics.percent !== null && (
-                                            <div className="preorder-progress-wrap">
-                                                <div className="preorder-progress-head">
-                                                    <span>Tiến độ đặt trước</span>
-                                                    <strong>{Math.round(preorderMetrics.percent)}%</strong>
-                                                </div>
-                                                <div className="preorder-progress-bar">
-                                                    <span style={{ width: `${preorderMetrics.percent}%` }} />
-                                                </div>
-                                            </div>
-                                        )}
+                                <div className="preorder-stats">
+                                    <div className="preorder-stat-card">
+                                        <span className="preorder-stat-label">Tên chiến dịch</span>
+                                        <strong>{matchedCampaign.name}</strong>
                                     </div>
-                                )}
-
-                                {hasPreorderWindow && (
-                                    <div className="preorder-timeline">
-                                        {selectedVariant?.preorderStartDate && (
-                                            <div className="preorder-timeline-item">
-                                                <span>Mở nhận đơn</span>
-                                                <strong>{formatDate(selectedVariant.preorderStartDate)}</strong>
-                                            </div>
-                                        )}
-                                        {selectedVariant?.preorderEndDate && (
-                                            <div className="preorder-timeline-item">
-                                                <span>Kết thúc nhận đơn</span>
-                                                <strong>{formatDate(selectedVariant.preorderEndDate)}</strong>
-                                            </div>
-                                        )}
-                                        {selectedVariant?.preorderFulfillmentDate && (
-                                            <div className="preorder-timeline-item">
-                                                <span>Mốc xử lý dự kiến</span>
-                                                <strong>{formatDate(selectedVariant.preorderFulfillmentDate)}</strong>
-                                            </div>
-                                        )}
+                                    <div className="preorder-stat-card">
+                                        <span className="preorder-stat-label">Mở nhận đơn đến</span>
+                                        <strong>{formatDate(matchedCampaign.endDate) || '—'}</strong>
                                     </div>
-                                )}
+                                    <div className="preorder-stat-card">
+                                        <span className="preorder-stat-label">Dự kiến giao</span>
+                                        <strong>{formatDate(matchedCampaign.fulfillmentDate) || '—'}</strong>
+                                    </div>
+                                </div>
+                                <Link to={`/customer/preorder-campaigns/${matchedCampaign.id}`} className="section-link">
+                                    Xem chiến dịch này <RightOutlined />
+                                </Link>
+                            </div>
+                        )}
+
+                        {productCampaigns.length > 1 && (
+                            <div className="select-group">
+                                <label>Các chiến dịch khác của mẫu này</label>
+                                <div className="variant-chips">
+                                    {productCampaigns.map((campaign) => (
+                                        <Link key={campaign.id} to={`/customer/preorder-campaigns/${campaign.id}`} className="chip in">
+                                            <span>{campaign.name}</span>
+                                            <small>{formatDate(campaign.endDate) || 'Chiến dịch'}</small>
+                                        </Link>
+                                    ))}
+                                </div>
                             </div>
                         )}
 
                         {selectedVariant?.attributes?.length > 0 && (
                             <div className="select-group">
-                                <label>Thông tin biến thể đã chọn</label>
+                                <label>Thông tin phiên bản đã chọn</label>
                                 <div className="attribute-grid">
                                     {selectedVariant.attributes.map((attribute) => (
                                         <div key={attribute.id} className="attribute-card">
@@ -574,7 +357,11 @@ const ProductDetailPage = () => {
 
                         {!availabilityMeta.canAddToCart && selectedVariant?.saleType === 'PRE_ORDER' && (
                             <div className="preorder-block-note">
-                                {availabilityMeta.copy}
+                                {matchedCampaign ? (
+                                    <>Phiên bản này đang được mở bán trong chiến dịch <strong>{matchedCampaign.name}</strong>. Hãy ghé xem để giữ chỗ sớm.</>
+                                ) : (
+                                    <>Phiên bản này hiện thuộc nhóm đặt trước. Vui lòng quay lại sau để xem thêm thông tin mở bán.</>
+                                )}
                             </div>
                         )}
 
@@ -587,7 +374,7 @@ const ProductDetailPage = () => {
                             onClick={handleAddToCart}
                             className="add-cart-btn"
                         >
-                            {actionLabel}
+                            {availabilityMeta.canAddToCart ? 'Thêm vào giỏ hàng' : 'Xem chiến dịch đặt trước'}
                         </Button>
 
                         {product.description && (
@@ -600,7 +387,7 @@ const ProductDetailPage = () => {
                         <div className="detail-meta">
                             <div className="meta-item"><CheckCircleOutlined style={{ color: '#22c55e' }} /> Giao hàng toàn quốc qua GHN</div>
                             <div className="meta-item"><CheckCircleOutlined style={{ color: '#22c55e' }} /> Đổi trả trong 30 ngày</div>
-                            <div className="meta-item"><CheckCircleOutlined style={{ color: '#22c55e' }} /> Pre-order thanh toán an toàn qua VNPay theo 2 bước hoặc 1 lần</div>
+                            <div className="meta-item"><CheckCircleOutlined style={{ color: '#22c55e' }} /> Thanh toán an toàn, mua sắm thuận tiện</div>
                         </div>
                     </div>
                 </div>
@@ -610,4 +397,3 @@ const ProductDetailPage = () => {
 };
 
 export default ProductDetailPage;
-

@@ -191,6 +191,8 @@ export const normalizeCartItem = (input) => {
         ...item,
         id: firstDefined(item.id, item.itemId, item.cartItemId),
         clientKey: firstDefined(item.id, item.itemId, item.cartItemId, item.productId, item.productComboId, `${productName || 'item'}-${quantity}`),
+        productVariantId: firstDefined(item.productVariantId, item.variantId, item.variant?.id, item.productVariant?.id),
+        campaignId: firstDefined(item.campaignId, item.preorderCampaignId, item.campaign?.id),
         saleType: firstDefined(item.saleType, item.type),
         productName,
         variantName,

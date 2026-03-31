@@ -46,8 +46,8 @@ const STATUS_CONFIG = {
 const SHIPMENT_STATUS_CONFIG = {
     WAITING_CONFIRM: { label: 'Chờ tạo vận đơn', color: 'default' },
     READY_TO_PICK: { label: 'Chờ GHN lấy hàng', color: 'blue' },
-    PICKING: { label: 'Đang lấy hàng', color: 'blue' },
-    PICKED: { label: 'Đã lấy hàng', color: 'cyan' },
+    PICKING: { label: 'GHN đang lấy hàng', color: 'blue' },
+    PICKED: { label: 'GHN đã lấy hàng', color: 'cyan' },
     DELIVERING: { label: 'Đang giao hàng', color: 'cyan' },
     DELIVERED: { label: 'Đã giao hàng', color: 'green' },
     FAILED: { label: 'Giao hàng thất bại', color: 'red' },
@@ -64,7 +64,7 @@ const RETURN_REASON_OPTIONS = [
 ];
 
 const RETURN_STATUS_META = {
-    SUBMITTED: ['Đã gửi, chờ support duyệt', 'pending'],
+    SUBMITTED: ['Đã gửi yêu cầu, đang chờ xác nhận', 'pending'],
     WAITING_RETURN: ['Đã duyệt, chờ trả hàng về', 'ready'],
     RECEIVED: ['Kho đã nhận hàng', 'info'],
     REFUND_REQUESTED: ['Đã tạo yêu cầu hoàn tiền', 'done'],
@@ -110,15 +110,15 @@ const getOrderStatusMeta = (order) => {
     const shipmentStatus = normalizeShipmentStatus(order?.shipmentStatus);
 
     if (shipmentStatus && SHIPMENT_STATUS_CONFIG[shipmentStatus]) return SHIPMENT_STATUS_CONFIG[shipmentStatus];
-    if (order?.orderType !== 'PRE_ORDER' && hasSupportApproval(order)) return { label: 'Đã xác nhận - chờ giao GHN', color: 'cyan' };
-    if (isPreOrderFullyPaidAfterSupport(order)) return { label: 'Đã thanh toán đủ - chờ giao GHN', color: 'green' };
-    if (canOpenRemainingPayment(order)) return { label: 'Đã về hàng - chờ thanh toán còn lại', color: 'gold' };
-    if (isPreOrderWaitingSupport(order)) return { label: 'Đã thanh toán cọc - chờ support duyệt', color: 'blue' };
+    if (order?.orderType !== 'PRE_ORDER' && hasSupportApproval(order)) return { label: 'Đã xác nhận - chờ giao hàng', color: 'cyan' };
+    if (isPreOrderFullyPaidAfterSupport(order)) return { label: 'Đã thanh toán đủ - chờ giao hàng', color: 'green' };
+    if (canOpenRemainingPayment(order)) return { label: 'Đã sẵn sàng - chờ thanh toán còn lại', color: 'gold' };
+    if (isPreOrderWaitingSupport(order)) return { label: 'Đã thanh toán giữ chỗ - đang chờ cập nhật tiếp theo', color: 'blue' };
     return STATUS_CONFIG[order?.orderStatus] || { label: order?.orderStatus || '-', color: 'default' };
 };
 
 const formatVND = (n) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n || 0);
-const formatDate = (d) => (d ? new Date(d).toLocaleString('vi-VN') : 'Backend chưa trả ngày');
+const formatDate = (d) => (d ? new Date(d).toLocaleString('vi-VN') : 'Đang cập nhật');
 
 const getPaymentTimestamp = (payment) => {
     const rawDate = payment?.paidAt || payment?.createAt;
@@ -207,8 +207,8 @@ const getShipmentLabel = (status) => {
     const labels = {
         WAITING_CONFIRM: 'Chờ tạo vận đơn',
         READY_TO_PICK: 'Chờ GHN lấy hàng',
-        PICKING: 'Đang lấy hàng',
-        PICKED: 'Đã lấy hàng',
+        PICKING: 'GHN đang lấy hàng',
+        PICKED: 'GHN đã lấy hàng',
         DELIVERING: 'Đang giao hàng',
         DELIVERED: 'Hoàn thành',
         FAILED: 'Giao hàng thất bại',
@@ -223,8 +223,8 @@ const getRemainingPaymentMeta = (order) => {
     if (hasFinishedRemainingPayment(order)) {
         return {
             tone: 'done',
-            title: 'Đã hoàn tất thanh toán pre-order',
-            description: 'Đơn đã được thanh toán đủ và đang tiếp tục các bước giao vận.',
+            title: 'Đã hoàn tất thanh toán',
+            description: 'Đơn hàng đã được thanh toán đầy đủ và đang tiếp tục hành trình giao đến bạn.',
         };
     }
     if (canOpenRemainingPayment(order)) {
@@ -237,23 +237,23 @@ const getRemainingPaymentMeta = (order) => {
     if (order.orderStatus === 'PAID') {
         return {
             tone: 'waiting',
-            title: isPreOrderSupportApproved(order) ? 'Đã mở thanh toán phần còn lại' : 'Đã ghi nhận thanh toán ban đầu',
+            title: 'Đã ghi nhận khoản thanh toán đầu tiên',
             description: isPreOrderSupportApproved(order)
-                ? `Support đã xác nhận đơn. Bạn có thể thanh toán ${formatVND(order.remainingAmount)} còn lại ngay bây giờ.`
-                : 'Khách đã thanh toán tiền cọc. Đơn đang chờ support xác nhận trước khi mở bước thanh toán còn lại.',
+                ? `Đơn hàng đã được support duyệt. Bạn có thể thanh toán ${formatVND(order.remainingAmount)} còn lại ngay bây giờ để hoàn tất đơn hàng.`
+                : 'Khoản thanh toán ban đầu đã được ghi nhận. Đơn hàng sẽ sớm được cập nhật cho bước tiếp theo.',
         };
     }
     if (isPreOrderSupportApproved(order)) {
         return {
-            tone: 'waiting',
-            title: 'Đơn đã qua support',
-            description: 'Đơn đang chờ backend chuyển sang bước tiếp theo. Nút thanh toán phần còn lại chỉ xuất hiện khi đơn chuyển sang chờ thanh toán.',
+            tone: 'ready',
+            title: 'Đã mở thanh toán phần còn lại',
+            description: `Bạn có thể thanh toán ${formatVND(order.remainingAmount)} còn lại ngay bây giờ.`,
         };
     }
     return {
         tone: 'waiting',
         title: 'Chờ mở thanh toán phần còn lại',
-        description: 'Đơn pre-order vẫn đang ở bước trung gian. Khi backend chuyển đơn sang trạng thái thanh toán còn lại, nút thanh toán sẽ xuất hiện tại đây.',
+        description: 'Đơn hàng của bạn đang được chuẩn bị cho bước thanh toán tiếp theo. Vui lòng quay lại sau để kiểm tra cập nhật mới nhất.',
     };
 };
 
@@ -375,7 +375,7 @@ const OrdersPage = () => {
             }
 
             if (latestOrder && !canOpenRemainingPayment(latestOrder)) {
-                message.warning('Đơn này vẫn chưa được backend mở bước thanh toán phần còn lại.');
+                message.warning('Đơn này chưa sẵn sàng cho bước thanh toán tiếp theo. Vui lòng thử lại sau.');
                 return;
             }
 
@@ -390,7 +390,7 @@ const OrdersPage = () => {
         } catch (e) {
             const backendMessage = getErrorMessage(e, 'Không thể thanh toán phần còn lại');
             if (typeof backendMessage === 'string' && backendMessage.includes('Remaining payment is not opened yet')) {
-                message.warning('Backend chưa mở thanh toán phần còn lại cho đơn này. Hãy thử lại sau.');
+                message.warning('Khoản thanh toán còn lại chưa được backend mở. Vui lòng chờ đến khi trạng thái đơn được cập nhật rồi thử lại.');
             } else {
                 message.error(backendMessage);
             }
@@ -652,7 +652,7 @@ const OrdersPage = () => {
                         <div className="complaint-section">
                             <div className="complaint-section-header">
                                 <h3>Tiến độ trả hàng</h3>
-                                <p>Support duyệt, operations nhận hàng, sau đó sẽ hoàn tiền.</p>
+                                <p>Yêu cầu của bạn sẽ được xác nhận, tiếp nhận hàng hoàn và hoàn tiền theo tiến độ xử lý.</p>
                             </div>
                             {orderReturnRequests.length === 0 ? (
                                 <div className="complaint-empty-box">Chưa có yêu cầu trả hàng.</div>
