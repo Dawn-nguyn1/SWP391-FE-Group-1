@@ -47,7 +47,7 @@ const CampaignPage = () => {
         <div className="campaign-page-container">
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">Preorder Campaign Management</h1>
+                    <h1 className="page-title" style={{ color: '#ffffff' }}>Preorder Campaign Management</h1>
                     <p className="page-subtitle" style={{ color: '#ffffff' }}>Manage and view all preorder campaigns in the system</p>
                 </div>
             </div>
@@ -59,6 +59,7 @@ const CampaignPage = () => {
             <CampaignTable
                 loadCampaigns={loadCampaigns}
                 dataCampaigns={dataCampaigns}
+                setDataCampaigns={setDataCampaigns}
                 current={current}
                 pageSize={pageSize}
                 total={total}

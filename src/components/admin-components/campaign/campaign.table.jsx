@@ -10,6 +10,7 @@ import './campaign.css';
 const CampaignTable = (props) => {
     const {
         dataCampaigns,
+        setDataCampaigns,
         loadCampaigns,
         current,
         pageSize,
@@ -38,13 +39,20 @@ const CampaignTable = (props) => {
                 await activatePreorderCampaignAPI(id);
             }
 
-            await loadCampaigns();
+            // Update local data instead of reloading to maintain position
+            props.setDataCampaigns(prev => 
+                prev.map(item => 
+                    item.id === id ? { ...item, isActive: !isActive } : item
+                )
+            );
         } catch (error) {
             console.error('Toggle status error:', error);
             notification.error({
                 message: 'Error updating status',
                 description: error?.message || 'Failed to update campaign status.',
             });
+            // Reload data on error to restore correct state
+            await loadCampaigns();
         } finally {
             setSwitchLoadingIds((prev) => prev.filter((loadingId) => loadingId !== id));
         }

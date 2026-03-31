@@ -7,9 +7,6 @@ import dayjs from 'dayjs';
 import './homepage.css';
 import { getManagerDashboardAPI, getDashboardOrderDetailAPI, getDashboardRevenueDetailAPI } from '../../services/api.service';
 
-const GENDER_MAP = { 0: "Nữ", 1: "Nam", 2: "Khác" };
-const GENDER_COLORS = { 1: "#7c3aed", 0: "#2563eb", 2: "#bfdbfe" };
-
 function formatVND(amount) {
   if (!amount || amount === 0) return '0đ';
   return new Intl.NumberFormat("vi-VN", {
@@ -50,8 +47,8 @@ function MetricCard({ label, value, sub, change, icon, color = "purple" }) {
         <span className="metric-card-label">{label}</span>
         <span className="metric-card-value">{value}</span>
         {sub && <span className="metric-card-sub">{sub}</span>}
-        {change !== undefined && (
-          <div className="metric-card-change" style={{ color: getChangeColor(change) }}>
+        {false && (
+          <div className="metric-card-change" style={{ color: '#ef4444', fontSize: '14px' }}>
             {getChangeIcon(change)}
             <span>{change > 0 ? '+' : ''}{change}%</span>
             <span className="change-text">vs kỳ trước</span>
@@ -65,29 +62,21 @@ function MetricCard({ label, value, sub, change, icon, color = "purple" }) {
 function RevenueChart({ data, chartType, onChartTypeChange }) {
   const chartData = data.map(item => ({
     time: item.time,
-    year: item.year,
-    value: item.revenue || item.value || 0,
-    displayTime: `${item.time}/${item.year}`
+    year: item.year === 0 ? new Date().getFullYear() : item.year,
+    revenue: item.revenue || 0,
+    displayTime: `Tháng ${item.time}/${item.year === 0 ? new Date().getFullYear() : item.year}`
   }));
 
   return (
     <div className="revenue-chart">
       <div className="revenue-chart-header">
         <div>
-          <div className="revenue-chart-title">Biểu đồ {chartType === 'revenue' ? 'Doanh thu' : 'Đơn hàng'}</div>
-          <div className="revenue-chart-subtitle">Theo thời gian</div>
-        </div>
-        <div className="chart-controls">
-          <Switch
-            checked={chartType === 'orders'}
-            onChange={(checked) => onChartTypeChange(checked ? 'orders' : 'revenue')}
-            checkedChildren="Đơn hàng"
-            unCheckedChildren="Doanh thu"
-          />
+          <div className="revenue-chart-title">Biểu đồ Doanh thu</div>
+          <div className="revenue-chart-subtitle">Theo tháng</div>
         </div>
       </div>
       <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+        <BarChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis 
             dataKey="displayTime" 
@@ -97,26 +86,20 @@ function RevenueChart({ data, chartType, onChartTypeChange }) {
           <YAxis 
             tick={{ fontSize: 12 }}
             stroke="#6b7280"
-            tickFormatter={(value) => chartType === 'revenue' ? `${(value / 1000000).toFixed(0)}M` : value}
+            tickFormatter={(value) => `${(value / 1000000).toFixed(1)}M`}
           />
           <RechartsTooltip
-            formatter={(value) => [
-              chartType === 'revenue' ? formatVND(value) : value,
-              chartType === 'revenue' ? 'Doanh thu' : 'Số lượng'
-            ]}
-            labelFormatter={(label) => `Thời gian: ${label}`}
+            formatter={(value) => [formatVND(value), 'Doanh thu']}
+            labelFormatter={(label) => label}
           />
           <Legend />
-          <Line 
-            type="monotone" 
-            dataKey="value" 
-            stroke="#7c3aed" 
-            strokeWidth={2}
-            dot={{ fill: '#7c3aed', strokeWidth: 2, r: 4 }}
-            activeDot={{ r: 6 }}
-            name={chartType === 'revenue' ? 'Doanh thu' : 'Đơn hàng'}
+          <Bar 
+            dataKey="revenue" 
+            fill="#7c3aed"
+            name="Doanh thu"
+            radius={[8, 8, 0, 0]}
           />
-        </LineChart>
+        </BarChart>
       </ResponsiveContainer>
     </div>
   );
@@ -226,7 +209,6 @@ function BestSellersChart({ items }) {
       </div>
       <div className="best-sellers-list">
         {items.slice(0, 3).map((item, idx) => {
-          const pct = (item.totalSold / max) * 100;
           const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other';
           return (
             <div key={idx} className="best-seller-item">
@@ -238,76 +220,12 @@ function BestSellersChart({ items }) {
                   <span className={`best-seller-name ${idx < 2 ? '' : 'normal'}`} title={item.productName}>
                     {item.productName}
                   </span>
-                  <span className="best-seller-stats">
-                    <span className="sold-count">{item.totalSold}</span>
-                    <span className="sold-percentage">{pct.toFixed(1)}%</span>
-                  </span>
                 </div>
-                <div className="best-seller-bar-container">
-                  <div className={`best-seller-bar-fill ${rankClass}`} style={{ width: `${pct}%` }} />
-                  <div className="best-seller-bar-bg" style={{ width: '100%' }} />
-                </div>
+                <div className="sold-count">{item.totalSold} đã bán</div>
               </div>
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function DonutChart({ stats }) {
-  const total = stats.reduce((s, g) => s + g.count, 0);
-  let cumulative = 0;
-  const r = 54, cx = 72, cy = 72;
-  const circumference = 2 * Math.PI * r;
-
-  const segments = stats.map((g) => {
-    const start = cumulative;
-    cumulative += g.percentage;
-    return { ...g, start, dash: (g.percentage / 100) * circumference, offset: -(start / 100) * circumference };
-  });
-
-  return (
-    <div className="gender-chart">
-      <div className="gender-chart-header">
-        <div className="gender-chart-title-container">
-          <div className="gender-chart-icon">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
-          </div>
-          <span className="gender-chart-title">Giới tính người dùng</span>
-        </div>
-        <span className="gender-chart-total">{total} users</span>
-      </div>
-
-      <div className="gender-chart-content">
-        <div className="gender-chart-svg">
-          <svg width={144} height={144} viewBox="0 0 144 144">
-            <circle cx={cx} cy={cy} r={r} fill="none" stroke="#f1f5f9" strokeWidth={18} />
-            {segments.map((seg, i) => (
-              <circle key={i} cx={cx} cy={cy} r={r} fill="none"
-                stroke={GENDER_COLORS[seg.gender]} strokeWidth={18}
-                strokeDasharray={`${seg.dash} ${circumference - seg.dash}`}
-                strokeDashoffset={seg.offset + circumference / 4}
-                transform={`rotate(-90 ${cx} ${cy})`}
-              />
-            ))}
-            <text x={cx} y={cy - 7} textAnchor="middle" fontSize={22} fontWeight={700} fill="#1e293b" fontFamily="'DM Mono', monospace">{total}</text>
-            <text x={cx} y={cy + 13} textAnchor="middle" fontSize={11} fill="#94a3b8" fontFamily="sans-serif">users</text>
-          </svg>
-        </div>
-        <div className="gender-chart-legend">
-          {segments.map((seg) => (
-            <div key={seg.gender} className="gender-legend-item">
-              <div className="gender-legend-color" style={{ background: GENDER_COLORS[seg.gender] }} />
-              <span className="gender-legend-name">{GENDER_MAP[seg.gender]}</span>
-              <span className="gender-legend-percentage">{seg.percentage.toFixed(1)}%</span>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
@@ -371,9 +289,9 @@ export default function AdminHomepage() {
     averageOrderValue: 0,
     cancellationRate: 0,
     bestSellers: [],
-    genderStats: [],
     lowStockProducts: [],
-    previousPeriodData: null,
+    revenueByMonth: [],
+    revenueByQuarter: [],
   });
   
   const [revenueData, setRevenueData] = useState([]);
@@ -387,7 +305,7 @@ export default function AdminHomepage() {
   const [selectedMonth, setSelectedMonth] = useState(dayjs().month());
   const [selectedYear, setSelectedYear] = useState(dayjs().year());
   const [orderStatusFilter, setOrderStatusFilter] = useState('ALL');
-  const [revenueTypeFilter, setRevenueTypeFilter] = useState('MONTH');
+  const [revenueTypeFilter] = useState('MONTH');
 
   // Time filter options
   const timeFilterOptions = [
@@ -417,10 +335,7 @@ export default function AdminHomepage() {
 
   // Revenue type options
   const revenueTypeOptions = [
-    { value: 'DAY', label: 'Theo ngày' },
-    { value: 'MONTH', label: 'Theo tháng' },
-    { value: 'QUARTER', label: 'Theo quý' },
-    { value: 'YEAR', label: 'Theo năm' },
+    { value: 'MONTH', label: '📆 Theo tháng' },
   ];
 
   // Get date range based on filter
@@ -480,9 +395,9 @@ export default function AdminHomepage() {
           averageOrderValue: dashboardRes.averageOrderValue || 0,
           cancellationRate: dashboardRes.cancellationRate || 0,
           bestSellers: dashboardRes.bestSellers || [],
-          genderStats: dashboardRes.genderStats || [],
           lowStockProducts: dashboardRes.lowStockProducts || [],
-          previousPeriodData: dashboardRes.previousPeriodData || null,
+          revenueByMonth: dashboardRes.revenueByMonth || [],
+          revenueByQuarter: dashboardRes.revenueByQuarter || [],
         });
       }
 
@@ -503,17 +418,58 @@ export default function AdminHomepage() {
 
   useEffect(() => {
     fetchDashboardData();
-  }, [timeFilter, customDateRange, selectedMonth, selectedYear, orderStatusFilter, revenueTypeFilter]);
+  }, [timeFilter, customDateRange, selectedMonth, selectedYear, orderStatusFilter]);
+
+  // Calculate percentage changes from revenueByMonth/revenueByQuarter
+  const getPreviousPeriodData = () => {
+    const { from, to } = getDateRange();
+    if (!from || !to) return null;
+    
+    const fromDate = dayjs(from);
+    const toDate = dayjs(to);
+    const currentMonth = fromDate.month();
+    const currentYear = fromDate.year();
+    const currentQuarter = Math.floor(currentMonth / 3) + 1;
+    
+    // If date range spans multiple months or is a full month, use month comparison
+    if (timeFilter === 'thisMonth' || timeFilter === 'monthYear' || 
+        (fromDate.isSame(fromDate.startOf('month')) && toDate.isSame(toDate.endOf('month')))) {
+      // Find previous month data
+      let prevMonth = currentMonth - 1;
+      let prevYear = currentYear;
+      if (prevMonth < 0) {
+        prevMonth = 11;
+        prevYear = currentYear - 1;
+      }
+      
+      const prevMonthData = data.revenueByMonth?.find(m => m.time === prevMonth + 1 && m.year === prevYear);
+      const currentMonthData = data.revenueByMonth?.find(m => m.time === currentMonth + 1 && m.year === currentYear);
+      
+      if (prevMonthData && currentMonthData) {
+        return {
+          totalRevenue: prevMonthData.revenue,
+          // Orders và các metric khác không có trong revenueByMonth, nên dùng estimation
+          totalOrders: data.totalOrders * (prevMonthData.revenue / currentMonthData.revenue),
+          averageOrderValue: data.averageOrderValue,
+          cancellationRate: data.cancellationRate,
+        };
+      }
+    }
+    
+    return null;
+  };
+
+  const previousPeriodData = getPreviousPeriodData();
 
   // Calculate percentage changes
-  const revenueChange = data.previousPeriodData ? 
-    calculatePercentageChange(data.totalRevenue, data.previousPeriodData.totalRevenue) : 0;
-  const ordersChange = data.previousPeriodData ? 
-    calculatePercentageChange(data.totalOrders, data.previousPeriodData.totalOrders) : 0;
-  const avgOrderChange = data.previousPeriodData ? 
-    calculatePercentageChange(data.averageOrderValue, data.previousPeriodData.averageOrderValue) : 0;
-  const cancellationChange = data.previousPeriodData ? 
-    calculatePercentageChange(data.cancellationRate, data.previousPeriodData.cancellationRate) : 0;
+  const revenueChange = previousPeriodData ? 
+    calculatePercentageChange(data.totalRevenue, previousPeriodData.totalRevenue) : 0;
+  const ordersChange = previousPeriodData ? 
+    calculatePercentageChange(data.totalOrders, previousPeriodData.totalOrders) : 0;
+  const avgOrderChange = previousPeriodData ? 
+    calculatePercentageChange(data.averageOrderValue, previousPeriodData.averageOrderValue) : 0;
+  const cancellationChange = previousPeriodData ? 
+    calculatePercentageChange(data.cancellationRate, previousPeriodData.cancellationRate) : 0;
 
   if (loading) {
     return (
@@ -540,7 +496,7 @@ export default function AdminHomepage() {
           <div className="dashboard-filters">
             {/* Row 1: Time Period Filter */}
             <div className="filter-group">
-              <label className="filter-label">📅 Thời gian:</label>
+              <label className="filter-label"> Thời gian:</label>
               <Select
                 value={timeFilter}
                 onChange={setTimeFilter}
@@ -550,8 +506,8 @@ export default function AdminHomepage() {
                   { value: '7days', label: '7 ngày qua' },
                   { value: '30days', label: '30 ngày qua' },
                   { value: 'thisMonth', label: 'Tháng này' },
-                  { value: 'custom', label: '📆 Tùy chọn...' },
-                  { value: 'monthYear', label: '📅 Tháng/Năm' },
+                  { value: 'custom', label: ' Tùy chọn...' },
+                  { value: 'monthYear', label: ' Tháng/Năm' },
                 ]}
               />
             </div>
@@ -559,7 +515,7 @@ export default function AdminHomepage() {
             {/* Custom Date Range */}
             {timeFilter === 'custom' && (
               <div className="filter-group">
-                <label className="filter-label">📆 Chọn ngày:</label>
+                <label className="filter-label"> Chọn ngày:</label>
                 <DatePicker.RangePicker
                   value={[customDateRange.from, customDateRange.to]}
                   onChange={(dates) => setCustomDateRange({ from: dates?.[0], to: dates?.[1] })}
@@ -572,7 +528,7 @@ export default function AdminHomepage() {
             {/* Month/Year Picker */}
             {timeFilter === 'monthYear' && (
               <div className="filter-group">
-                <label className="filter-label">📅 Chọn tháng:</label>
+                <label className="filter-label"> Chọn tháng:</label>
                 <DatePicker
                   picker="month"
                   value={dayjs().year(selectedYear).month(selectedMonth)}
@@ -587,35 +543,29 @@ export default function AdminHomepage() {
 
             {/* Row 2: Order Status Filter */}
             <div className="filter-group">
-              <label className="filter-label">📦 Trạng thái đơn:</label>
+              <label className="filter-label"> Trạng thái đơn:</label>
               <Select
                 value={orderStatusFilter}
                 onChange={setOrderStatusFilter}
                 style={{ width: 170 }}
                 options={[
-                  { value: 'ALL', label: '📋 Tất cả' },
-                  { value: 'PENDING', label: '⏳ Chờ xử lý' },
-                  { value: 'PAID', label: '✅ Đã thanh toán' },
-                  { value: 'SHIPPING', label: '🚚 Đang giao' },
-                  { value: 'COMPLETED', label: '🏁 Hoàn thành' },
-                  { value: 'CANCELLED', label: '❌ Đã hủy' },
+                  { value: 'ALL', label: ' Tất cả' },
+                  { value: 'PAID', label: ' Đã thanh toán' },
+                  { value: 'SHIPPING', label: ' Đang giao' },
+                  { value: 'COMPLETED', label: ' Hoàn thành' },
+                  { value: 'CANCELLED', label: ' Đã hủy' },
                 ]}
               />
             </div>
 
-            {/* Row 3: Revenue Chart Type */}
+            {/* Row 3: Revenue Chart Type - chỉ hiển thị MONTH */}
             <div className="filter-group">
-              <label className="filter-label">📊 Biểu đồ:</label>
+              <label className="filter-label"> Biểu đồ:</label>
               <Select
                 value={revenueTypeFilter}
-                onChange={setRevenueTypeFilter}
                 style={{ width: 140 }}
-                options={[
-                  { value: 'DAY', label: '📅 Theo ngày' },
-                  { value: 'MONTH', label: '📆 Theo tháng' },
-                  { value: 'QUARTER', label: '📊 Theo quý' },
-                  { value: 'YEAR', label: '📈 Theo năm' },
-                ]}
+                options={revenueTypeOptions}
+                disabled
               />
             </div>
           </div>
