@@ -496,7 +496,7 @@ export default function AdminHomepage() {
           <div className="dashboard-filters">
             {/* Row 1: Time Period Filter */}
             <div className="filter-group">
-              <label className="filter-label">📅 Thời gian:</label>
+              <label className="filter-label"> Thời gian:</label>
               <Select
                 value={timeFilter}
                 onChange={setTimeFilter}
@@ -506,8 +506,8 @@ export default function AdminHomepage() {
                   { value: '7days', label: '7 ngày qua' },
                   { value: '30days', label: '30 ngày qua' },
                   { value: 'thisMonth', label: 'Tháng này' },
-                  { value: 'custom', label: '📆 Tùy chọn...' },
-                  { value: 'monthYear', label: '📅 Tháng/Năm' },
+                  { value: 'custom', label: ' Tùy chọn...' },
+                  { value: 'monthYear', label: ' Tháng/Năm' },
                 ]}
               />
             </div>
@@ -515,7 +515,7 @@ export default function AdminHomepage() {
             {/* Custom Date Range */}
             {timeFilter === 'custom' && (
               <div className="filter-group">
-                <label className="filter-label">📆 Chọn ngày:</label>
+                <label className="filter-label"> Chọn ngày:</label>
                 <DatePicker.RangePicker
                   value={[customDateRange.from, customDateRange.to]}
                   onChange={(dates) => setCustomDateRange({ from: dates?.[0], to: dates?.[1] })}
@@ -528,7 +528,7 @@ export default function AdminHomepage() {
             {/* Month/Year Picker */}
             {timeFilter === 'monthYear' && (
               <div className="filter-group">
-                <label className="filter-label">📅 Chọn tháng:</label>
+                <label className="filter-label"> Chọn tháng:</label>
                 <DatePicker
                   picker="month"
                   value={dayjs().year(selectedYear).month(selectedMonth)}
@@ -543,25 +543,24 @@ export default function AdminHomepage() {
 
             {/* Row 2: Order Status Filter */}
             <div className="filter-group">
-              <label className="filter-label">📦 Trạng thái đơn:</label>
+              <label className="filter-label"> Trạng thái đơn:</label>
               <Select
                 value={orderStatusFilter}
                 onChange={setOrderStatusFilter}
                 style={{ width: 170 }}
                 options={[
-                  { value: 'ALL', label: '📋 Tất cả' },
-                  { value: 'PENDING', label: '⏳ Chờ xử lý' },
-                  { value: 'PAID', label: '✅ Đã thanh toán' },
-                  { value: 'SHIPPING', label: '🚚 Đang giao' },
-                  { value: 'COMPLETED', label: '🏁 Hoàn thành' },
-                  { value: 'CANCELLED', label: '❌ Đã hủy' },
+                  { value: 'ALL', label: ' Tất cả' },
+                  { value: 'PAID', label: ' Đã thanh toán' },
+                  { value: 'SHIPPING', label: ' Đang giao' },
+                  { value: 'COMPLETED', label: ' Hoàn thành' },
+                  { value: 'CANCELLED', label: ' Đã hủy' },
                 ]}
               />
             </div>
 
             {/* Row 3: Revenue Chart Type - chỉ hiển thị MONTH */}
             <div className="filter-group">
-              <label className="filter-label">📊 Biểu đồ:</label>
+              <label className="filter-label"> Biểu đồ:</label>
               <Select
                 value={revenueTypeFilter}
                 style={{ width: 140 }}
