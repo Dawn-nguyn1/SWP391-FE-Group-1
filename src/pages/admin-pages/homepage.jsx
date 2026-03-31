@@ -226,7 +226,6 @@ function BestSellersChart({ items }) {
       </div>
       <div className="best-sellers-list">
         {items.slice(0, 3).map((item, idx) => {
-          const pct = (item.totalSold / max) * 100;
           const rankClass = idx === 0 ? 'rank-1' : idx === 1 ? 'rank-2' : idx === 2 ? 'rank-3' : 'rank-other';
           return (
             <div key={idx} className="best-seller-item">
@@ -238,15 +237,8 @@ function BestSellersChart({ items }) {
                   <span className={`best-seller-name ${idx < 2 ? '' : 'normal'}`} title={item.productName}>
                     {item.productName}
                   </span>
-                  <span className="best-seller-stats">
-                    <span className="sold-count">{item.totalSold}</span>
-                    <span className="sold-percentage">{pct.toFixed(1)}%</span>
-                  </span>
                 </div>
-                <div className="best-seller-bar-container">
-                  <div className={`best-seller-bar-fill ${rankClass}`} style={{ width: `${pct}%` }} />
-                  <div className="best-seller-bar-bg" style={{ width: '100%' }} />
-                </div>
+                <div className="sold-count">{item.totalSold} đã bán</div>
               </div>
             </div>
           );

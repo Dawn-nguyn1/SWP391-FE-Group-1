@@ -97,7 +97,7 @@ export default function BestSellersDetail() {
       title: 'STT',
       key: 'stt',
       width: 60,
-      align: 'center',
+      align: 'left',
       render: (_, __, index) => (
         <span style={{ fontWeight: 'bold' }}>
           {index + 1 + (pagination.current - 1) * pagination.pageSize}
@@ -105,22 +105,13 @@ export default function BestSellersDetail() {
       ),
     },
     {
-      title: 'Xếp hạng',
-      key: 'rank',
-      width: 100,
-      align: 'center',
-      render: (_, __, index) => getRankTag(index + 1 + (pagination.current - 1) * pagination.pageSize),
-    },
-    {
       title: 'Tên sản phẩm',
       dataIndex: 'productName',
       key: 'productName',
       width: 300,
-      render: (text, record, index) => (
+      align: 'left',
+      render: (text) => (
         <div className="product-name-cell">
-          <span className={`rank-badge rank-${index < 3 ? index + 1 : 'other'}`}>
-            {index + 1 + (pagination.current - 1) * pagination.pageSize}
-          </span>
           <span className="product-name-text" title={text}>{text}</span>
         </div>
       ),
@@ -130,41 +121,11 @@ export default function BestSellersDetail() {
       dataIndex: 'totalSold',
       key: 'totalSold',
       width: 120,
-      align: 'right',
+      align: 'left',
       sorter: (a, b) => a.totalSold - b.totalSold,
       render: (value) => (
         <span className="sold-count">
           <RiseOutlined /> {value?.toLocaleString()}
-        </span>
-      ),
-    },
-    {
-      title: 'Tỷ lệ',
-      key: 'percentage',
-      width: 150,
-      render: (_, record) => {
-        const percentage = ((record.totalSold || 0) / maxSold) * 100;
-        return (
-          <div className="percentage-cell">
-            <Progress 
-              percent={percentage.toFixed(1)} 
-              size="small" 
-              strokeColor={percentage > 50 ? '#52c41a' : '#1890ff'}
-            />
-          </div>
-        );
-      },
-    },
-    {
-      title: 'Doanh thu',
-      dataIndex: 'revenue',
-      key: 'revenue',
-      width: 150,
-      align: 'right',
-      sorter: (a, b) => (a.revenue || 0) - (b.revenue || 0),
-      render: (value) => (
-        <span className="revenue-text">
-          {value ? formatVND(value) : '0đ'}
         </span>
       ),
     },

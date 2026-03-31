@@ -153,6 +153,7 @@ export default function RecentOrdersDetail() {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
+      sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
       render: (date) => formatDate(date),
     },
   ];
