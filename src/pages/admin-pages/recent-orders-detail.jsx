@@ -72,7 +72,7 @@ export default function RecentOrdersDetail() {
 
   useEffect(() => {
     fetchOrders(1, pagination.pageSize);
-  }, [statusFilter]);
+  }, [statusFilter, dateRange]);
 
   const handleSearch = () => {
     fetchOrders(1, pagination.pageSize);
@@ -95,7 +95,7 @@ export default function RecentOrdersDetail() {
     return (
       order.orderCode?.toLowerCase().includes(keyword) ||
       order.items?.some(item => item.productName?.toLowerCase().includes(keyword)) ||
-      order.customerName?.toLowerCase().includes(keyword)
+      order.address?.receiverName?.toLowerCase().includes(keyword)
     );
   });
 
@@ -109,9 +109,9 @@ export default function RecentOrdersDetail() {
     },
     {
       title: 'Khách hàng',
-      dataIndex: 'customerName',
       key: 'customerName',
       width: 150,
+      render: (record) => record.address?.receiverName || 'N/A',
     },
     {
       title: 'Sản phẩm',
@@ -153,6 +153,7 @@ export default function RecentOrdersDetail() {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 150,
+      sorter: (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
       render: (date) => formatDate(date),
     },
   ];
@@ -162,8 +163,8 @@ export default function RecentOrdersDetail() {
       <Card className="page-card">
         <div className="page-header">
           <div>
-            <h1>Đơn hàng gần đây</h1>
-            <p>Chi tiết tất cả đơn hàng trong hệ thống</p>
+            <h1 style={{ color: 'white' }}>Đơn hàng gần đây</h1>
+            <p style={{ color: 'white' }}>Chi tiết tất cả đơn hàng trong hệ thống</p>
           </div>
         </div>
 
