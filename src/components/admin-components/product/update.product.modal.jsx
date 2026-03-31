@@ -516,9 +516,31 @@ const UpdateProductModal = (props) => {
                                                         <Form.Item
                                                             {...attrRestField}
                                                             name={[attrName, 'attributeValue']}
-                                                            rules={[{ required: true, message: 'Missing value!' }]}
+                                                            rules={[
+                                                                { required: true, message: 'Missing value!' },
+                                                                {
+                                                                    validator: async (_, value) => {
+                                                                        const attributeName = form.getFieldValue(['variants', name, 'attributes', attrName, 'attributeName']);
+                                                                        if (!value) return Promise.resolve();
+                                                                        
+                                                                        if (attributeName === 'Size') {
+                                                                            if (!/^\d+$/.test(value)) {
+                                                                                return Promise.reject('Size chỉ được nhập số!');
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        if (attributeName === 'Color') {
+                                                                            if (!/^[a-zA-ZÀ-ỹ\s]+$/.test(value)) {
+                                                                                return Promise.reject('Color chỉ được nhập chữ!');
+                                                                            }
+                                                                        }
+                                                                        
+                                                                        return Promise.resolve();
+                                                                    }
+                                                                }
+                                                            ]}
                                                         >
-                                                            <Input placeholder="Enter value (e.g XL or 40 or Red)" />
+                                                            <Input placeholder="Enter value (e.g 40 or Red)" />
                                                         </Form.Item>
 
                                                         {/* IMAGES FOR ATTRIBUTE */}
