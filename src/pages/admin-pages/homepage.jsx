@@ -47,8 +47,8 @@ function MetricCard({ label, value, sub, change, icon, color = "purple" }) {
         <span className="metric-card-label">{label}</span>
         <span className="metric-card-value">{value}</span>
         {sub && <span className="metric-card-sub">{sub}</span>}
-        {change !== undefined && (
-          <div className="metric-card-change" style={{ color: getChangeColor(change) }}>
+        {false && (
+          <div className="metric-card-change" style={{ color: '#ef4444', fontSize: '14px' }}>
             {getChangeIcon(change)}
             <span>{change > 0 ? '+' : ''}{change}%</span>
             <span className="change-text">vs kỳ trước</span>
